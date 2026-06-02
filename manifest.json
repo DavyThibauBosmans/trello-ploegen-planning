@@ -1,0 +1,13 @@
+{
+  "name": "Ploegen Planning",
+  "id": "ploegen-planning-custom",
+  "version": "1.0.0",
+  "author": "Bosmans",
+  "description": "Custom drag-and-drop planning per ploeg",
+  "icon": {
+    "url": "https://trello.com/favicon.ico"
+  },
+  "capabilities": [
+    "board-buttons"
+  ]
+}
