@@ -39,7 +39,6 @@
             margin: 0 0 12px 0;
         }
 
-        /* ── INTERVENTIE FORMULIER ── */
         .intervention-form {
             display: flex;
             gap: 6px;
@@ -83,7 +82,6 @@
             border-radius: 6px;
             padding: 8px;
             min-height: 100px;
-            transition: background-color 0.15s;
         }
 
         #sidebar-pool.dragover {
@@ -91,41 +89,63 @@
             outline: 2px dashed #0052cc;
         }
 
-        /* ── KAARTEN ── */
+        /* ── KAARTEN OPBOUW ── */
         .planning-card {
             border-radius: 4px;
             padding: 10px 12px;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.15);
             cursor: grab;
-            font-size: 13px;
-            font-weight: 600;
-            line-height: 1.4;
             user-select: none;
-            position: relative;
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            transition: box-shadow 0.15s, opacity 0.15s, transform 0.1s;
+            transition: box-shadow 0.15s, transform 0.1s;
         }
 
-        .planning-card:hover  { 
+        .planning-card:hover { 
             box-shadow: 0 4px 10px rgba(0,0,0,0.22);
             transform: translateY(-1px);
         }
-        .planning-card:active { cursor: grabbing; opacity: 0.75; }
+        .planning-card:active { cursor: grabbing; }
 
-        /* Bewerkbare tekstzone */
-        .planning-card span[contenteditable="true"] {
+        .card-body {
             flex-grow: 1;
-            outline: none;
-            padding-right: 6px;
-            cursor: text;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
         }
-        .planning-card span[contenteditable="true"]:focus {
-            background-color: rgba(255, 255, 255, 0.25);
+
+        .card-title {
+            font-size: 13px;
+            font-weight: 700;
+            line-height: 1.3;
+        }
+
+        /* Adres styling */
+        .card-address {
+            font-size: 11px;
+            font-style: italic;
+            opacity: 0.85;
+            line-height: 1.2;
+            outline: none;
+        }
+
+        /* Info Plaatsing styling (Het Custom Veld) */
+        .card-info-placement {
+            font-size: 11px;
+            font-weight: 500;
+            margin-top: 5px;
+            padding: 4px 6px;
+            background-color: rgba(255, 255, 255, 0.45);
+            border-left: 3px solid rgba(0, 0, 0, 0.2);
             border-radius: 2px;
-            box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+            outline: none;
+            color: #172b4d !important; /* Altijd goed leesbaar */
+        }
+        .card-info-placement:focus {
+            background-color: #fff;
+            box-shadow: 0 0 0 1px #0052cc;
         }
 
         /* Knoppen op de kaart */
@@ -133,22 +153,18 @@
             display: flex;
             gap: 6px;
             align-items: center;
+            margin-left: 6px;
         }
 
         .color-btn, .delete-btn {
             cursor: pointer;
             font-size: 14px;
-            line-height: 1;
             opacity: 0.4;
-            transition: opacity 0.15s, transform 0.1s;
-            user-select: none;
+            transition: opacity 0.15s;
         }
-        .color-btn:hover, .delete-btn:hover { 
-            opacity: 1; 
-            transform: scale(1.15);
-        }
+        .color-btn:hover, .delete-btn:hover { opacity: 1; }
 
-        /* ── HOOFDSCHERM ── */
+        /* ── HOOFDSCHERM & TABEL ── */
         .main-content {
             flex-grow: 1;
             padding: 20px;
@@ -161,10 +177,8 @@
             font-size: 16px;
             font-weight: 700;
             margin: 0 0 14px 0;
-            color: #172b4d;
         }
 
-        /* ── TABEL ── */
         .planning-table {
             width: 100%;
             border-collapse: collapse;
@@ -187,55 +201,24 @@
             font-weight: 700;
             font-size: 13px;
             text-align: left;
-            white-space: nowrap;
         }
 
         .col-ploeg { width: 130px; }
-
-        .row-ploeg {
-            font-weight: 700;
-            font-size: 13px;
-            background-color: #fafbfc;
-            vertical-align: middle !important;
-        }
-
-        /* ── DROPZONES ── */
-        .dropzone {
-            min-height: 70px;
-            transition: background-color 0.15s;
-        }
-
-        .dropzone.dragover {
-            background-color: #dce9fc;
-            outline: 2px dashed #0052cc;
-        }
-
-        /* ── LAADSTATUS ── */
-        #loading-msg {
-            font-size: 13px;
-            color: #5e6c84;
-            padding: 8px;
-            font-style: italic;
-        }
-
-        #error-msg {
-            font-size: 13px;
-            color: #bf2600;
-            padding: 8px;
-            display: none;
-        }
+        .row-ploeg { font-weight: 700; font-size: 13px; background-color: #fafbfc; vertical-align: middle !important; }
+        .dropzone { min-height: 90px; }
+        .dropzone.dragover { background-color: #dce9fc; outline: 2px dashed #0052cc; }
+        #loading-msg { font-size: 13px; color: #5e6c84; padding: 8px; font-style: italic; }
+        #error-msg { font-size: 13px; color: #bf2600; padding: 8px; display: none; }
     </style>
 </head>
 <body>
 
     <div class="sidebar">
         <h2>📋 Nog in te plannen</h2>
-        
         <div class="intervention-form">
             <input type="text" id="int-name-input" placeholder="Snelle interventie...">
             <button id="add-int-btn" type="button">+</button>
         </div>
-
         <div id="loading-msg">Kaarten laden…</div>
         <div id="error-msg">⚠️ Kon kaarten niet laden.</div>
         <div id="sidebar-pool"></div>
@@ -265,21 +248,17 @@
         var WEEKDAGEN = ['Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag'];
         var datumsVanDeWeek = [];
 
-        // HET VOLLEDIGE KEUZEPALET VOOR INTERVENTIES (Standaard + Specialekes)
         var CUSTOM_COLORS = [
-            { bg: '#dfe1e6', text: '#172b4d' }, // 0. Standaard Grijs
-            { bg: '#ff9f1a', text: '#172b4d' }, // 1. Jens (Oranje)
-            { bg: '#61bd4f', text: '#ffffff' }, // 2. Eva (Groen)
-            { bg: '#f2d600', text: '#172b4d' }, // 3. Davy (Geel)
-            { bg: '#0079bf', text: '#ffffff' }, // 4. Bert (Blauw)
-            { bg: '#89609e', text: '#ffffff' }, // 5. Special: Paars
-            { bg: '#ec4c3c', text: '#ffffff' }, // 6. Special: Felrood
-            { bg: '#00c2e0', text: '#172b4d' }  // 7. Special: Turquoise/Cyan
+            { bg: '#dfe1e6', text: '#172b4d' }, 
+            { bg: '#ff9f1a', text: '#172b4d' }, 
+            { bg: '#61bd4f', text: '#ffffff' }, 
+            { bg: '#f2d600', text: '#172b4d' }, 
+            { bg: '#0079bf', text: '#ffffff' }, 
+            { bg: '#89609e', text: '#ffffff' }, 
+            { bg: '#ec4c3c', text: '#ffffff' }, 
+            { bg: '#00c2e0', text: '#172b4d' }  
         ];
 
-        /* ─────────────────────────────────────────────
-           1. DATUM-HULPFUNCTIES
-        ───────────────────────────────────────────── */
         function berekenWeekDatums() {
             var vandaag = new Date();
             var dag = vandaag.getDay(); 
@@ -293,23 +272,16 @@
                 d.setDate(maandag.getDate() + i);
                 var dd = String(d.getDate()).padStart(2, '0');
                 var mm = String(d.getMonth() + 1).padStart(2, '0');
-                var label = dd + '-' + mm;
-                datumsVanDeWeek.push(label);
-                document.getElementById('day-' + (i + 1)).innerText =
-                    WEEKDAGEN[i] + ' ' + dd + '/' + mm;
+                datumsVanDeWeek.push(dd + '-' + mm);
+                document.getElementById('day-' + (i + 1)).innerText = WEEKDAGEN[i] + ' ' + dd + '/' + mm;
             }
         }
 
-        /* ─────────────────────────────────────────────
-           2. TABEL OPBOUWEN
-        ───────────────────────────────────────────── */
         function bouwTabel() {
             var tbody = document.getElementById('table-body');
             tbody.innerHTML = '';
-
             PLOEGEN.forEach(function(ploeg) {
                 var tr = document.createElement('tr');
-
                 var tdPloeg = document.createElement('td');
                 tdPloeg.className = 'row-ploeg col-ploeg';
                 tdPloeg.innerText = ploeg;
@@ -319,14 +291,13 @@
                     var td = document.createElement('td');
                     td.className = 'dropzone';
                     td.id = maakZoneId(ploeg, datumsVanDeWeek[i]);
-                    td.dataset.ploeg  = ploeg;
-                    td.dataset.datum  = datumsVanDeWeek[i];
+                    td.dataset.ploeg = ploeg;
+                    td.dataset.datum = datumsVanDeWeek[i];
                     td.addEventListener('dragover',  allowDrop);
                     td.addEventListener('dragleave', dragLeave);
                     td.addEventListener('drop',      drop);
                     tr.appendChild(td);
                 }
-
                 tbody.appendChild(tr);
             });
         }
@@ -335,60 +306,51 @@
             return 'zone-' + ploeg.replace(/[\s\/]+/g, '-') + '-' + datum;
         }
 
-        /* ─────────────────────────────────────────────
-           3. STIJL BEPALEN VOOR REGULIERE TRELLO KAARTEN
-        ───────────────────────────────────────────── */
         function bepaalTrelloKaartStijl(members) {
             var standaardStijl = { bg: '#eaecf0', text: '#172b4d' };
             if (!members || members.length === 0) return standaardStijl;
-
             var usernames = members.map(function(m) { return m.username; });
-
             if (usernames.indexOf('jenstriest') !== -1) return { bg: '#ff9f1a', text: '#172b4d' };   
             if (usernames.indexOf('evageeroms') !== -1) return { bg: '#61bd4f', text: '#ffffff' };   
             if (usernames.indexOf('davythibau01') !== -1) return { bg: '#f2d600', text: '#172b4d' }; 
             if (usernames.indexOf('bertdebie1') !== -1) return { bg: '#0079bf', text: '#ffffff' };   
-            if (usernames.indexOf('laurenabsillis1') !== -1) return { bg: '#7a869a', text: '#ffffff' }; 
-            
             return standaardStijl; 
         }
 
-        /* ─────────────────────────────────────────────
-           4. DATA EXCLUSIEF DETECTEREN EN INLADEN
-        ───────────────────────────────────────────── */
         t.render(function() {
             berekenWeekDatums();
             bouwTabel();
 
             var pool = document.getElementById('sidebar-pool');
             var loadingMsg = document.getElementById('loading-msg');
-            var errorMsg   = document.getElementById('error-msg');
-
+            var errorMsg = document.getElementById('error-msg');
             pool.innerHTML = '';
 
+            // Vraag 'address' expliciet op bij Trello kaarten!
             return Promise.all([
-                t.cards('id', 'name', 'members'),
+                t.cards('id', 'name', 'members', 'address'),
                 t.get('board', 'shared', 'interventions', [])
             ])
             .then(function(resultaten) {
-                var cards          = resultaten[0];
-                var interventions  = resultaten[1];
-
+                var cards = resultaten[0];
+                var interventions = resultaten[1];
                 loadingMsg.style.display = 'none';
 
                 var cardPromises = cards.map(function(card) {
-                    return t.get(card.id, 'shared', 'planning', null)
-                        .then(function(planningData) {
-                            return { type: 'trello', card: card, planning: planningData };
-                        });
+                    // Haal zowel planning- als infoPlaatsing-data op
+                    return Promise.all([
+                        t.get(card.id, 'shared', 'planning', null),
+                        t.get(card.id, 'shared', 'infoPlaatsing', '')
+                    ]).then(function(storedData) {
+                        return { type: 'trello', card: card, planning: storedData[0], infoPlaatsing: storedData[1] };
+                    });
                 });
 
                 return Promise.all(cardPromises).then(function(trelloResultaten) {
                     var alleItems = [];
-                    
                     trelloResultaten.forEach(function(r) { alleItems.push(r); });
                     interventions.forEach(function(int) {
-                        alleItems.push({ type: 'intervention', card: int, planning: int });
+                        alleItems.push({ type: 'intervention', card: int, planning: int, infoPlaatsing: int.infoPlaatsing || '' });
                     });
 
                     alleItems.forEach(function(item) {
@@ -397,7 +359,9 @@
                             item.card.name, 
                             item.card.members, 
                             (item.type === 'intervention'),
-                            item.card.colorObj // Geef opgeslagen kleur mee voor interventies
+                            item.card.colorObj,
+                            item.card.address, // Het adres
+                            item.infoPlaatsing // De handmatige tekst
                         );
 
                         if (item.planning && item.planning.ploeg && item.planning.datum) {
@@ -413,99 +377,191 @@
                 });
             })
             .catch(function(err) {
-                console.error('Fout bij laden:', err);
+                console.error(err);
                 loadingMsg.style.display = 'none';
-                errorMsg.style.display   = 'block';
+                errorMsg.style.display = 'block';
             });
         });
 
-        /* ─────────────────────────────────────────────
-           5. KAART-ELEMENT GENERATOR (Met Live Edit & Kleurwiel)
-        ───────────────────────────────────────────── */
-        function maakKaartElement(id, naam, members, isIntervention, savedColorObj) {
+        /* ── DYNAMISCHE KAART GENERATOR ── */
+        function maakKaartElement(id, naam, members, isIntervention, savedColorObj, adres, infoPlaatsingText) {
             var el = document.createElement('div');
-            el.className  = 'planning-card';
-            el.id         = id;
-            el.draggable  = true;
+            el.className = 'planning-card';
+            el.id = id;
+            el.draggable = true;
             
-            var textSpan = document.createElement('span');
-            textSpan.innerText = naam;
-            el.appendChild(textSpan);
+            var bodyContainer = document.createElement('div');
+            bodyContainer.className = 'card-body';
             
-            // Pas de juiste kleur toe
+            // 1. Titel
+            var titleEl = document.createElement('div');
+            titleEl.className = 'card-title';
+            titleEl.innerText = naam;
+            if (isIntervention) {
+                titleEl.contentEditable = true;
+                titleEl.addEventListener('focus', function() { el.draggable = false; });
+                titleEl.addEventListener('blur', function() {
+                    el.draggable = true;
+                    updateInterventionText(id, titleEl.innerText.trim());
+                });
+            }
+            bodyContainer.appendChild(titleEl);
+
+            // 2. Adres (Onder de titel)
+            var addressEl = document.createElement('div');
+            addressEl.className = 'card-address';
+            if (isIntervention) {
+                addressEl.innerText = adres || '📍 Voeg adres toe...';
+                addressEl.contentEditable = true;
+                addressEl.addEventListener('focus', function() { 
+                    el.draggable = false; 
+                    if(addressEl.innerText === '📍 Voeg adres toe...') addressEl.innerText = '';
+                });
+                addressEl.addEventListener('blur', function() {
+                    el.draggable = true;
+                    var txt = addressEl.innerText.trim();
+                    if(!txt) addressEl.innerText = '📍 Voeg adres toe...';
+                    updateInterventionAddress(id, txt);
+                });
+            } else {
+                addressEl.innerText = adres ? '📍 ' + adres : '';
+            }
+            if (adres || isIntervention) {
+                bodyContainer.appendChild(addressEl);
+            }
+
+            // 3. Info Plaatsing (Handmatige tekst / Custom veld)
+            var infoEl = document.createElement('div');
+            infoEl.className = 'card-info-placement';
+            infoEl.innerText = infoPlaatsingText || '✏️ Info plaatsing...';
+            infoEl.contentEditable = true;
+            
+            infoEl.addEventListener('focus', function() {
+                el.draggable = false;
+                if (infoEl.innerText === '✏️ Info plaatsing...') infoEl.innerText = '';
+            });
+            
+            infoEl.addEventListener('blur', function() {
+                el.draggable = true;
+                var txt = infoEl.innerText.trim();
+                if (!txt) {
+                    infoEl.innerText = '✏️ Info plaatsing...';
+                    txt = '';
+                }
+                if (isIntervention) {
+                    updateInterventionInfo(id, txt);
+                } else {
+                    updateTrelloCardInfo(id, txt);
+                }
+            });
+
+            infoEl.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') { e.preventDefault(); infoEl.blur(); }
+            });
+            bodyContainer.appendChild(infoEl);
+            el.appendChild(bodyContainer);
+            
+            // Kleurzetting
             if (isIntervention) {
                 var actueleStijl = savedColorObj || CUSTOM_COLORS[0];
                 el.style.backgroundColor = actueleStijl.bg;
-                el.style.color           = actueleStijl.text;
+                el.style.color = actueleStijl.text;
 
-                // TOEVOEGING 1: LIVE TEKST EDITEN IN DE PLANNING
-                textSpan.contentEditable = true;
-                
-                // Schakel verslepen uit tijdens het typen om bugs te voorkomen
-                textSpan.addEventListener('focus', function() {
-                    el.draggable = false;
-                });
-                
-                // Sla wijzigingen op zodra je buiten het vakje klikt
-                textSpan.addEventListener('blur', function() {
-                    el.draggable = true;
-                    updateInterventionText(id, textSpan.innerText.trim());
-                });
-
-                // Zorg dat 'Enter' direct opslaat in plaats van een nieuwe regel start
-                textSpan.addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        textSpan.blur();
-                    }
-                });
-
-                // CONTROLS APPARAATJE (Kleurwiel + Verwijderknop)
                 var controls = document.createElement('div');
                 controls.className = 'card-controls';
 
-                // TOEVOEGING 2: HET KLEURENWIEL (🎨)
                 var colorBtn = document.createElement('span');
                 colorBtn.className = 'color-btn';
                 colorBtn.innerHTML = '🎨';
-                colorBtn.title = 'Wijzig kleur';
                 colorBtn.addEventListener('click', function(e) {
                     e.stopPropagation();
                     cycleInterventionColor(id, el);
                 });
                 controls.appendChild(colorBtn);
 
-                // Verwijderkruisje
                 var delBtn = document.createElement('span');
                 delBtn.className = 'delete-btn';
                 delBtn.innerHTML = '&times;';
-                delBtn.title = 'Permanent wissen';
                 delBtn.addEventListener('click', function(e) {
                     e.stopPropagation();
                     verwijderInterventie(id);
                 });
                 controls.appendChild(delBtn);
-
                 el.appendChild(controls);
-
             } else {
-                // Reguliere Trello Kaart Kleurstelling
                 var stijl = bepaalTrelloKaartStijl(members);
                 el.style.backgroundColor = stijl.bg;
-                el.style.color           = stijl.text;
+                el.style.color = stijl.text;
             }
 
             el.addEventListener('dragstart', drag);
             return el;
         }
 
-        /* ─────────────────────────────────────────────
-           6. INTERVENTIE MUTATIE MANAGEMENT (BORD OPSLAG)
-        ───────────────────────────────────────────── */
-        document.getElementById('add-int-btn').addEventListener('click', voegInterventieToe);
-        document.getElementById('int-name-input').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') voegInterventieToe();
-        });
+        /* ── DATA OPSLAG FUNCTIES ── */
+        function updateTrelloCardInfo(id, nieuweTekst) {
+            if (!nieuweTekst) {
+                t.remove(id, 'shared', 'infoPlaatsing');
+            } else {
+                t.set(id, 'shared', 'infoPlaatsing', nieuweTekst);
+            }
+        }
+
+        function updateInterventionText(id, nieuweTekst) {
+            t.get('board', 'shared', 'interventions', []).then(function(lijst) {
+                var geupdatet = lijst.map(function(item) {
+                    if (item.id === id) { item.name = nieuweTekst; }
+                    return item;
+                });
+                return t.set('board', 'shared', 'interventions', geupdatet);
+            });
+        }
+
+        function updateInterventionAddress(id, nieuwAdres) {
+            t.get('board', 'shared', 'interventions', []).then(function(lijst) {
+                var geupdatet = lijst.map(function(item) {
+                    if (item.id === id) { item.address = nieuwAdres; }
+                    return item;
+                });
+                return t.set('board', 'shared', 'interventions', geupdatet);
+            });
+        }
+
+        function updateInterventionInfo(id, nieuweTekst) {
+            t.get('board', 'shared', 'interventions', []).then(function(lijst) {
+                var geupdatet = lijst.map(function(item) {
+                    if (item.id === id) { item.infoPlaatsing = nieuweTekst; }
+                    return item;
+                });
+                return t.set('board', 'shared', 'interventions', geupdatet);
+            });
+        }
+
+        function cycleInterventionColor(id, kaartElement) {
+            t.get('board', 'shared', 'interventions', []).then(function(lijst) {
+                var volgendeKleur = null;
+                var geupdatet = lijst.map(function(item) {
+                    if (item.id === id) {
+                        var huidigeIndex = 0;
+                        if (item.colorObj) {
+                            for (var i = 0; i < CUSTOM_COLORS.length; i++) {
+                                if (CUSTOM_COLORS[i].bg === item.colorObj.bg) { huidigeIndex = i; break; }
+                            }
+                        }
+                        var volgendeIndex = (huidigeIndex + 1) % CUSTOM_COLORS.length;
+                        item.colorObj = CUSTOM_COLORS[volgendeIndex];
+                        volgendeKleur = item.colorObj;
+                    }
+                    return item;
+                });
+                return t.set('board', 'shared', 'interventions', geupdatet).then(function() {
+                    if (volgendeKleur) {
+                        kaartElement.style.backgroundColor = volgendeKleur.bg;
+                        kaartElement.style.color = volgendeKleur.text;
+                    }
+                });
+            });
+        }
 
         function voegInterventieToe() {
             var input = document.getElementById('int-name-input');
@@ -518,98 +574,34 @@
                 ploeg: null,
                 datum: null,
                 members: [],
-                colorObj: CUSTOM_COLORS[0] // Begint altijd op neutraal grijs
+                address: '',
+                infoPlaatsing: '',
+                colorObj: CUSTOM_COLORS[0]
             };
 
-            t.get('board', 'shared', 'interventions', [])
-                .then(function(lijst) {
-                    lijst.push(nieuweInterventie);
-                    return t.set('board', 'shared', 'interventions', lijst);
-                })
-                .then(function() {
-                    input.value = '';
-                    var pool = document.getElementById('sidebar-pool');
-                    var cardEl = maakKaartElement(nieuweInterventie.id, nieuweInterventie.name, [], true, nieuweInterventie.colorObj);
-                    pool.appendChild(cardEl);
-                });
-        }
-
-        // FUNCTIE OM VERANDERDE TEKST OP TE SLAAN
-        function updateInterventionText(id, nieuweTekst) {
-            t.get('board', 'shared', 'interventions', [])
-                .then(function(lijst) {
-                    var geupdatet = lijst.map(function(item) {
-                        if (item.id === id) {
-                            item.name = nieuweTekst;
-                        }
-                        return item;
-                    });
-                    return t.set('board', 'shared', 'interventions', geupdatet);
-                });
-        }
-
-        // FUNCTIE OM DOOR DE KLEUREN TE CYCLEN (KLEURENWIEL LOGICA)
-        function cycleInterventionColor(id, kaartElement) {
-            t.get('board', 'shared', 'interventions', [])
-                .then(function(lijst) {
-                    var volgendeKleur = null;
-                    
-                    var geupdatet = lijst.map(function(item) {
-                        if (item.id === id) {
-                            var huidigeIndex = 0;
-                            if (item.colorObj) {
-                                for (var i = 0; i < CUSTOM_COLORS.length; i++) {
-                                    if (CUSTOM_COLORS[i].bg === item.colorObj.bg) {
-                                        huidigeIndex = i;
-                                        break;
-                                    }
-                                }
-                            }
-                            // Pak de volgende index (en ga terug naar 0 als we aan het einde zijn)
-                            var volgendeIndex = (huidigeIndex + 1) % CUSTOM_COLORS.length;
-                            item.colorObj = CUSTOM_COLORS[volgendeIndex];
-                            volgendeKleur = item.colorObj;
-                        }
-                        return item;
-                    });
-
-                    return t.set('board', 'shared', 'interventions', geupdatet).then(function() {
-                        if (volgendeKleur) {
-                            // Pas de kleur direct visueel toe op het scherm!
-                            kaartElement.style.backgroundColor = volgendeKleur.bg;
-                            kaartElement.style.color           = volgendeKleur.text;
-                        }
-                    });
-                });
+            t.get('board', 'shared', 'interventions', []).then(function(lijst) {
+                lijst.push(nieuweInterventie);
+                return t.set('board', 'shared', 'interventions', lijst);
+            }).then(function() {
+                input.value = '';
+                t.render(); // Forceer een schone hertekening van de view
+            });
         }
 
         function verwijderInterventie(id) {
-            t.get('board', 'shared', 'interventions', [])
-                .then(function(lijst) {
-                    var gefilterd = lijst.filter(function(item) { return item.id !== id; });
-                    return t.set('board', 'shared', 'interventions', gefilterd);
-                })
-                .then(function() {
-                    var el = document.getElementById(id);
-                    if (el) el.remove();
-                });
+            t.get('board', 'shared', 'interventions', []).then(function(lijst) {
+                var gefilterd = lijst.filter(function(item) { return item.id !== id; });
+                return t.set('board', 'shared', 'interventions', gefilterd);
+            }).then(function() {
+                var el = document.getElementById(id);
+                if (el) el.remove();
+            });
         }
 
-        /* ─────────────────────────────────────────────
-           7. DRAG & DROP LOGICA
-        ───────────────────────────────────────────── */
-        function allowDrop(ev) {
-            ev.preventDefault();
-            ev.currentTarget.classList.add('dragover');
-        }
-
-        function dragLeave(ev) {
-            ev.currentTarget.classList.remove('dragover');
-        }
-
-        function drag(ev) {
-            ev.dataTransfer.setData('text/plain', ev.currentTarget.id);
-        }
+        /* ── DRAG & DROP HANDLERS ── */
+        function allowDrop(ev) { ev.preventDefault(); ev.currentTarget.classList.add('dragover'); }
+        function dragLeave(ev) { ev.currentTarget.classList.remove('dragover'); }
+        function drag(ev) { ev.dataTransfer.setData('text/plain', ev.currentTarget.id); }
 
         function drop(ev) {
             ev.preventDefault();
@@ -624,37 +616,28 @@
             var isSidebar = (zone.id === 'sidebar-pool');
 
             if (cardId.indexOf('int-') === 0) {
-                t.get('board', 'shared', 'interventions', [])
-                    .then(function(lijst) {
-                        var geupdatet = lijst.map(function(item) {
-                            if (item.id === cardId) {
-                                item.ploeg = isSidebar ? null : zone.dataset.ploeg;
-                                item.datum = isSidebar ? null : zone.dataset.datum;
-                            }
-                            return item;
-                        });
-                        return t.set('board', 'shared', 'interventions', geupdatet);
+                t.get('board', 'shared', 'interventions', []).then(function(lijst) {
+                    var geupdatet = lijst.map(function(item) {
+                        if (item.id === cardId) {
+                            item.ploeg = isSidebar ? null : zone.dataset.ploeg;
+                            item.datum = isSidebar ? null : zone.dataset.datum;
+                        }
+                        return item;
                     });
+                    return t.set('board', 'shared', 'interventions', geupdatet);
+                });
             } else {
                 if (isSidebar) {
                     t.set(cardId, 'shared', 'planning', null);
                 } else {
-                    t.set(cardId, 'shared', 'planning', {
-                        ploeg: zone.dataset.ploeg,
-                        datum: zone.dataset.datum
-                    });
+                    t.set(cardId, 'shared', 'planning', { ploeg: zone.dataset.ploeg, datum: zone.dataset.datum });
                 }
             }
         }
 
         var sidebarPool = document.getElementById('sidebar-pool');
-        sidebarPool.addEventListener('dragover', function(ev) {
-            ev.preventDefault();
-            sidebarPool.classList.add('dragover');
-        });
-        sidebarPool.addEventListener('dragleave', function() {
-            sidebarPool.classList.remove('dragover');
-        });
+        sidebarPool.addEventListener('dragover', function(ev) { ev.preventDefault(); sidebarPool.classList.add('dragover'); });
+        sidebarPool.addEventListener('dragleave', function() { sidebarPool.classList.remove('dragover'); });
         sidebarPool.addEventListener('drop', drop);
     </script>
 </body>
