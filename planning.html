@@ -5,6 +5,8 @@
     <title>Ploegen Planning</title>
     <script src="https://p.trellocdn.com/power-up.min.js"></script>
     <style>
+        * { box-sizing: border-box; }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f4f5f7;
@@ -15,245 +17,368 @@
             color: #172b4d;
             overflow: hidden;
         }
-        
-        /* LAYOUT: Zijbalk + Hoofdscherm */
+
+        /* ── ZIJBALK ── */
         .sidebar {
-            width: 300px;
+            width: 260px;
+            min-width: 260px;
             background-color: #fff;
             border-right: 1px solid #dfe1e6;
             display: flex;
             flex-direction: column;
-            padding: 20px;
-            box-shadow: 2px 0 5px rgba(0,0,0,0.05);
-        }
-        .main-content {
-            flex-grow: 1;
-            padding: 20px;
-            overflow-y: auto;
+            padding: 16px;
+            box-shadow: 2px 0 6px rgba(0,0,0,0.06);
         }
 
-        h2 { font-size: 18px; margin-top: 0; margin-bottom: 15px; }
-        
-        /* De Projectkaarten */
-        .project-list {
+        .sidebar h2 {
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #5e6c84;
+            margin: 0 0 12px 0;
+        }
+
+        #sidebar-pool {
             flex-grow: 1;
             overflow-y: auto;
             background-color: #f4f5f7;
-            border-radius: 5px;
-            padding: 10px;
-            min-height: 200px;
+            border-radius: 6px;
+            padding: 8px;
+            min-height: 100px;
+            transition: background-color 0.15s;
         }
-        .planning-card {
-            background-color: white;
-            border-radius: 4px;
-            padding: 10px;
-            margin-bottom: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
-            cursor: grab;
-            font-size: 14px;
-            border-left: 4px solid #0052cc;
-        }
-        .planning-card:active { cursor: grabbing; }
 
-        /* De Planningstabel */
+        #sidebar-pool.dragover {
+            background-color: #dce9fc;
+            outline: 2px dashed #0052cc;
+        }
+
+        /* ── KAARTEN ── */
+        .planning-card {
+            background-color: #fff;
+            border-radius: 4px;
+            padding: 8px 10px;
+            margin-bottom: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.14);
+            cursor: grab;
+            font-size: 13px;
+            border-left: 4px solid #0052cc;
+            line-height: 1.4;
+            user-select: none;
+            transition: box-shadow 0.15s, opacity 0.15s;
+        }
+
+        .planning-card:hover  { box-shadow: 0 3px 8px rgba(0,0,0,0.18); }
+        .planning-card:active { cursor: grabbing; opacity: 0.75; }
+
+        /* ── HOOFDSCHERM ── */
+        .main-content {
+            flex-grow: 1;
+            padding: 20px;
+            overflow: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-content h2 {
+            font-size: 16px;
+            font-weight: 700;
+            margin: 0 0 14px 0;
+            color: #172b4d;
+        }
+
+        /* ── TABEL ── */
         .planning-table {
             width: 100%;
             border-collapse: collapse;
             background-color: white;
             border-radius: 8px;
             overflow: hidden;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+            table-layout: fixed;
         }
-        .planning-table th, .planning-table td {
+
+        .planning-table th,
+        .planning-table td {
             border: 1px solid #dfe1e6;
-            padding: 10px;
+            padding: 8px;
             vertical-align: top;
-            width: 18%;
         }
-        .planning-table th { background-color: #ebecf0; font-weight: 600; text-align: left;}
-        .row-ploeg { font-weight: bold; background-color: #fafbfc; width: 120px !important; }
-        
-        /* Dropzones in de tabel */
+
+        .planning-table th {
+            background-color: #ebecf0;
+            font-weight: 700;
+            font-size: 13px;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        .col-ploeg { width: 130px; }
+
+        .row-ploeg {
+            font-weight: 700;
+            font-size: 13px;
+            background-color: #fafbfc;
+            vertical-align: middle !important;
+        }
+
+        /* ── DROPZONES ── */
         .dropzone {
-            min-height: 80px;
-            background-color: #fff;
-            transition: background-color 0.2s;
+            min-height: 70px;
+            transition: background-color 0.15s;
         }
-        .dropzone.dragover { background-color: #e6effc; border: 2px dashed #0052cc; }
+
+        .dropzone.dragover {
+            background-color: #dce9fc;
+            outline: 2px dashed #0052cc;
+        }
+
+        /* ── LAADSTATUS ── */
+        #loading-msg {
+            font-size: 13px;
+            color: #5e6c84;
+            padding: 8px;
+            font-style: italic;
+        }
+
+        #error-msg {
+            font-size: 13px;
+            color: #bf2600;
+            padding: 8px;
+            display: none;
+        }
     </style>
 </head>
 <body>
 
     <div class="sidebar">
         <h2>📋 Nog in te plannen</h2>
-        <div id="sidebar-pool" class="project-list" ondragover="allowDrop(event)" ondrop="drop(event)" data-is-sidebar="true">
-            </div>
+        <div id="loading-msg">Kaarten laden…</div>
+        <div id="error-msg">⚠️ Kon kaarten niet laden.</div>
+        <div id="sidebar-pool"></div>
     </div>
 
     <div class="main-content">
-        <h2>📅 Live Ploegen Planning</h2>
+        <h2>📅 Ploegen Planning – deze week</h2>
         <table class="planning-table">
             <thead>
                 <tr>
-                    <th style="width: 10%">Ploeg</th>
-                    <th id="day-1">Maandag</th>
-                    <th id="day-2">Dinsdag</th>
-                    <th id="day-3">Woensdag</th>
-                    <th id="day-4">Donderdag</th>
-                    <th id="day-5">Vrijdag</th>
+                    <th class="col-ploeg">Ploeg</th>
+                    <th id="day-1"></th>
+                    <th id="day-2"></th>
+                    <th id="day-3"></th>
+                    <th id="day-4"></th>
+                    <th id="day-5"></th>
                 </tr>
             </thead>
-            <tbody id="table-body">
-                </tbody>
+            <tbody id="table-body"></tbody>
         </table>
     </div>
 
     <script>
         var t = TrelloPowerUp.iframe();
-        var ploegen = ["Ploeg 1", "Ploeg 2", "Ploeg 5", "Ploeg 7 / Extra"];
+
+        var PLOEGEN = ["Ploeg 1", "Ploeg 2", "Ploeg 5", "Ploeg 7 / Extra"];
+        var WEEKDAGEN = ['Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag'];
         var datumsVanDeWeek = [];
 
-        // 1. Bereken de datums van de huidige week
+        /* ─────────────────────────────────────────────
+           1. DATUM-HULPFUNCTIES
+        ───────────────────────────────────────────── */
         function berekenWeekDatums() {
             var vandaag = new Date();
-            var huidigeDag = vandaag.getDay();
-            var afstandTotMaandag = huidigeDag === 0 ? -6 : 1 - huidigeDag;
+            var dag = vandaag.getDay(); // 0=zo … 6=za
+            var afstand = (dag === 0) ? -6 : 1 - dag;
             var maandag = new Date(vandaag);
-            maandag.setDate(vandaag.getDate() + afstandTotMaandag);
+            maandag.setDate(vandaag.getDate() + afstand);
 
-            var weekDagen = ['Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag'];
             datumsVanDeWeek = [];
-            
             for (var i = 0; i < 5; i++) {
-                var dag = new Date(maandag);
-                dag.setDate(maandag.getDate() + i);
-                var dagStr = String(dag.getDate()).padStart(2, '0');
-                var maandStr = String(dag.getMonth() + 1).padStart(2, '0');
-                var volledigeDatum = dagStr + '-' + maandStr;
-                
-                datumsVanDeWeek.push(volledigeDatum);
-                document.getElementById('day-' + (i + 1)).innerText = weekDagen[i] + ' ' + dagStr + '/' + maandStr;
+                var d = new Date(maandag);
+                d.setDate(maandag.getDate() + i);
+                var dd = String(d.getDate()).padStart(2, '0');
+                var mm = String(d.getMonth() + 1).padStart(2, '0');
+                var label = dd + '-' + mm;
+                datumsVanDeWeek.push(label);
+                document.getElementById('day-' + (i + 1)).innerText =
+                    WEEKDAGEN[i] + ' ' + dd + '/' + mm;
             }
         }
 
-        // 2. Bouw de tabelrijen voor de ploegen
+        /* ─────────────────────────────────────────────
+           2. TABEL OPBOUWEN
+        ───────────────────────────────────────────── */
         function bouwTabel() {
             var tbody = document.getElementById('table-body');
-            tbody.innerHTML = "";
-            
-            ploegen.forEach(function(ploeg) {
+            tbody.innerHTML = '';
+
+            PLOEGEN.forEach(function(ploeg) {
                 var tr = document.createElement('tr');
-                
-                // Ploegnaam kolom
+
                 var tdPloeg = document.createElement('td');
-                tdPloeg.className = "row-ploeg";
+                tdPloeg.className = 'row-ploeg col-ploeg';
                 tdPloeg.innerText = ploeg;
                 tr.appendChild(tdPloeg);
-                
-                // 5 Dagkolommen (Dropzones)
+
                 for (var i = 0; i < 5; i++) {
-                    var tdDag = document.createElement('td');
-                    tdDag.className = "dropzone";
-                    tdDag.setAttribute('data-ploeg', ploeg);
-                    tdDag.setAttribute('data-datum', datumsVanDeWeek[i]);
-                    tdDag.setAttribute('ondragover', 'allowDrop(event)');
-                    tdDag.setAttribute('ondragleave', 'dragLeave(event)');
-                    tdDag.setAttribute('ondrop', 'drop(event)');
-                    
-                    // Uniek ID voor dit specifieke vakje
-                    tdDag.id = "zone-" + ploeg.replace(/\s+/g, '') + "-" + datumsVanDeWeek[i];
-                    tr.appendChild(tdDag);
+                    var td = document.createElement('td');
+                    td.className = 'dropzone';
+                    td.id = maakZoneId(ploeg, datumsVanDeWeek[i]);
+                    td.dataset.ploeg  = ploeg;
+                    td.dataset.datum  = datumsVanDeWeek[i];
+                    td.addEventListener('dragover',  allowDrop);
+                    td.addEventListener('dragleave', dragLeave);
+                    td.addEventListener('drop',      drop);
+                    tr.appendChild(td);
                 }
+
                 tbody.appendChild(tr);
             });
         }
 
-        // 3. Trello Data laden en verdelen
+        function maakZoneId(ploeg, datum) {
+            return 'zone-' + ploeg.replace(/[\s\/]+/g, '-') + '-' + datum;
+        }
+
+        /* ─────────────────────────────────────────────
+           3. KAARTEN LADEN  (FIX: t.get() per kaart)
+        ───────────────────────────────────────────── */
         t.render(function() {
             berekenWeekDatums();
             bouwTabel();
 
-            // Maak de zijbalk eerst helemaal leeg om duplicaten bij refreshes te voorkomen
-            document.getElementById('sidebar-pool').innerHTML = '';
+            var pool = document.getElementById('sidebar-pool');
+            var loadingMsg = document.getElementById('loading-msg');
+            var errorMsg   = document.getElementById('error-msg');
 
-            // FIX: We gebruiken hier nu 'all' zodat Trello alle actieve kaarten correct meestuurt
-            return t.cards('all')
-            .then(function(cards) {
-                cards.forEach(function(card) {
-                    // Maak het visuele kaartje aan
-                    var cardEl = document.createElement('div');
-                    cardEl.className = "planning-card";
-                    cardEl.id = card.id;
-                    cardEl.draggable = true;
-                    cardEl.setAttribute('ondragstart', 'drag(event)');
-                    cardEl.innerText = card.name;
+            pool.innerHTML = '';
 
-                    // Check of deze kaart al opgeslagen planningsdata heeft via onze Power-Up
-                    var planningData = card.pluginData && card.pluginData.shared && card.pluginData.shared.planning;
-                    
-                    if (planningData && planningData.ploeg && planningData.datum) {
-                        // Zoek of de kaart in de huidige weekthuishoort
-                        var doelZone = document.getElementById("zone-" + planningData.ploeg.replace(/\s+/g, '') + "-" + planningData.datum);
-                        if (doelZone) {
-                            doelZone.appendChild(cardEl);
-                        } else {
-                            document.getElementById('sidebar-pool').appendChild(cardEl);
-                        }
-                    } else {
-                        // Geen planning bekend? In de zijbalk!
-                        document.getElementById('sidebar-pool').appendChild(cardEl);
+            // Stap A: haal alle kaarten op (alleen id + name nodig)
+            return t.cards('id', 'name')
+                .then(function(cards) {
+                    if (!cards || cards.length === 0) {
+                        loadingMsg.innerText = 'Geen kaarten gevonden.';
+                        return;
                     }
+
+                    // Stap B: haal per kaart de opgeslagen planningsdata op via t.get()
+                    var promises = cards.map(function(card) {
+                        return t.get(card.id, 'shared', 'planning', null)
+                            .then(function(planningData) {
+                                return { card: card, planningData: planningData };
+                            });
+                    });
+
+                    return Promise.all(promises);
+                })
+                .then(function(resultaten) {
+                    if (!resultaten) return;
+
+                    loadingMsg.style.display = 'none';
+
+                    resultaten.forEach(function(item) {
+                        var card        = item.card;
+                        var planning    = item.planningData;
+
+                        // Maak het kaartje aan
+                        var cardEl = maakKaartElement(card.id, card.name);
+
+                        // Bepaal waar het kaartje thuishoort
+                        if (planning && planning.ploeg && planning.datum) {
+                            var zoneId   = maakZoneId(planning.ploeg, planning.datum);
+                            var doelZone = document.getElementById(zoneId);
+                            if (doelZone) {
+                                doelZone.appendChild(cardEl);
+                                return;
+                            }
+                        }
+                        // Geen (geldige) planning → zijbalk
+                        pool.appendChild(cardEl);
+                    });
+                })
+                .catch(function(err) {
+                    console.error('Fout bij laden van kaarten:', err);
+                    loadingMsg.style.display = 'none';
+                    errorMsg.style.display   = 'block';
                 });
-            })
-            .catch(function(error) {
-                console.error("Fout bij laden van kaarten:", error);
-            });
         });
 
-        /* --- DRAG AND DROP LOGICA --- */
+        /* ─────────────────────────────────────────────
+           4. KAART-ELEMENT AANMAKEN
+        ───────────────────────────────────────────── */
+        function maakKaartElement(id, naam) {
+            var el = document.createElement('div');
+            el.className  = 'planning-card';
+            el.id         = id;
+            el.draggable  = true;
+            el.innerText  = naam;
+            el.addEventListener('dragstart', drag);
+            return el;
+        }
+
+        /* ─────────────────────────────────────────────
+           5. DRAG & DROP
+        ───────────────────────────────────────────── */
         function allowDrop(ev) {
             ev.preventDefault();
-            if (ev.target.classList.contains('dropzone') || ev.target.id === 'sidebar-pool') {
-                ev.target.classList.add('dragover');
-            }
+            ev.currentTarget.classList.add('dragover');
         }
 
         function dragLeave(ev) {
-            ev.target.classList.remove('dragover');
+            ev.currentTarget.classList.remove('dragover');
         }
 
         function drag(ev) {
-            ev.dataTransfer.setData("text", ev.target.id);
+            ev.dataTransfer.setData('text/plain', ev.currentTarget.id);
         }
 
         function drop(ev) {
             ev.preventDefault();
-            var targetZone = ev.target;
-            
-            // Als er bovenop een andere kaart wordt gedropt, pak dan de cell/dropzone zelf
-            if (targetZone.classList.contains('planning-card')) {
-                targetZone = targetZone.parentElement;
-            }
-            
-            targetZone.classList.remove('dragover');
-            var cardId = ev.dataTransfer.getData("text");
-            var cardEl = document.getElementById(cardId);
-            targetZone.appendChild(cardEl);
 
-            // Opslaan in Trello database
-            if (targetZone.getAttribute('data-is-sidebar') === 'true') {
-                // Kaart is terug naar de zijbalk gesleept -> wis planningsdata
+            var zone = ev.currentTarget;
+            zone.classList.remove('dragover');
+
+            var cardId = ev.dataTransfer.getData('text/plain');
+            var cardEl = document.getElementById(cardId);
+            if (!cardEl) return;
+
+            zone.appendChild(cardEl);
+
+            // Opslaan in Trello
+            var isSidebar = (zone.id === 'sidebar-pool');
+            if (isSidebar) {
                 t.set(cardId, 'shared', 'planning', null);
             } else {
-                // Kaart is in de tabel gedropt -> sla ploeg en datum op
-                var gekozenPloeg = targetZone.getAttribute('data-ploeg');
-                var gekozenDatum = targetZone.getAttribute('data-datum');
-                
                 t.set(cardId, 'shared', 'planning', {
-                    ploeg: gekozenPloeg,
-                    datum: gekozenDatum
+                    ploeg: zone.dataset.ploeg,
+                    datum: zone.dataset.datum
                 });
             }
         }
+
+        /* ─────────────────────────────────────────────
+           6. ZIJBALK OOK ALS DROPZONE
+        ───────────────────────────────────────────── */
+        var sidebarPool = document.getElementById('sidebar-pool');
+        sidebarPool.addEventListener('dragover', function(ev) {
+            ev.preventDefault();
+            sidebarPool.classList.add('dragover');
+        });
+        sidebarPool.addEventListener('dragleave', function() {
+            sidebarPool.classList.remove('dragover');
+        });
+        sidebarPool.addEventListener('drop', function(ev) {
+            ev.preventDefault();
+            sidebarPool.classList.remove('dragover');
+
+            var cardId = ev.dataTransfer.getData('text/plain');
+            var cardEl = document.getElementById(cardId);
+            if (!cardEl) return;
+
+            sidebarPool.appendChild(cardEl);
+            t.set(cardId, 'shared', 'planning', null);
+        });
     </script>
 </body>
 </html>
