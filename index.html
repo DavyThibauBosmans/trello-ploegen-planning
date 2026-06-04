@@ -1,21 +1,25 @@
+HTML
 <!DOCTYPE html>
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
     <title>Ploegen Planning Connector</title>
-    <!-- We laden de officiële Trello bibliotheek -->
     <script src="https://p.trellocdn.com/power-up.min.js"></script>
 </head>
 <body>
     <script>
-        // We initialiseren de Power-Up en voegen een knop toe aan het Trello-bord
         TrelloPowerUp.initialize({
             'board-buttons': function(t, options) {
                 return [{
                     icon: 'https://trello.com/favicon.ico',
                     text: 'Ploegen Planning',
                     callback: function(t) {
-                        alert('Binnenkort opent hier de planning!');
+                        // In plaats van een alert openen we nu een paginagroot venster
+                        return t.modal({
+                            url: './planning.html',
+                            fullscreen: true,
+                            title: 'Ploegen Planning'
+                        });
                     }
                 }];
             }
