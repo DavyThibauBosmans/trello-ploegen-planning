@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <title>Planning Overzicht</title>
+    <script src="https://p.trellocdn.com/power-up.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f5f7;
+            margin: 0;
+            padding: 20px;
+            color: #172b4d;
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        .planning-table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .planning-table th, .planning-table td {
+            border: 1px solid #dfe1e6;
+            padding: 15px;
+            text-align: left;
+        }
+        .planning-table th {
+            background-color: #ebecf0;
+            color: #172b4d;
+            font-weight: 600;
+        }
+        .row-ploeg { font-weight: bold; background-color: #fafbfc; width: 150px; }
+        .empty-cell { color: #b3bac5; font-style: italic; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+    <h1>📅 Live Ploegen Planning</h1>
+
+    <table class="planning-table">
+        <thead>
+            <tr>
+                <th>Ploeg / Sectie</th>
+                <th>Maandag</th>
+                <th>Dinsdag</th>
+                <th>Woensdag</th>
+                <th>Donderdag</th>
+                <th>Vrijdag</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="row-ploeg">Ploeg 1</td>
+                <td class="empty-cell">Geen projecten ingepland</td>
+                <td class="empty-cell">Geen projecten ingepland</td>
+                <td class="empty-cell">Geen projecten ingepland</td>
+                <td class="empty-cell">Geen projecten ingepland</td>
+                <td class="empty-cell">Geen projecten ingepland</td>
+            </tr>
+            <tr>
+                <td class="row-ploeg">Ploeg 2</td>
+                <td class="empty-cell">Geen projecten ingepland</td>
+                <td class="empty-cell">Geen projecten ingepland</td>
+                <td class="empty-cell">Geen projecten ingepland</td>
+                <td class="empty-cell">Geen projecten ingepland</td>
+                <td class="empty-cell">Geen projecten ingepland</td>
+            </tr>
+            <tr>
+                <td class="row-ploeg">Ploeg 5</td>
+                <td class="empty-cell">Geen projecten ingepland</td>
+                <td class="empty-cell">Geen projecten ingepland</td>
+                <td class="empty-cell">Geen projecten ingepland</td>
+                <td class="empty-cell">Geen projecten ingepland</td>
+                <td class="empty-cell">Geen projecten ingepland</td>
+            </tr>
+            <tr>
+                <td class="row-ploeg">Ploeg 7 / Extra</td>
+                <td class="empty-cell">Geen projecten ingepland</td>
+                <td class="empty-cell">Geen projecten ingepland</td>
+                <td class="empty-cell">Geen projecten ingepland</td>
+                <td class="empty-cell">Geen projecten ingepland</td>
+                <td class="empty-cell">Geen projecten ingepland</td>
+            </tr>
+            <tr>
+                <td class="row-ploeg" style="color: #6b778c;">Magazijn / Staal</td>
+                <td class="empty-cell">-</td>
+                <td class="empty-cell">-</td>
+                <td class="empty-cell">-</td>
+                <td class="empty-cell">-</td>
+                <td class="empty-cell">-</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <script>
+        var t = TrelloPowerUp.iframe();
+        // Hier komt later de logica om de Trello kaarten écht in te laden!
+    </script>
+</body>
+</html>
