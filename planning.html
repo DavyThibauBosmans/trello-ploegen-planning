@@ -39,7 +39,7 @@
             margin: 0 0 12px 0;
         }
 
-        /* ── INTERVENTIE REMANIE ── */
+        /* ── INTERVENTIE FORMULIER ── */
         .intervention-form {
             display: flex;
             gap: 6px;
@@ -115,17 +115,38 @@
         }
         .planning-card:active { cursor: grabbing; opacity: 0.75; }
 
-        /* Kruisje voor interventies */
-        .delete-btn {
-            margin-left: 6px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: 700;
-            line-height: 1;
-            opacity: 0.5;
-            transition: opacity 0.15s;
+        /* Bewerkbare tekstzone */
+        .planning-card span[contenteditable="true"] {
+            flex-grow: 1;
+            outline: none;
+            padding-right: 6px;
+            cursor: text;
         }
-        .delete-btn:hover { opacity: 1; }
+        .planning-card span[contenteditable="true"]:focus {
+            background-color: rgba(255, 255, 255, 0.25);
+            border-radius: 2px;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+        }
+
+        /* Knoppen op de kaart */
+        .card-controls {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .color-btn, .delete-btn {
+            cursor: pointer;
+            font-size: 14px;
+            line-height: 1;
+            opacity: 0.4;
+            transition: opacity 0.15s, transform 0.1s;
+            user-select: none;
+        }
+        .color-btn:hover, .delete-btn:hover { 
+            opacity: 1; 
+            transform: scale(1.15);
+        }
 
         /* ── HOOFDSCHERM ── */
         .main-content {
@@ -210,7 +231,6 @@
     <div class="sidebar">
         <h2>📋 Nog in te plannen</h2>
         
-        <!-- Snelkaarten Formulier -->
         <div class="intervention-form">
             <input type="text" id="int-name-input" placeholder="Snelle interventie...">
             <button id="add-int-btn" type="button">+</button>
@@ -244,6 +264,18 @@
         var PLOEGEN = ["Ploeg 1", "Ploeg 2", "Ploeg 5", "Ploeg 7 / Extra"];
         var WEEKDAGEN = ['Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag'];
         var datumsVanDeWeek = [];
+
+        // HET VOLLEDIGE KEUZEPALET VOOR INTERVENTIES (Standaard + Specialekes)
+        var CUSTOM_COLORS = [
+            { bg: '#dfe1e6', text: '#172b4d' }, // 0. Standaard Grijs
+            { bg: '#ff9f1a', text: '#172b4d' }, // 1. Jens (Oranje)
+            { bg: '#61bd4f', text: '#ffffff' }, // 2. Eva (Groen)
+            { bg: '#f2d600', text: '#172b4d' }, // 3. Davy (Geel)
+            { bg: '#0079bf', text: '#ffffff' }, // 4. Bert (Blauw)
+            { bg: '#89609e', text: '#ffffff' }, // 5. Special: Paars
+            { bg: '#ec4c3c', text: '#ffffff' }, // 6. Special: Felrood
+            { bg: '#00c2e0', text: '#172b4d' }  // 7. Special: Turquoise/Cyan
+        ];
 
         /* ─────────────────────────────────────────────
            1. DATUM-HULPFUNCTIES
@@ -304,14 +336,9 @@
         }
 
         /* ─────────────────────────────────────────────
-           3. VOLLEDIGE STIJL BEPALEN (BG + TEKSTKLEUR)
+           3. STIJL BEPALEN VOOR REGULIERE TRELLO KAARTEN
         ───────────────────────────────────────────── */
-        function bepaalKaartStijl(members, isIntervention) {
-            // Als het een ad-hoc interventie is, maken we hem herkenbaar lichtgrijs/blauw
-            if (isIntervention) {
-                return { bg: '#dfe1e6', text: '#172b4d' };
-            }
-
+        function bepaalTrelloKaartStijl(members) {
             var standaardStijl = { bg: '#eaecf0', text: '#172b4d' };
             if (!members || members.length === 0) return standaardStijl;
 
@@ -327,7 +354,7 @@
         }
 
         /* ─────────────────────────────────────────────
-           4. KAARTEN + INTERVENTIES LADEN
+           4. DATA EXCLUSIEF DETECTEREN EN INLADEN
         ───────────────────────────────────────────── */
         t.render(function() {
             berekenWeekDatums();
@@ -339,7 +366,6 @@
 
             pool.innerHTML = '';
 
-            // We laden hier ZOWEL de Trello kaarten ALS de custom bord-interventies parallel in!
             return Promise.all([
                 t.cards('id', 'name', 'members'),
                 t.get('board', 'shared', 'interventions', [])
@@ -350,7 +376,6 @@
 
                 loadingMsg.style.display = 'none';
 
-                // 1. Verwerk reguliere Trello kaarten
                 var cardPromises = cards.map(function(card) {
                     return t.get(card.id, 'shared', 'planning', null)
                         .then(function(planningData) {
@@ -359,7 +384,6 @@
                 });
 
                 return Promise.all(cardPromises).then(function(trelloResultaten) {
-                    // Combineer Trello kaarten en Interventies in één loop
                     var alleItems = [];
                     
                     trelloResultaten.forEach(function(r) { alleItems.push(r); });
@@ -372,7 +396,8 @@
                             item.card.id, 
                             item.card.name, 
                             item.card.members, 
-                            (item.type === 'intervention')
+                            (item.type === 'intervention'),
+                            item.card.colorObj // Geef opgeslagen kleur mee voor interventies
                         );
 
                         if (item.planning && item.planning.ploeg && item.planning.datum) {
@@ -395,9 +420,9 @@
         });
 
         /* ─────────────────────────────────────────────
-           5. KAART-ELEMENT AANMAKEN (Inclusief Kruisje)
+           5. KAART-ELEMENT GENERATOR (Met Live Edit & Kleurwiel)
         ───────────────────────────────────────────── */
-        function maakKaartElement(id, naam, members, isIntervention) {
+        function maakKaartElement(id, naam, members, isIntervention, savedColorObj) {
             var el = document.createElement('div');
             el.className  = 'planning-card';
             el.id         = id;
@@ -407,21 +432,67 @@
             textSpan.innerText = naam;
             el.appendChild(textSpan);
             
-            var stijl = bepaalKaartStijl(members, isIntervention);
-            el.style.backgroundColor = stijl.bg;
-            el.style.color           = stijl.text;
-            
-            // Als het een ad-hoc interventie is, voegen we een verwijderknop toe
+            // Pas de juiste kleur toe
             if (isIntervention) {
+                var actueleStijl = savedColorObj || CUSTOM_COLORS[0];
+                el.style.backgroundColor = actueleStijl.bg;
+                el.style.color           = actueleStijl.text;
+
+                // TOEVOEGING 1: LIVE TEKST EDITEN IN DE PLANNING
+                textSpan.contentEditable = true;
+                
+                // Schakel verslepen uit tijdens het typen om bugs te voorkomen
+                textSpan.addEventListener('focus', function() {
+                    el.draggable = false;
+                });
+                
+                // Sla wijzigingen op zodra je buiten het vakje klikt
+                textSpan.addEventListener('blur', function() {
+                    el.draggable = true;
+                    updateInterventionText(id, textSpan.innerText.trim());
+                });
+
+                // Zorg dat 'Enter' direct opslaat in plaats van een nieuwe regel start
+                textSpan.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        textSpan.blur();
+                    }
+                });
+
+                // CONTROLS APPARAATJE (Kleurwiel + Verwijderknop)
+                var controls = document.createElement('div');
+                controls.className = 'card-controls';
+
+                // TOEVOEGING 2: HET KLEURENWIEL (🎨)
+                var colorBtn = document.createElement('span');
+                colorBtn.className = 'color-btn';
+                colorBtn.innerHTML = '🎨';
+                colorBtn.title = 'Wijzig kleur';
+                colorBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    cycleInterventionColor(id, el);
+                });
+                controls.appendChild(colorBtn);
+
+                // Verwijderkruisje
                 var delBtn = document.createElement('span');
                 delBtn.className = 'delete-btn';
                 delBtn.innerHTML = '&times;';
-                delBtn.title = 'Interventie permanent wissen';
+                delBtn.title = 'Permanent wissen';
                 delBtn.addEventListener('click', function(e) {
-                    e.stopPropagation(); // Voorkom dat de kaart per ongeluk gaat slepen bij klikken
+                    e.stopPropagation();
                     verwijderInterventie(id);
                 });
-                el.appendChild(delBtn);
+                controls.appendChild(delBtn);
+
+                el.appendChild(controls);
+
+            } else {
+                // Reguliere Trello Kaart Kleurstelling
+                var stijl = bepaalTrelloKaartStijl(members);
+                el.style.backgroundColor = stijl.bg;
+                el.style.color           = stijl.text;
             }
 
             el.addEventListener('dragstart', drag);
@@ -429,7 +500,7 @@
         }
 
         /* ─────────────────────────────────────────────
-           6. INTERVENTIE LOGICA (AANMAKEN & VERWIJDEREN)
+           6. INTERVENTIE MUTATIE MANAGEMENT (BORD OPSLAG)
         ───────────────────────────────────────────── */
         document.getElementById('add-int-btn').addEventListener('click', voegInterventieToe);
         document.getElementById('int-name-input').addEventListener('keypress', function(e) {
@@ -442,11 +513,12 @@
             if (!naam) return;
 
             var nieuweInterventie = {
-                id: 'int-' + Date.now(), // Unieke custom ID
+                id: 'int-' + Date.now(),
                 name: naam,
                 ploeg: null,
                 datum: null,
-                members: []
+                members: [],
+                colorObj: CUSTOM_COLORS[0] // Begint altijd op neutraal grijs
             };
 
             t.get('board', 'shared', 'interventions', [])
@@ -456,10 +528,58 @@
                 })
                 .then(function() {
                     input.value = '';
-                    // Direct de zijbalk verversen
                     var pool = document.getElementById('sidebar-pool');
-                    var cardEl = maakKaartElement(nieuweInterventie.id, nieuweInterventie.name, [], true);
+                    var cardEl = maakKaartElement(nieuweInterventie.id, nieuweInterventie.name, [], true, nieuweInterventie.colorObj);
                     pool.appendChild(cardEl);
+                });
+        }
+
+        // FUNCTIE OM VERANDERDE TEKST OP TE SLAAN
+        function updateInterventionText(id, nieuweTekst) {
+            t.get('board', 'shared', 'interventions', [])
+                .then(function(lijst) {
+                    var geupdatet = lijst.map(function(item) {
+                        if (item.id === id) {
+                            item.name = nieuweTekst;
+                        }
+                        return item;
+                    });
+                    return t.set('board', 'shared', 'interventions', geupdatet);
+                });
+        }
+
+        // FUNCTIE OM DOOR DE KLEUREN TE CYCLEN (KLEURENWIEL LOGICA)
+        function cycleInterventionColor(id, kaartElement) {
+            t.get('board', 'shared', 'interventions', [])
+                .then(function(lijst) {
+                    var volgendeKleur = null;
+                    
+                    var geupdatet = lijst.map(function(item) {
+                        if (item.id === id) {
+                            var huidigeIndex = 0;
+                            if (item.colorObj) {
+                                for (var i = 0; i < CUSTOM_COLORS.length; i++) {
+                                    if (CUSTOM_COLORS[i].bg === item.colorObj.bg) {
+                                        huidigeIndex = i;
+                                        break;
+                                    }
+                                }
+                            }
+                            // Pak de volgende index (en ga terug naar 0 als we aan het einde zijn)
+                            var volgendeIndex = (huidigeIndex + 1) % CUSTOM_COLORS.length;
+                            item.colorObj = CUSTOM_COLORS[volgendeIndex];
+                            volgendeKleur = item.colorObj;
+                        }
+                        return item;
+                    });
+
+                    return t.set('board', 'shared', 'interventions', geupdatet).then(function() {
+                        if (volgendeKleur) {
+                            // Pas de kleur direct visueel toe op het scherm!
+                            kaartElement.style.backgroundColor = volgendeKleur.bg;
+                            kaartElement.style.color           = volgendeKleur.text;
+                        }
+                    });
                 });
         }
 
@@ -471,12 +591,12 @@
                 })
                 .then(function() {
                     var el = document.getElementById(id);
-                    if (el) el.remove(); // Direct uit het scherm wissen
+                    if (el) el.remove();
                 });
         }
 
         /* ─────────────────────────────────────────────
-           7. DRAG & DROP LOGICA (Nu ook voor Interventies)
+           7. DRAG & DROP LOGICA
         ───────────────────────────────────────────── */
         function allowDrop(ev) {
             ev.preventDefault();
@@ -503,7 +623,6 @@
             zone.appendChild(cardEl);
             var isSidebar = (zone.id === 'sidebar-pool');
 
-            // SPLIT LOGICA: Is het een custom interventie of een Trello kaart?
             if (cardId.indexOf('int-') === 0) {
                 t.get('board', 'shared', 'interventions', [])
                     .then(function(lijst) {
@@ -528,7 +647,6 @@
             }
         }
 
-        /* ── ZIJBALK DROPZONE ACTIVATIE ── */
         var sidebarPool = document.getElementById('sidebar-pool');
         sidebarPool.addEventListener('dragover', function(ev) {
             ev.preventDefault();
@@ -537,7 +655,7 @@
         sidebarPool.addEventListener('dragleave', function() {
             sidebarPool.classList.remove('dragover');
         });
-        sidebarPool.addEventListener('drop', drop); // Gebruikt nu dezelfde universele drop-handler
+        sidebarPool.addEventListener('drop', drop);
     </script>
 </body>
 </html>
