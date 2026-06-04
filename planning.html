@@ -90,7 +90,7 @@
     </div>
 
     <div class="main-content">
-        <h2 id="table-title">📅 Live Ploegen Planning</h2>
+        <h2>📅 Live Ploegen Planning</h2>
         <table class="planning-table">
             <thead>
                 <tr>
@@ -158,6 +158,7 @@
                     tdDag.setAttribute('ondragover', 'allowDrop(event)');
                     tdDag.setAttribute('ondragleave', 'dragLeave(event)');
                     tdDag.setAttribute('ondrop', 'drop(event)');
+                    
                     // Uniek ID voor dit specifieke vakje
                     tdDag.id = "zone-" + ploeg.replace(/\s+/g, '') + "-" + datumsVanDeWeek[i];
                     tr.appendChild(tdDag);
@@ -171,8 +172,11 @@
             berekenWeekDatums();
             bouwTabel();
 
-            // Haal alle kaarten inclusief onze verborgen pluginData op
-            return t.cards('id', 'name', 'pluginData')
+            // Maak de zijbalk eerst helemaal leeg om duplicaten bij refreshes te voorkomen
+            document.getElementById('sidebar-pool').innerHTML = '';
+
+            // FIX: We gebruiken hier nu 'all' zodat Trello alle actieve kaarten correct meestuurt
+            return t.cards('all')
             .then(function(cards) {
                 cards.forEach(function(card) {
                     // Maak het visuele kaartje aan
@@ -183,13 +187,11 @@
                     cardEl.setAttribute('ondragstart', 'drag(event)');
                     cardEl.innerText = card.name;
 
-                    // Check of deze kaart al planningsdata heeft
+                    // Check of deze kaart al opgeslagen planningsdata heeft via onze Power-Up
                     var planningData = card.pluginData && card.pluginData.shared && card.pluginData.shared.planning;
                     
                     if (planningData && planningData.ploeg && planningData.datum) {
-                        // Zoek de juiste cel in de tabel
-                        var zoneId = "zone-" + planningData.ploeg.replace(/\s+/g, '') + "-" + planningData.planningDatum;
-                        // Als de datum van deze week is, zet hem in de tabel, anders in de zijbalk
+                        // Zoek of de kaart in de huidige weekthuishoort
                         var doelZone = document.getElementById("zone-" + planningData.ploeg.replace(/\s+/g, '') + "-" + planningData.datum);
                         if (doelZone) {
                             doelZone.appendChild(cardEl);
@@ -197,10 +199,13 @@
                             document.getElementById('sidebar-pool').appendChild(cardEl);
                         }
                     } else {
-                        // Geen planning bekend? Hup, in de zijbalk!
+                        // Geen planning bekend? In de zijbalk!
                         document.getElementById('sidebar-pool').appendChild(cardEl);
                     }
                 });
+            })
+            .catch(function(error) {
+                console.error("Fout bij laden van kaarten:", error);
             });
         });
 
@@ -224,7 +229,7 @@
             ev.preventDefault();
             var targetZone = ev.target;
             
-            // Als er per ongeluk bovenop een andere kaart wordt gedropt, pak dan de cell/dropzone
+            // Als er bovenop een andere kaart wordt gedropt, pak dan de cell/dropzone zelf
             if (targetZone.classList.contains('planning-card')) {
                 targetZone = targetZone.parentElement;
             }
@@ -234,7 +239,7 @@
             var cardEl = document.getElementById(cardId);
             targetZone.appendChild(cardEl);
 
-            // Opslaan in Trello
+            // Opslaan in Trello database
             if (targetZone.getAttribute('data-is-sidebar') === 'true') {
                 // Kaart is terug naar de zijbalk gesleept -> wis planningsdata
                 t.set(cardId, 'shared', 'planning', null);
