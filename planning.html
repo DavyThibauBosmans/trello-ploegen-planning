@@ -63,7 +63,7 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.14);
             cursor: grab;
             font-size: 13px;
-            border-left: 4px solid #0052cc;
+            border-left: 5px solid #0052cc; /* Wordt dynamisch aangepast via JS */
             line-height: 1.4;
             user-select: none;
             transition: box-shadow 0.15s, opacity 0.15s;
@@ -188,7 +188,7 @@
         ───────────────────────────────────────────── */
         function berekenWeekDatums() {
             var vandaag = new Date();
-            var dag = vandaag.getDay(); // 0=zo … 6=za
+            var dag = vandaag.getDay(); 
             var afstand = (dag === 0) ? -6 : 1 - dag;
             var maandag = new Date(vandaag);
             maandag.setDate(vandaag.getDate() + afstand);
@@ -242,7 +242,30 @@
         }
 
         /* ─────────────────────────────────────────────
-           3. KAARTEN LADEN  (FIX: t.get() per kaart)
+           3. KLEURCODE BEPALEN OP BASIS VAN USERNAME
+        ───────────────────────────────────────────── */
+        function bepaalKleur(members) {
+            if (!members || members.length === 0) return '#b3bac5'; // Standaard grijs als er niemand op staat
+
+            // Haal alle usernames van de kaart op in een simpele lijst
+            var usernames = members.map(function(m) { return m.username; });
+
+            // PRIORITY RULE: Tekenaars gaan áltijd voor op Bert
+            if (usernames.indexOf('jenstriest') !== -1) return '#ff9f1a';   // Jens = Oranje
+            if (usernames.indexOf('evageeroms') !== -1) return '#61bd4f';   // Eva = Groen
+            if (usernames.indexOf('davythibau01') !== -1) return '#f2d600'; // Davy = Geel
+            
+            // Als er geen tekenaar op staat, maar Bert wel
+            if (usernames.indexOf('bertdebie1') !== -1) return '#0079bf';   // Bert = Blauw
+
+            // Lauren of eventuele andere nieuwe gebruikers (Standaard blauw/grijs)
+            if (usernames.indexOf('laurenabsillis1') !== -1) return '#7a869a'; // Lauren = Donkergrijs
+            
+            return '#b3bac5'; 
+        }
+
+        /* ─────────────────────────────────────────────
+           4. KAARTEN LADEN + HOEVEELHEID DATA GEUPGRADED
         ───────────────────────────────────────────── */
         t.render(function() {
             berekenWeekDatums();
@@ -254,15 +277,15 @@
 
             pool.innerHTML = '';
 
-            // Stap A: haal alle kaarten op (alleen id + name nodig)
-            return t.cards('id', 'name')
+            // STAP A: We vragen nu expliciet ook de 'members' mee aan Trello
+            return t.cards('id', 'name', 'members')
                 .then(function(cards) {
                     if (!cards || cards.length === 0) {
                         loadingMsg.innerText = 'Geen kaarten gevonden.';
                         return;
                     }
 
-                    // Stap B: haal per kaart de opgeslagen planningsdata op via t.get()
+                    // STAP B: Planningsdata ophalen
                     var promises = cards.map(function(card) {
                         return t.get(card.id, 'shared', 'planning', null)
                             .then(function(planningData) {
@@ -281,10 +304,10 @@
                         var card        = item.card;
                         var planning    = item.planningData;
 
-                        // Maak het kaartje aan
-                        var cardEl = maakKaartElement(card.id, card.name);
+                        // Kaart aanmaken én members meegeven voor de kleurcode
+                        var cardEl = maakKaartElement(card.id, card.name, card.members);
 
-                        // Bepaal waar het kaartje thuishoort
+                        // Positioneren
                         if (planning && planning.ploeg && planning.datum) {
                             var zoneId   = maakZoneId(planning.ploeg, planning.datum);
                             var doelZone = document.getElementById(zoneId);
@@ -293,7 +316,6 @@
                                 return;
                             }
                         }
-                        // Geen (geldige) planning → zijbalk
                         pool.appendChild(cardEl);
                     });
                 })
@@ -305,20 +327,24 @@
         });
 
         /* ─────────────────────────────────────────────
-           4. KAART-ELEMENT AANMAKEN
+           5. KAART-ELEMENT AANMAKEN
         ───────────────────────────────────────────── */
-        function maakKaartElement(id, naam) {
+        function maakKaartElement(id, naam, members) {
             var el = document.createElement('div');
             el.className  = 'planning-card';
             el.id         = id;
             el.draggable  = true;
             el.innerText  = naam;
+            
+            // Hier passen we de kleur van de linker rand live toe!
+            el.style.borderLeftColor = bepaalKleur(members);
+            
             el.addEventListener('dragstart', drag);
             return el;
         }
 
         /* ─────────────────────────────────────────────
-           5. DRAG & DROP
+           6. DRAG & DROP LOGICA
         ───────────────────────────────────────────── */
         function allowDrop(ev) {
             ev.preventDefault();
@@ -345,7 +371,6 @@
 
             zone.appendChild(cardEl);
 
-            // Opslaan in Trello
             var isSidebar = (zone.id === 'sidebar-pool');
             if (isSidebar) {
                 t.set(cardId, 'shared', 'planning', null);
@@ -357,9 +382,7 @@
             }
         }
 
-        /* ─────────────────────────────────────────────
-           6. ZIJBALK OOK ALS DROPZONE
-        ───────────────────────────────────────────── */
+        /* ── ZIJBAlK DROPZONE ACTIVATIE ── */
         var sidebarPool = document.getElementById('sidebar-pool');
         sidebarPool.addEventListener('dragover', function(ev) {
             ev.preventDefault();
