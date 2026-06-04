@@ -56,20 +56,23 @@
 
         /* ── KAARTEN ── */
         .planning-card {
-            background-color: #fff;
             border-radius: 4px;
-            padding: 8px 10px;
+            padding: 10px 12px;
             margin-bottom: 6px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.14);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
             cursor: grab;
             font-size: 13px;
-            border-left: 5px solid #0052cc; /* Wordt dynamisch aangepast via JS */
+            font-weight: 600; /* Iets dikker gemaakt zodat tekst goed leesbaar is op kleur */
             line-height: 1.4;
             user-select: none;
-            transition: box-shadow 0.15s, opacity 0.15s;
+            transition: box-shadow 0.15s, opacity 0.15s, transform 0.1s;
+            /* De achtergrond en tekstkleur worden nu volledig dynamisch via JS bepaald */
         }
 
-        .planning-card:hover  { box-shadow: 0 3px 8px rgba(0,0,0,0.18); }
+        .planning-card:hover  { 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.22);
+            transform: translateY(-1px);
+        }
         .planning-card:active { cursor: grabbing; opacity: 0.75; }
 
         /* ── HOOFDSCHERM ── */
@@ -242,30 +245,43 @@
         }
 
         /* ─────────────────────────────────────────────
-           3. KLEURCODE BEPALEN OP BASIS VAN USERNAME
+           3. VOLLEDIGE STIJL BEPALEN (BG + TEKSTKLEUR)
         ───────────────────────────────────────────── */
-        function bepaalKleur(members) {
-            if (!members || members.length === 0) return '#b3bac5'; // Standaard grijs als er niemand op staat
+        function bepaalKaartStijl(members) {
+            // Standaardstijl als er niemand op de kaart staat (neutraal grijs met donkere tekst)
+            var standaardStijl = { bg: '#eaecf0', text: '#172b4d' };
 
-            // Haal alle usernames van de kaart op in een simpele lijst
+            if (!members || members.length === 0) return standaardStijl;
+
             var usernames = members.map(function(m) { return m.username; });
 
             // PRIORITY RULE: Tekenaars gaan áltijd voor op Bert
-            if (usernames.indexOf('jenstriest') !== -1) return '#ff9f1a';   // Jens = Oranje
-            if (usernames.indexOf('evageeroms') !== -1) return '#61bd4f';   // Eva = Groen
-            if (usernames.indexOf('davythibau01') !== -1) return '#f2d600'; // Davy = Geel
+            // Jens = Oranje (donkere tekst leest hierop prettiger)
+            if (usernames.indexOf('jenstriest') !== -1) {
+                return { bg: '#ff9f1a', text: '#172b4d' };   
+            }
+            // Eva = Groen (witte tekst voor hoog contrast)
+            if (usernames.indexOf('evageeroms') !== -1) {
+                return { bg: '#61bd4f', text: '#ffffff' };   
+            }
+            // Davy = Geel (donkere tekst voor leesbaarheid)
+            if (usernames.indexOf('davythibau01') !== -1) {
+                return { bg: '#f2d600', text: '#172b4d' }; 
+            }
+            // Bert = Blauw (witte tekst voor hoog contrast)
+            if (usernames.indexOf('bertdebie1') !== -1) {
+                return { bg: '#0079bf', text: '#ffffff' };   
+            }
+            // Lauren = Donkergrijs (witte tekst)
+            if (usernames.indexOf('laurenabsillis1') !== -1) {
+                return { bg: '#7a869a', text: '#ffffff' }; 
+            }
             
-            // Als er geen tekenaar op staat, maar Bert wel
-            if (usernames.indexOf('bertdebie1') !== -1) return '#0079bf';   // Bert = Blauw
-
-            // Lauren of eventuele andere nieuwe gebruikers (Standaard blauw/grijs)
-            if (usernames.indexOf('laurenabsillis1') !== -1) return '#7a869a'; // Lauren = Donkergrijs
-            
-            return '#b3bac5'; 
+            return standaardStijl; 
         }
 
         /* ─────────────────────────────────────────────
-           4. KAARTEN LADEN + HOEVEELHEID DATA GEUPGRADED
+           4. KAARTEN LADEN
         ───────────────────────────────────────────── */
         t.render(function() {
             berekenWeekDatums();
@@ -277,7 +293,6 @@
 
             pool.innerHTML = '';
 
-            // STAP A: We vragen nu expliciet ook de 'members' mee aan Trello
             return t.cards('id', 'name', 'members')
                 .then(function(cards) {
                     if (!cards || cards.length === 0) {
@@ -285,7 +300,6 @@
                         return;
                     }
 
-                    // STAP B: Planningsdata ophalen
                     var promises = cards.map(function(card) {
                         return t.get(card.id, 'shared', 'planning', null)
                             .then(function(planningData) {
@@ -304,10 +318,8 @@
                         var card        = item.card;
                         var planning    = item.planningData;
 
-                        // Kaart aanmaken én members meegeven voor de kleurcode
                         var cardEl = maakKaartElement(card.id, card.name, card.members);
 
-                        // Positioneren
                         if (planning && planning.ploeg && planning.datum) {
                             var zoneId   = maakZoneId(planning.ploeg, planning.datum);
                             var doelZone = document.getElementById(zoneId);
@@ -336,8 +348,10 @@
             el.draggable  = true;
             el.innerText  = naam;
             
-            // Hier passen we de kleur van de linker rand live toe!
-            el.style.borderLeftColor = bepaalKleur(members);
+            // Haal de kleurinstellingen op en pas ze volledig toe op de kaart
+            var stijl = bepaalKaartStijl(members);
+            el.style.backgroundColor = stijl.bg;
+            el.style.color           = stijl.text;
             
             el.addEventListener('dragstart', drag);
             return el;
@@ -382,7 +396,7 @@
             }
         }
 
-        /* ── ZIJBAlK DROPZONE ACTIVATIE ── */
+        /* ── ZIJBALK DROPZONE ACTIVATIE ── */
         var sidebarPool = document.getElementById('sidebar-pool');
         sidebarPool.addEventListener('dragover', function(ev) {
             ev.preventDefault();
