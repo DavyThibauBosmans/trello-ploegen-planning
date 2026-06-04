@@ -1,28 +1,38 @@
-<!DOCTYPE html>
-<html lang="nl">
-<head>
-    <meta charset="UTF-8">
-    <title>Ploegen Planning Connector</title>
-    <script src="https://p.trellocdn.com/power-up.min.js"></script>
-</head>
-<body>
-    <script>
-        TrelloPowerUp.initialize({
-            'board-buttons': function(t, options) {
-                return [{
-                    icon: 'https://trello.com/favicon.ico',
-                    text: 'Ploegen Planning',
-                    callback: function(t) {
-                        // In plaats van een alert openen we nu een paginagroot venster
-                        return t.modal({
-                            url: './planning.html',
-                            fullscreen: true,
-                            title: 'Ploegen Planning'
-                        });
-                    }
-                }];
-            }
+TrelloPowerUp.initialize({
+  // 1. De bestaande knop bovenaan je Trello-bord voor de grote matrix
+  'board-buttons': function (t, opts) {
+    return [{
+      icon: 'https://cdn.jsdelivr.net/gh/clistudios/trello-planning@main/icon.svg', // Pas aan naar jouw eigen icoon-URL als dat nodig is
+      text: 'Ploegen Planning',
+      callback: function (t) {
+        return t.modal({
+          title: 'Ploegen Planning',
+          url: './planning.html',
+          fullscreen: true
         });
-    </script>
-</body>
-</html>
+      }
+    }];
+  },
+  
+  // 2. DE NIEUWE TOEVOEGING: Het extra blok op de achterkant van een kaart
+  'card-back-section': function(t, options) {
+    // We kijken of er 'infoPlaatsing' in deze specifieke kaart is opgeslagen
+    return t.get('card', 'shared', 'infoPlaatsing')
+    .then(function(infoPlaatsing) {
+      if (infoPlaatsing && infoPlaatsing.trim() !== "") {
+        // Alleen ALS er tekst is, praten we terug tegen Trello en tonen we de sectie
+        return {
+          title: 'ℹ️ Info Plaatsing (Planning)',
+          icon: 'https://cdn.jsdelivr.net/gh/clistudios/trello-planning@main/icon.svg', // Eventueel een eigen icoon
+          content: {
+            type: 'iframe',
+            url: t.signUrl('./card-back.html'), // Dit verwijst naar het bestand uit Stap 2
+            height: 50 // Beginhoogte, dit past zich straks automatisch aan
+          }
+        };
+      }
+      // Is het leeg? Dan sturen we 'null' en blijft de achterkant van de kaart volledig schoon!
+      return null; 
+    });
+  }
+});
