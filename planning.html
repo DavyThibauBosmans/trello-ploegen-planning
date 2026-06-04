@@ -39,6 +39,43 @@
             margin: 0 0 12px 0;
         }
 
+        /* ── INTERVENTIE REMANIE ── */
+        .intervention-form {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .intervention-form input {
+            flex-grow: 1;
+            padding: 6px 10px;
+            border: 2px solid #dfe1e6;
+            border-radius: 4px;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        .intervention-form input:focus {
+            border-color: #0052cc;
+        }
+
+        .intervention-form button {
+            background-color: #0052cc;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.15s;
+        }
+
+        .intervention-form button:hover {
+            background-color: #0071e3;
+        }
+
         #sidebar-pool {
             flex-grow: 1;
             overflow-y: auto;
@@ -62,11 +99,14 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.15);
             cursor: grab;
             font-size: 13px;
-            font-weight: 600; /* Iets dikker gemaakt zodat tekst goed leesbaar is op kleur */
+            font-weight: 600;
             line-height: 1.4;
             user-select: none;
+            position: relative;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
             transition: box-shadow 0.15s, opacity 0.15s, transform 0.1s;
-            /* De achtergrond en tekstkleur worden nu volledig dynamisch via JS bepaald */
         }
 
         .planning-card:hover  { 
@@ -74,6 +114,18 @@
             transform: translateY(-1px);
         }
         .planning-card:active { cursor: grabbing; opacity: 0.75; }
+
+        /* Kruisje voor interventies */
+        .delete-btn {
+            margin-left: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 700;
+            line-height: 1;
+            opacity: 0.5;
+            transition: opacity 0.15s;
+        }
+        .delete-btn:hover { opacity: 1; }
 
         /* ── HOOFDSCHERM ── */
         .main-content {
@@ -157,6 +209,13 @@
 
     <div class="sidebar">
         <h2>📋 Nog in te plannen</h2>
+        
+        <!-- Snelkaarten Formulier -->
+        <div class="intervention-form">
+            <input type="text" id="int-name-input" placeholder="Snelle interventie...">
+            <button id="add-int-btn" type="button">+</button>
+        </div>
+
         <div id="loading-msg">Kaarten laden…</div>
         <div id="error-msg">⚠️ Kon kaarten niet laden.</div>
         <div id="sidebar-pool"></div>
@@ -247,41 +306,28 @@
         /* ─────────────────────────────────────────────
            3. VOLLEDIGE STIJL BEPALEN (BG + TEKSTKLEUR)
         ───────────────────────────────────────────── */
-        function bepaalKaartStijl(members) {
-            // Standaardstijl als er niemand op de kaart staat (neutraal grijs met donkere tekst)
-            var standaardStijl = { bg: '#eaecf0', text: '#172b4d' };
+        function bepaalKaartStijl(members, isIntervention) {
+            // Als het een ad-hoc interventie is, maken we hem herkenbaar lichtgrijs/blauw
+            if (isIntervention) {
+                return { bg: '#dfe1e6', text: '#172b4d' };
+            }
 
+            var standaardStijl = { bg: '#eaecf0', text: '#172b4d' };
             if (!members || members.length === 0) return standaardStijl;
 
             var usernames = members.map(function(m) { return m.username; });
 
-            // PRIORITY RULE: Tekenaars gaan áltijd voor op Bert
-            // Jens = Oranje (donkere tekst leest hierop prettiger)
-            if (usernames.indexOf('jenstriest') !== -1) {
-                return { bg: '#ff9f1a', text: '#172b4d' };   
-            }
-            // Eva = Groen (witte tekst voor hoog contrast)
-            if (usernames.indexOf('evageeroms') !== -1) {
-                return { bg: '#61bd4f', text: '#ffffff' };   
-            }
-            // Davy = Geel (donkere tekst voor leesbaarheid)
-            if (usernames.indexOf('davythibau01') !== -1) {
-                return { bg: '#f2d600', text: '#172b4d' }; 
-            }
-            // Bert = Blauw (witte tekst voor hoog contrast)
-            if (usernames.indexOf('bertdebie1') !== -1) {
-                return { bg: '#0079bf', text: '#ffffff' };   
-            }
-            // Lauren = Donkergrijs (witte tekst)
-            if (usernames.indexOf('laurenabsillis1') !== -1) {
-                return { bg: '#7a869a', text: '#ffffff' }; 
-            }
+            if (usernames.indexOf('jenstriest') !== -1) return { bg: '#ff9f1a', text: '#172b4d' };   
+            if (usernames.indexOf('evageeroms') !== -1) return { bg: '#61bd4f', text: '#ffffff' };   
+            if (usernames.indexOf('davythibau01') !== -1) return { bg: '#f2d600', text: '#172b4d' }; 
+            if (usernames.indexOf('bertdebie1') !== -1) return { bg: '#0079bf', text: '#ffffff' };   
+            if (usernames.indexOf('laurenabsillis1') !== -1) return { bg: '#7a869a', text: '#ffffff' }; 
             
             return standaardStijl; 
         }
 
         /* ─────────────────────────────────────────────
-           4. KAARTEN LADEN
+           4. KAARTEN + INTERVENTIES LADEN
         ───────────────────────────────────────────── */
         t.render(function() {
             berekenWeekDatums();
@@ -293,35 +339,44 @@
 
             pool.innerHTML = '';
 
-            return t.cards('id', 'name', 'members')
-                .then(function(cards) {
-                    if (!cards || cards.length === 0) {
-                        loadingMsg.innerText = 'Geen kaarten gevonden.';
-                        return;
-                    }
+            // We laden hier ZOWEL de Trello kaarten ALS de custom bord-interventies parallel in!
+            return Promise.all([
+                t.cards('id', 'name', 'members'),
+                t.get('board', 'shared', 'interventions', [])
+            ])
+            .then(function(resultaten) {
+                var cards          = resultaten[0];
+                var interventions  = resultaten[1];
 
-                    var promises = cards.map(function(card) {
-                        return t.get(card.id, 'shared', 'planning', null)
-                            .then(function(planningData) {
-                                return { card: card, planningData: planningData };
-                            });
+                loadingMsg.style.display = 'none';
+
+                // 1. Verwerk reguliere Trello kaarten
+                var cardPromises = cards.map(function(card) {
+                    return t.get(card.id, 'shared', 'planning', null)
+                        .then(function(planningData) {
+                            return { type: 'trello', card: card, planning: planningData };
+                        });
+                });
+
+                return Promise.all(cardPromises).then(function(trelloResultaten) {
+                    // Combineer Trello kaarten en Interventies in één loop
+                    var alleItems = [];
+                    
+                    trelloResultaten.forEach(function(r) { alleItems.push(r); });
+                    interventions.forEach(function(int) {
+                        alleItems.push({ type: 'intervention', card: int, planning: int });
                     });
 
-                    return Promise.all(promises);
-                })
-                .then(function(resultaten) {
-                    if (!resultaten) return;
+                    alleItems.forEach(function(item) {
+                        var cardEl = maakKaartElement(
+                            item.card.id, 
+                            item.card.name, 
+                            item.card.members, 
+                            (item.type === 'intervention')
+                        );
 
-                    loadingMsg.style.display = 'none';
-
-                    resultaten.forEach(function(item) {
-                        var card        = item.card;
-                        var planning    = item.planningData;
-
-                        var cardEl = maakKaartElement(card.id, card.name, card.members);
-
-                        if (planning && planning.ploeg && planning.datum) {
-                            var zoneId   = maakZoneId(planning.ploeg, planning.datum);
+                        if (item.planning && item.planning.ploeg && item.planning.datum) {
+                            var zoneId = maakZoneId(item.planning.ploeg, item.planning.datum);
                             var doelZone = document.getElementById(zoneId);
                             if (doelZone) {
                                 doelZone.appendChild(cardEl);
@@ -330,35 +385,98 @@
                         }
                         pool.appendChild(cardEl);
                     });
-                })
-                .catch(function(err) {
-                    console.error('Fout bij laden van kaarten:', err);
-                    loadingMsg.style.display = 'none';
-                    errorMsg.style.display   = 'block';
                 });
+            })
+            .catch(function(err) {
+                console.error('Fout bij laden:', err);
+                loadingMsg.style.display = 'none';
+                errorMsg.style.display   = 'block';
+            });
         });
 
         /* ─────────────────────────────────────────────
-           5. KAART-ELEMENT AANMAKEN
+           5. KAART-ELEMENT AANMAKEN (Inclusief Kruisje)
         ───────────────────────────────────────────── */
-        function maakKaartElement(id, naam, members) {
+        function maakKaartElement(id, naam, members, isIntervention) {
             var el = document.createElement('div');
             el.className  = 'planning-card';
             el.id         = id;
             el.draggable  = true;
-            el.innerText  = naam;
             
-            // Haal de kleurinstellingen op en pas ze volledig toe op de kaart
-            var stijl = bepaalKaartStijl(members);
+            var textSpan = document.createElement('span');
+            textSpan.innerText = naam;
+            el.appendChild(textSpan);
+            
+            var stijl = bepaalKaartStijl(members, isIntervention);
             el.style.backgroundColor = stijl.bg;
             el.style.color           = stijl.text;
             
+            // Als het een ad-hoc interventie is, voegen we een verwijderknop toe
+            if (isIntervention) {
+                var delBtn = document.createElement('span');
+                delBtn.className = 'delete-btn';
+                delBtn.innerHTML = '&times;';
+                delBtn.title = 'Interventie permanent wissen';
+                delBtn.addEventListener('click', function(e) {
+                    e.stopPropagation(); // Voorkom dat de kaart per ongeluk gaat slepen bij klikken
+                    verwijderInterventie(id);
+                });
+                el.appendChild(delBtn);
+            }
+
             el.addEventListener('dragstart', drag);
             return el;
         }
 
         /* ─────────────────────────────────────────────
-           6. DRAG & DROP LOGICA
+           6. INTERVENTIE LOGICA (AANMAKEN & VERWIJDEREN)
+        ───────────────────────────────────────────── */
+        document.getElementById('add-int-btn').addEventListener('click', voegInterventieToe);
+        document.getElementById('int-name-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') voegInterventieToe();
+        });
+
+        function voegInterventieToe() {
+            var input = document.getElementById('int-name-input');
+            var naam = input.value.trim();
+            if (!naam) return;
+
+            var nieuweInterventie = {
+                id: 'int-' + Date.now(), // Unieke custom ID
+                name: naam,
+                ploeg: null,
+                datum: null,
+                members: []
+            };
+
+            t.get('board', 'shared', 'interventions', [])
+                .then(function(lijst) {
+                    lijst.push(nieuweInterventie);
+                    return t.set('board', 'shared', 'interventions', lijst);
+                })
+                .then(function() {
+                    input.value = '';
+                    // Direct de zijbalk verversen
+                    var pool = document.getElementById('sidebar-pool');
+                    var cardEl = maakKaartElement(nieuweInterventie.id, nieuweInterventie.name, [], true);
+                    pool.appendChild(cardEl);
+                });
+        }
+
+        function verwijderInterventie(id) {
+            t.get('board', 'shared', 'interventions', [])
+                .then(function(lijst) {
+                    var gefilterd = lijst.filter(function(item) { return item.id !== id; });
+                    return t.set('board', 'shared', 'interventions', gefilterd);
+                })
+                .then(function() {
+                    var el = document.getElementById(id);
+                    if (el) el.remove(); // Direct uit het scherm wissen
+                });
+        }
+
+        /* ─────────────────────────────────────────────
+           7. DRAG & DROP LOGICA (Nu ook voor Interventies)
         ───────────────────────────────────────────── */
         function allowDrop(ev) {
             ev.preventDefault();
@@ -375,7 +493,6 @@
 
         function drop(ev) {
             ev.preventDefault();
-
             var zone = ev.currentTarget;
             zone.classList.remove('dragover');
 
@@ -384,15 +501,30 @@
             if (!cardEl) return;
 
             zone.appendChild(cardEl);
-
             var isSidebar = (zone.id === 'sidebar-pool');
-            if (isSidebar) {
-                t.set(cardId, 'shared', 'planning', null);
+
+            // SPLIT LOGICA: Is het een custom interventie of een Trello kaart?
+            if (cardId.indexOf('int-') === 0) {
+                t.get('board', 'shared', 'interventions', [])
+                    .then(function(lijst) {
+                        var geupdatet = lijst.map(function(item) {
+                            if (item.id === cardId) {
+                                item.ploeg = isSidebar ? null : zone.dataset.ploeg;
+                                item.datum = isSidebar ? null : zone.dataset.datum;
+                            }
+                            return item;
+                        });
+                        return t.set('board', 'shared', 'interventions', geupdatet);
+                    });
             } else {
-                t.set(cardId, 'shared', 'planning', {
-                    ploeg: zone.dataset.ploeg,
-                    datum: zone.dataset.datum
-                });
+                if (isSidebar) {
+                    t.set(cardId, 'shared', 'planning', null);
+                } else {
+                    t.set(cardId, 'shared', 'planning', {
+                        ploeg: zone.dataset.ploeg,
+                        datum: zone.dataset.datum
+                    });
+                }
             }
         }
 
@@ -405,17 +537,7 @@
         sidebarPool.addEventListener('dragleave', function() {
             sidebarPool.classList.remove('dragover');
         });
-        sidebarPool.addEventListener('drop', function(ev) {
-            ev.preventDefault();
-            sidebarPool.classList.remove('dragover');
-
-            var cardId = ev.dataTransfer.getData('text/plain');
-            var cardEl = document.getElementById(cardId);
-            if (!cardEl) return;
-
-            sidebarPool.appendChild(cardEl);
-            t.set(cardId, 'shared', 'planning', null);
-        });
+        sidebarPool.addEventListener('drop', drop); // Gebruikt nu dezelfde universele drop-handler
     </script>
 </body>
 </html>
