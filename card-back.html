@@ -2,38 +2,52 @@
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
+    <!-- Laad de Trello bibliotheek in voor de achterkant -->
     <script src="https://p.trellocdn.com/power-up.min.js"></script>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-            margin: 0;
-            padding: 8px 12px;
-            color: #172b4d;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             font-size: 14px;
+            color: #172b4d;
+            margin: 0;
+            padding: 0;
+        }
+        #info-box {
             background-color: #f4f5f7;
-            border-left: 4px solid #0052cc;
+            border-left: 4px solid #ffcc00; /* Mooi geel matchend met de planning */
+            padding: 8px 12px;
             border-radius: 3px;
-            line-height: 1.4;
-            white-space: pre-wrap; /* Zorgt dat enters/regels netjes behouden blijven */
+            white-space: pre-wrap; /* Zorgt dat regeleinden behouden blijven */
         }
     </style>
 </head>
 <body>
 
-    <div id="plaatsings-info-box">Laden...</div>
+    <!-- Hierin komt de tekst te staan -->
+    <div id="info-box">Informatie ophalen...</div>
 
     <script>
+        // Initialiseer de Trello Power-Up client voor een iframe
         var t = TrelloPowerUp.iframe();
 
-        // Dit script draait zodra Trello de achterkant van de kaart opent
+        // t.render wordt door Trello getriggerd zodra het iframe getoond wordt
         t.render(function() {
-            return t.get('card', 'shared', 'infoPlaatsing', '')
-            .then(function(tekst) {
-                // Zet de opgeslagen tekst in ons div-je
-                document.getElementById('plaatsings-info-box').innerText = tekst;
+            return t.get('card', 'shared', 'infoPlaatsing')
+            .then(function(infoPlaatsing) {
+                var element = document.getElementById('info-box');
                 
-                // CRUCIAL: Dit vertelt Trello om het venster exact zo groot te maken als de tekst lang is
-                t.sizeTo('body');
+                if (infoPlaatsing && infoPlaatsing.trim() !== "") {
+                    element.textContent = infoPlaatsing;
+                } else {
+                    element.textContent = "Geen specifieke plaatsingsinfo ingevuld in de planning.";
+                }
+            })
+            .then(function() {
+                // HEEL BELANGRIJK: Dit vertelt Trello dat het laden klaar is en stopt de "Laden..." spinner!
+                return t.sizeTo(document.body);
+            })
+            .catch(function(err) {
+                console.error("Fout bij ophalen infoPlaatsing:", err);
             });
         });
     </script>
