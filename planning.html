@@ -402,7 +402,7 @@
         LADEN
     ───────────────────────────────────────────── */
 
-    t.render(function() {
+  t.render(function() {
         berekenWeekDatums();
         bouwTabel();
 
@@ -411,8 +411,9 @@
         var errorMsg   = document.getElementById('error-msg');
         pool.innerHTML = '';
 
+        // FIX: 'id', 'name', etc. vervangen door 'all'
         return Promise.all([
-            t.cards('id', 'name', 'members', 'desc'),
+            t.cards('all'), 
             t.get('board', 'shared', 'interventions', [])
         ])
         .then(function(resultaten) {
@@ -455,7 +456,7 @@
                         item.card.members,
                         isInt,
                         item.card.colorObj   || null,
-                        isInt ? (item.card.address || '') : (item.card.desc || ''), /* FIX: Zoekt nu in .address voor interventies */
+                        isInt ? (item.card.address || '') : (item.card.desc || ''),
                         item.infoPlaatsing   || ''
                     );
 
@@ -474,7 +475,6 @@
             errorMsg.style.display   = 'block';
         });
     });
-
     /* ─────────────────────────────────────────────
         KAART AANMAKEN
     ───────────────────────────────────────────── */
