@@ -39,8 +39,6 @@
             margin: 0 0 12px 0;
         }
 
-        /* STAP 1.1: intervention-form verwijderd uit zijbalk */
-
         #sidebar-pool {
             flex-grow: 1;
             overflow-y: auto;
@@ -85,6 +83,7 @@
             font-size: 13px;
             font-weight: 700;
             line-height: 1.3;
+            outline: none;
         }
 
         .card-address {
@@ -189,7 +188,6 @@
         .dropzone { min-height: 90px; }
         .dropzone.dragover { background-color: #dce9fc; outline: 2px dashed #0052cc; }
 
-        /* STAP 1.1: klikbare cel hover effect */
         .dropzone {
             cursor: pointer;
             position: relative;
@@ -206,12 +204,11 @@
             pointer-events: none;
         }
 
-        /* Wanneer cel al kaarten bevat, hint subtiel tonen */
         .dropzone.has-cards:hover::after {
             content: '＋';
         }
 
-        /* STAP 1.1: context-menu popup */
+        /* ── CONTEXT MENU POPUP ── */
         .cell-context-menu {
             position: fixed;
             background: #fff;
@@ -328,7 +325,6 @@
         </table>
     </div>
 
-    <!-- STAP 1.1: Context-menu popup voor snelle interventie -->
     <div class="cell-context-menu" id="cell-context-menu">
         <label>⚡ Snelle interventie</label>
         <input type="text" id="ctx-naam-input" placeholder="Naam interventie...">
@@ -357,7 +353,6 @@
             { bg: '#00c2e0', text: '#172b4d' }
         ];
 
-        /* STAP 1.1: Context-menu state */
         var contextMenuTargetZone = null;
 
         /* ── OMSCHRIJVING PARSER ── */
@@ -446,16 +441,17 @@
                     td.addEventListener('dragleave', dragLeave);
                     td.addEventListener('drop',      drop);
 
-                    /* STAP 1.1: klik opent snelle-interventie popup */
+                    /* Klik opent snelle-interventie popup */
                     td.addEventListener('click', function(e) {
-                        // Klik op kaart zelf negeren (bubble)
                         if (e.target.closest('.planning-card')) return;
+                        e.stopPropagation(); 
                         openContextMenu(e, this);
                     });
 
-                    /* STAP 1.1: rechtermuisklik ook ondersteunen */
+                    /* Rechtermuisklik ondersteuning */
                     td.addEventListener('contextmenu', function(e) {
                         e.preventDefault();
+                        e.stopPropagation();
                         openContextMenu(e, this);
                     });
 
@@ -469,7 +465,7 @@
             return 'zone-' + ploeg.replace(/[\s\/]+/g, '-') + '-' + datum;
         }
 
-        /* ── STAP 1.1: CONTEXT MENU LOGICA ── */
+        /* ── CONTEXT MENU LOGICA ── */
         function openContextMenu(e, zone) {
             contextMenuTargetZone = zone;
             var menu = document.getElementById('cell-context-menu');
@@ -477,7 +473,6 @@
             document.getElementById('ctx-adres-input').value = '';
             menu.classList.add('visible');
 
-            // Positie berekenen (met schermgrens-correctie)
             var x = e.clientX;
             var y = e.clientY;
             var menuBreedte = 220;
@@ -487,7 +482,6 @@
             menu.style.left = x + 'px';
             menu.style.top  = y + 'px';
 
-            // Focus op naam-input
             setTimeout(function() {
                 document.getElementById('ctx-naam-input').focus();
             }, 50);
@@ -510,17 +504,14 @@
             voegInterventieToeAanZone(naam, adres, contextMenuTargetZone);
         }
 
-        // Context menu event listeners
         document.getElementById('ctx-confirm-btn').addEventListener('click', bevestigContextMenu);
         document.getElementById('ctx-cancel-btn').addEventListener('click', sluitContextMenu);
 
-        // Enter bevestigt, Escape annuleert
         document.getElementById('cell-context-menu').addEventListener('keydown', function(e) {
             if (e.key === 'Enter')  { e.preventDefault(); bevestigContextMenu(); }
             if (e.key === 'Escape') { sluitContextMenu(); }
         });
 
-        // Klik buiten menu sluit het
         document.addEventListener('click', function(e) {
             var menu = document.getElementById('cell-context-menu');
             if (menu.classList.contains('visible') && !menu.contains(e.target)) {
@@ -621,31 +612,41 @@
             var bodyContainer = document.createElement('div');
             bodyContainer.className = 'card-body';
 
-            /* 1. Titel */
+            /* 1. Titel (Dubbelklik om te bewerken) */
             var titleEl = document.createElement('div');
             titleEl.className = 'card-title';
             titleEl.innerText = naam;
             if (isIntervention) {
-                titleEl.contentEditable = true;
-                titleEl.addEventListener('focus', function() { el.draggable = false; });
+                titleEl.contentEditable = false;
+                titleEl.title = "Dubbelklik om te bewerken";
+                titleEl.addEventListener('dblclick', function() {
+                    titleEl.contentEditable = true;
+                    titleEl.focus();
+                    el.draggable = false;
+                });
                 titleEl.addEventListener('blur',  function() {
+                    titleEl.contentEditable = false;
                     el.draggable = true;
                     updateInterventionText(id, titleEl.innerText.trim());
                 });
             }
             bodyContainer.appendChild(titleEl);
 
-            /* 2. Adres */
+            /* 2. Adres (Dubbelklik om te bewerken) */
             if (isIntervention) {
                 var addressEl = document.createElement('div');
                 addressEl.className       = 'card-address';
-                addressEl.contentEditable = true;
+                addressEl.contentEditable = false;
                 addressEl.innerText       = adres || '📍 Voeg adres toe...';
-                addressEl.addEventListener('focus', function() {
-                    el.draggable = false;
+                addressEl.title           = "Dubbelklik om te bewerken";
+                addressEl.addEventListener('dblclick', function() {
+                    addressEl.contentEditable = true;
                     if (addressEl.innerText === '📍 Voeg adres toe...') addressEl.innerText = '';
+                    addressEl.focus();
+                    el.draggable = false;
                 });
                 addressEl.addEventListener('blur', function() {
+                    addressEl.contentEditable = false;
                     el.draggable = true;
                     var txt = addressEl.innerText.trim();
                     if (!txt) addressEl.innerText = '📍 Voeg adres toe...';
@@ -671,13 +672,19 @@
                 }
             }
 
-            /* 3. Info Plaatsing */
+            /* 3. Info Plaatsing (Dubbelklik om te bewerken voor ALLE kaarten, behoudt stabiele sleepactie) */
             var infoEl = document.createElement('div');
             infoEl.className       = 'card-info-placement';
-            infoEl.contentEditable = true;
+            infoEl.contentEditable = false;
             infoEl.innerText       = infoPlaatsingText || '';
-            infoEl.addEventListener('focus', function() { el.draggable = false; });
+            infoEl.title           = "Dubbelklik om te bewerken";
+            infoEl.addEventListener('dblclick', function() {
+                infoEl.contentEditable = true;
+                infoEl.focus();
+                el.draggable = false;
+            });
             infoEl.addEventListener('blur',  function() {
+                infoEl.contentEditable = false;
                 el.draggable = true;
                 var txt = infoEl.innerText.trim();
                 if (!txt) { infoEl.innerHTML = ''; txt = ''; }
@@ -782,9 +789,7 @@
             });
         }
 
-        /* ── INTERVENTIES ── */
-
-        /* STAP 1.1: aanmaken via cel-klik (met optionele ploeg/datum uit zone) */
+        /* ── INTERVENTIES AANMAKEN EN OPSLAAN ── */
         function voegInterventieToeAanZone(naam, adres, zone) {
             var nieuw = {
                 id:           'int-' + Date.now(),
@@ -797,34 +802,11 @@
                 colorObj:     null
             };
 
-            t.get('board', 'shared', 'interventions', []).then(function(lijst) {
+            t.get('board', 'shared', 'interventions', [])
+            .then(function(lijst) {
+                if (!Array.isArray(lijst)) lijst = [];
                 lijst.push(nieuw);
                 return t.set('board', 'shared', 'interventions', lijst);
-            }).then(function() {
-                var cardEl = maakKaartElement(
-                    nieuw.id, nieuw.name, [], true,
-                    null, nieuw.address, '', null
-                );
-
-                if (zone) {
-                    zone.appendChild(cardEl);
-                    zone.classList.add('has-cards');
-
-                    // Planning opslaan voor deze interventie
-                    t.get('board', 'shared', 'interventions', []).then(function(lijst) {
-                        return t.set('board', 'shared', 'interventions',
-                            lijst.map(function(i) {
-                                if (i.id === nieuw.id) {
-                                    i.ploeg = zone.dataset.ploeg;
-                                    i.datum = zone.dataset.datum;
-                                }
-                                return i;
-                            })
-                        );
-                    });
-                } else {
-                    document.getElementById('sidebar-pool').appendChild(cardEl);
-                }
             });
         }
 
@@ -879,7 +861,6 @@
             var datum = zone.dataset.datum || null;
             var id    = kaartEl.id;
 
-            // Bepaal of dit een interventie of Trello-kaart is
             var isInt = id.startsWith('int-');
 
             if (isInt) {
@@ -936,7 +917,7 @@
             }
         });
 
-        /* Drag-end cleanup (fallback) */
+        /* Drag-end cleanup */
         document.addEventListener('dragend', function() {
             if (sleependKaartId) {
                 var el = document.getElementById(sleependKaartId);
