@@ -39,35 +39,6 @@
             margin: 0 0 12px 0;
         }
 
-        .intervention-form {
-            display: flex;
-            gap: 6px;
-            margin-bottom: 12px;
-        }
-
-        .intervention-form input {
-            flex-grow: 1;
-            padding: 6px 10px;
-            border: 2px solid #dfe1e6;
-            border-radius: 4px;
-            font-size: 13px;
-            outline: none;
-            transition: border-color 0.15s;
-        }
-
-        .intervention-form input:focus { border-color: #0052cc; }
-
-        .intervention-form button {
-            background-color: #0052cc;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
-            font-weight: 700;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
         #sidebar-pool {
             flex-grow: 1;
             overflow-y: auto;
@@ -213,7 +184,15 @@
 
         .col-ploeg { width: 130px; }
         .row-ploeg { font-weight: 700; font-size: 13px; background-color: #fafbfc; vertical-align: middle !important; }
-        .dropzone { min-height: 90px; }
+        
+        .dropzone { 
+            min-height: 90px; 
+            cursor: pointer;
+            transition: background-color 0.15s;
+        }
+        .dropzone:hover {
+            background-color: #f4f5f7;
+        }
         .dropzone.dragover { background-color: #dce9fc; outline: 2px dashed #0052cc; }
         #loading-msg { font-size: 13px; color: #5e6c84; padding: 8px; font-style: italic; }
         #error-msg { font-size: 13px; color: #bf2600; padding: 8px; display: none; }
@@ -240,10 +219,6 @@
 
     <div class="sidebar">
         <h2>📋 Nog in te plannen</h2>
-        <div class="intervention-form">
-            <input type="text" id="int-name-input" placeholder="Snelle interventie...">
-            <button id="add-int-btn" type="button">+</button>
-        </div>
         <div id="loading-msg">Kaarten laden…</div>
         <div id="error-msg">⚠️ Kon kaarten niet laden.</div>
         <div id="sidebar-pool"></div>
@@ -366,9 +341,15 @@
                     td.id = maakZoneId(ploeg, datumsVanDeWeek[i]);
                     td.dataset.ploeg  = ploeg;
                     td.dataset.datum  = datumsVanDeWeek[i];
+                    
+                    /* Drag and Drop Listeners */
                     td.addEventListener('dragover',  allowDrop);
                     td.addEventListener('dragleave', dragLeave);
                     td.addEventListener('drop',      drop);
+                    
+                    /* Stap 1.1: Klikbare cel voor snelle interventie */
+                    td.addEventListener('click', is CelKlik);
+                    
                     tr.appendChild(td);
                 }
                 tbody.appendChild(tr);
@@ -377,6 +358,16 @@
 
         function maakZoneId(ploeg, datum) {
             return 'zone-' + ploeg.replace(/[\s\/]+/g, '-') + '-' + datum;
+        }
+
+        /* Handler om te differentiëren tussen een klik op de cel en een klik op de kaart */
+        function isCelKlik(e) {
+            // Zorg dat we niet triggeren als Lauren op een bestaande kaart of knop klikt binnen de cel
+            if (e.target.classList.contains('dropzone') || e.target.tagName.toLowerCase() === 'td') {
+                var ploeg = this.dataset.ploeg;
+                var datum = this.dataset.datum;
+                voegDirecteInterventieToe(ploeg, datum);
+            }
         }
 
         /* ── KLEUR OP BASIS VAN TRELLO-LID ── */
@@ -427,7 +418,7 @@
                         alleItems.push({
                             type:          'intervention',
                             card:          int,
-                            planning:      int,
+                            planning:      int, // bevat al ploeg en datum
                             infoPlaatsing: int.infoPlaatsing || ''
                         });
                     });
@@ -632,88 +623,84 @@
             });
         }
 
-        /* ── INTERVENTIES ── */
-        function voegInterventieToe() {
-            var input = document.getElementById('int-name-input');
-            var naam  = input.value.trim();
-            if (!naam) return;
+        /* ── INTERVENTIES CREATIE VIA CEL ── */
+        function voegDirecteInterventieToe(ploeg, datum) {
+            var naam = prompt("Naam snelle interventie:");
+            if (!naam || !naam.trim()) return;
 
             var nieuw = {
-                id:           'int-' + Date.now(),
-                name:         naam,
-                ploeg:        null,
-                datum:        null,
-                members:      [],
-                address:      '',
+                id:            'int-' + Date.now(),
+                name:          naam.trim(),
+                ploeg:         ploeg,
+                datum:         datum,
+                members:       [],
+                address:       '',
                 infoPlaatsing: '',
-                colorObj:     CUSTOM_COLORS[0]
+                colorObj:      CUSTOM_COLORS[0]
             };
 
-            t.get('board', 'shared', 'interventions', []).then(function(lijst) {
+            t.get('board', 'shared', 'interventions', [])
+            .then(function(lijst) {
                 lijst.push(nieuw);
                 return t.set('board', 'shared', 'interventions', lijst);
-            }).then(function() {
-                input.value = '';
-                t.render();
+            })
+            .then(function() {
+                // Forceer een volledige herberekening en hertekening van de UI
+                if (typeof t.render === 'function') {
+                    // t.render() wordt automatisch getriggerd door Trello bij data-updates, 
+                    // maar we kunnen handmatig refreshen indien nodig binnen de iframe context.
+                }
             });
         }
 
         function verwijderInterventie(id) {
             t.get('board', 'shared', 'interventions', []).then(function(lijst) {
-                return t.set('board', 'shared', 'interventions',
-                    lijst.filter(function(i) { return i.id !== id; })
-                );
-            }).then(function() {
-                var el = document.getElementById(id);
-                if (el) el.remove();
+                var gefilterd = lijst.filter(function(i) { return i.id !== id; });
+                return t.set('board', 'shared', 'interventions', gefilterd);
             });
         }
 
-        /* ── DRAG & DROP ── */
-        function allowDrop(ev) { ev.preventDefault(); ev.currentTarget.classList.add('dragover'); }
-        function dragLeave(ev) { ev.currentTarget.classList.remove('dragover'); }
-        function drag(ev)      { ev.dataTransfer.setData('text/plain', ev.currentTarget.id); }
-
-        function drop(ev) {
-            ev.preventDefault();
-            var zone   = ev.currentTarget;
-            zone.classList.remove('dragover');
-
-            var cardId = ev.dataTransfer.getData('text/plain');
-            var cardEl = document.getElementById(cardId);
-            if (!cardEl) return;
-
-            zone.appendChild(cardEl);
-            var isSidebar = (zone.id === 'sidebar-pool');
-
-            if (cardId.indexOf('int-') === 0) {
-                t.get('board', 'shared', 'interventions', []).then(function(lijst) {
-                    return t.set('board', 'shared', 'interventions',
-                        lijst.map(function(item) {
-                            if (item.id === cardId) {
-                                item.ploeg = isSidebar ? null : zone.dataset.ploeg;
-                                item.datum = isSidebar ? null : zone.dataset.datum;
-                            }
-                            return item;
-                        })
-                    );
-                });
-            } else {
-                if (isSidebar) { t.set(cardId, 'shared', 'planning', null); }
-                else           { t.set(cardId, 'shared', 'planning', { ploeg: zone.dataset.ploeg, datum: zone.dataset.datum }); }
-            }
+        /* ── DRAG AND DROP LOGICA ── */
+        function allowDrop(e) {
+            e.preventDefault();
+            this.classList.add('dragover');
         }
 
-        /* ── EVENT LISTENERS ── */
-        var sidebarPool = document.getElementById('sidebar-pool');
-        sidebarPool.addEventListener('dragover',  function(ev) { ev.preventDefault(); sidebarPool.classList.add('dragover'); });
-        sidebarPool.addEventListener('dragleave', function()   { sidebarPool.classList.remove('dragover'); });
-        sidebarPool.addEventListener('drop', drop);
+        function dragLeave(e) {
+            this.classList.remove('dragover');
+        }
 
-        document.getElementById('add-int-btn').addEventListener('click', voegInterventieToe);
-        document.getElementById('int-name-input').addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') voegInterventieToe();
-        });
+        function drag(e) {
+            e.dataTransfer.setData("text", e.target.id);
+        }
+
+        function drop(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+            var id = e.dataTransfer.getData("text");
+            var cardEl = document.getElementById(id);
+            if (!cardEl) return;
+
+            var nieuwePloeg = this.dataset.ploeg;
+            var nieuweDatum = this.dataset.datum;
+
+            if (id.indexOf('int-') === 0) {
+                /* Verplaatsing van custom interventie */
+                t.get('board', 'shared', 'interventions', []).then(function(lijst) {
+                    var geupdatet = lijst.map(function(item) {
+                        if (item.id === id) {
+                            item.ploeg = nieuwePloeg;
+                            item.datum = nieuweDatum;
+                        }
+                        return item;
+                    });
+                    return t.set('board', 'shared', 'interventions', geupdatet);
+                });
+            } else {
+                /* Verplaatsing van reguliere Trello-kaart */
+                t.set(id, 'shared', 'planning', { ploeg: nieuwePloeg, datum: nieuweDatum });
+            }
+        }
     </script>
 </body>
 </html>
