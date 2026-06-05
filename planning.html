@@ -136,6 +136,15 @@
             font-style: italic;
         }
 
+        /* ── PINNETJE BIJ INGEVULD INTERVENTIE-ADRES ──
+           Alleen wanneer het veld NIET leeg is verschijnt het 📍-symbool
+           als pseudo-element vóór de tekst. Omdat het CSS is (en geen tekst),
+           kan het niet per ongeluk gewist of gedupliceerd worden tijdens het editen.
+           Is het veld leeg, dan toont het de placeholder hierboven (of blijft het verborgen). */
+        .card-address-editable:not(:empty)::before {
+            content: "📍 ";
+        }
+
         /* ── CLEANE LOOK ──
            Lege adres- en infovelden zijn standaard verborgen.
            Ze verschijnen pas wanneer je over de kaart beweegt of het veld in focus is.
@@ -237,15 +246,15 @@
 
         .col-ploeg { width: 130px; }
         .row-ploeg { font-weight: 700; font-size: 13px; background-color: #fafbfc; vertical-align: middle !important; }
-        
+
         /* Dropzones & de Cel-acties */
-        .dropzone { 
-            min-height: 110px; 
+        .dropzone {
+            min-height: 110px;
             position: relative;
             padding-bottom: 26px !important; /* Ruimte onderin voor de + knop zodat kaarten er niet overheen vallen */
         }
         .dropzone.dragover { background-color: #dce9fc; outline: 2px dashed #0052cc; }
-        
+
         /* Subtiel inline plus-knopje per cel */
         .cell-add-btn {
             position: absolute;
@@ -523,10 +532,10 @@
 
                         if (item.planning && item.planning.ploeg && item.planning.datum) {
                             var zone = document.getElementById(maakZoneId(item.planning.ploeg, item.planning.datum));
-                            if (zone) { 
+                            if (zone) {
                                 // Drag-veilig: kaarten worden nu netjes boven de plus-knop geplaatst
-                                zone.appendChild(cardEl); 
-                                return; 
+                                zone.appendChild(cardEl);
+                                return;
                             }
                         }
                         pool.appendChild(cardEl);
@@ -539,6 +548,40 @@
                 errorMsg.style.display   = 'block';
             });
         });
+
+        /* ── HULPFUNCTIE: VELD BEWERKBAAR MAKEN ──
+           BELANGRIJK voor stabiele drag-and-drop:
+           Een element met draggable="true" wordt door Chrome NIET meer sleepbaar
+           zodra het een contenteditable-kind bevat. Daarom staat elk bewerkbaar veld
+           standaard op contentEditable=false (kaart blijft sleepbaar) en wordt het
+           pas bij een KLIK bewerkbaar, en bij blur weer uit. */
+        function maakBewerkbaarVeld(veldEl, opslaanCallback) {
+            veldEl.contentEditable = false;
+
+            veldEl.addEventListener('click', function() {
+                if (veldEl.isContentEditable) return;
+                veldEl.contentEditable = true;
+                veldEl.focus();
+                // Caret aan het einde van de tekst plaatsen
+                var range = document.createRange();
+                range.selectNodeContents(veldEl);
+                range.collapse(false);
+                var sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(range);
+            });
+
+            veldEl.addEventListener('blur', function() {
+                veldEl.contentEditable = false;
+                var txt = veldEl.innerText.trim();
+                if (!txt) { veldEl.innerHTML = ''; }   // leeg → placeholder/verborgen via CSS
+                opslaanCallback(txt);
+            });
+
+            veldEl.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') { e.preventDefault(); veldEl.blur(); }
+            });
+        }
 
         /* ── KAART GENERATOR ── */
         function maakKaartElement(id, naam, members, isIntervention, savedColorObj, adres, infoPlaatsingText, desc) {
@@ -555,11 +598,8 @@
             titleEl.className = 'card-title';
             titleEl.innerText = naam;
             if (isIntervention) {
-                titleEl.contentEditable = true;
-                titleEl.addEventListener('focus', function() { el.draggable = false; });
-                titleEl.addEventListener('blur',  function() {
-                    el.draggable = true;
-                    updateInterventionText(id, titleEl.innerText.trim());
+                maakBewerkbaarVeld(titleEl, function(txt) {
+                    updateInterventionText(id, txt);
                 });
             }
             bodyContainer.appendChild(titleEl);
@@ -567,20 +607,11 @@
             /* 2. Adres & extra velden */
             if (isIntervention) {
                 var addressEl = document.createElement('div');
-                addressEl.className       = 'card-address card-address-editable';
-                addressEl.contentEditable = true;
-                addressEl.innerText       = adres || '';
-                addressEl.addEventListener('focus', function() {
-                    el.draggable = false;
-                });
-                addressEl.addEventListener('blur', function() {
-                    el.draggable = true;
-                    var txt = addressEl.innerText.trim();
-                    if (!txt) { addressEl.innerHTML = ''; txt = ''; }
+                addressEl.className = 'card-address card-address-editable';
+                addressEl.innerText = adres || '';
+                // Pinnetje (📍) wordt via CSS getoond zodra het veld NIET leeg is.
+                maakBewerkbaarVeld(addressEl, function(txt) {
                     updateInterventionAddress(id, txt);
-                });
-                addressEl.addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter') { e.preventDefault(); addressEl.blur(); }
                 });
                 bodyContainer.appendChild(addressEl);
             } else {
@@ -604,19 +635,11 @@
 
             /* 3. Info Plaatsing */
             var infoEl = document.createElement('div');
-            infoEl.className       = 'card-info-placement';
-            infoEl.contentEditable = true;
-            infoEl.innerText       = infoPlaatsingText || '';
-            infoEl.addEventListener('focus', function() { el.draggable = false; });
-            infoEl.addEventListener('blur',  function() {
-                el.draggable = true;
-                var txt = infoEl.innerText.trim();
-                if (!txt) { infoEl.innerHTML = ''; txt = ''; }
+            infoEl.className = 'card-info-placement';
+            infoEl.innerText = infoPlaatsingText || '';
+            maakBewerkbaarVeld(infoEl, function(txt) {
                 if (isIntervention) { updateInterventionInfo(id, txt); }
                 else                { updateTrelloCardInfo(id, txt);   }
-            });
-            infoEl.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') { e.preventDefault(); infoEl.blur(); }
             });
             bodyContainer.appendChild(infoEl);
             el.appendChild(bodyContainer);
@@ -633,11 +656,11 @@
                 var colorBtn = document.createElement('span');
                 colorBtn.className = 'color-btn';
                 colorBtn.innerHTML = '🎨';
-                
-                /* KLIJK OP PALET: Open inline menu */
+
+                /* KLIK OP PALET: Open inline menu */
                 colorBtn.addEventListener('click', function(e) {
                     e.stopPropagation(); // Voorkom direct sluiten via document click listener
-                    
+
                     // Verwijder eventuele andere openstaande menu's
                     var openMenus = document.querySelectorAll('.color-picker-menu');
                     openMenus.forEach(function(m) { m.remove(); });
@@ -746,6 +769,16 @@
             .then(function(lijst) {
                 lijst.push(nieuw);
                 return t.set('board', 'shared', 'interventions', lijst);
+            })
+            .then(function() {
+                // Direct in de DOM tonen (niet wachten op re-render)
+                var cardEl = maakKaartElement(
+                    nieuw.id, nieuw.name, nieuw.members, true,
+                    nieuw.colorObj, nieuw.address, nieuw.infoPlaatsing, null
+                );
+                var zone = document.getElementById(maakZoneId(ploeg, datum));
+                if (zone) { zone.appendChild(cardEl); }
+                else      { document.getElementById('sidebar-pool').appendChild(cardEl); }
             });
         }
 
@@ -753,10 +786,15 @@
             t.get('board', 'shared', 'interventions', []).then(function(lijst) {
                 var gefilterd = lijst.filter(function(i) { return i.id !== id; });
                 return t.set('board', 'shared', 'interventions', gefilterd);
+            })
+            .then(function() {
+                // Direct uit de DOM verwijderen (niet wachten op re-render)
+                var el = document.getElementById(id);
+                if (el && el.parentNode) { el.parentNode.removeChild(el); }
             });
         }
 
-        /* ── DRAG AND DROP LOGICA (HERSTELD & STABIEL) ── */
+        /* ── DRAG AND DROP LOGICA (STABIEL) ── */
         function allowDrop(e) {
             e.preventDefault();
             this.classList.add('dragover');
@@ -768,7 +806,7 @@
 
         function drag(e) {
             /* currentTarget = het element waarop de listener staat (de kaart zelf),
-               ongeacht of je de kaart vastpakt op de titel, het adres of de body.
+               ongeacht waar je de kaart vastpakt.
                (e.target kan een subelement zonder id zijn → daardoor faalde het verslepen) */
             e.dataTransfer.setData("text", e.currentTarget.id);
         }
@@ -776,18 +814,22 @@
         function drop(e) {
             e.preventDefault();
             this.classList.remove('dragover');
-            
+
             var id = e.dataTransfer.getData("text");
             var cardEl = document.getElementById(id);
             if (!cardEl) return;
 
             var nieuwePloeg = this.dataset.ploeg;
             var nieuweDatum = this.dataset.datum;
+            var isIntervention = (id.indexOf('int-') === 0);
 
-            // Als er geen ploeg/datum is (omdat er naar de linker zijbalk gesleept is)
+            // Geen ploeg/datum → er is naar de linker zijbalk gesleept
             if (!nieuwePloeg) {
-                if (id.indexOf('int-') === 0) {
-                    /* Custom interventie terug naar zijbalk: ontkoppel datum/ploeg */
+                // 1) DOM direct verplaatsen voor onmiddellijke feedback
+                document.getElementById('sidebar-pool').appendChild(cardEl);
+
+                // 2) Data bijwerken
+                if (isIntervention) {
                     t.get('board', 'shared', 'interventions', []).then(function(lijst) {
                         var geupdatet = lijst.map(function(item) {
                             if (item.id === id) {
@@ -799,14 +841,17 @@
                         return t.set('board', 'shared', 'interventions', geupdatet);
                     });
                 } else {
-                    /* Trello-kaart terug naar zijbalk */
                     t.remove(id, 'shared', 'planning');
                 }
                 return;
             }
 
             // Slepen NAAR een cel in het rooster
-            if (id.indexOf('int-') === 0) {
+            // 1) DOM direct verplaatsen (de + knop is absoluut gepositioneerd, volgorde maakt niet uit)
+            this.appendChild(cardEl);
+
+            // 2) Data bijwerken
+            if (isIntervention) {
                 t.get('board', 'shared', 'interventions', []).then(function(lijst) {
                     var geupdatet = lijst.map(function(item) {
                         if (item.id === id) {
