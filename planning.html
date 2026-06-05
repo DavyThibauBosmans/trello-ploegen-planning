@@ -129,6 +129,28 @@
             font-weight: normal;
         }
 
+        /* Placeholder voor het editeerbare adresveld van een interventie */
+        .card-address-editable:empty::before {
+            content: "📍 Adres toevoegen...";
+            opacity: 0.4;
+            font-style: italic;
+        }
+
+        /* ── CLEANE LOOK ──
+           Lege adres- en infovelden zijn standaard verborgen.
+           Ze verschijnen pas wanneer je over de kaart beweegt of het veld in focus is.
+           Velden met inhoud blijven altijd zichtbaar. */
+        .card-address-editable:empty,
+        .card-info-placement:empty {
+            display: none;
+        }
+        .planning-card:hover .card-address-editable:empty,
+        .planning-card:hover .card-info-placement:empty,
+        .card-address-editable:empty:focus,
+        .card-info-placement:empty:focus {
+            display: block;
+        }
+
         /* Knoppen op de kaart */
         .card-controls {
             display: flex;
@@ -545,18 +567,20 @@
             /* 2. Adres & extra velden */
             if (isIntervention) {
                 var addressEl = document.createElement('div');
-                addressEl.className       = 'card-address';
+                addressEl.className       = 'card-address card-address-editable';
                 addressEl.contentEditable = true;
-                addressEl.innerText       = adres || '📍 Voeg adres toe...';
+                addressEl.innerText       = adres || '';
                 addressEl.addEventListener('focus', function() {
                     el.draggable = false;
-                    if (addressEl.innerText === '📍 Voeg adres toe...') addressEl.innerText = '';
                 });
                 addressEl.addEventListener('blur', function() {
                     el.draggable = true;
                     var txt = addressEl.innerText.trim();
-                    if (!txt) addressEl.innerText = '📍 Voeg adres toe...';
+                    if (!txt) { addressEl.innerHTML = ''; txt = ''; }
                     updateInterventionAddress(id, txt);
+                });
+                addressEl.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') { e.preventDefault(); addressEl.blur(); }
                 });
                 bodyContainer.appendChild(addressEl);
             } else {
@@ -743,7 +767,10 @@
         }
 
         function drag(e) {
-            e.dataTransfer.setData("text", e.target.id);
+            /* currentTarget = het element waarop de listener staat (de kaart zelf),
+               ongeacht of je de kaart vastpakt op de titel, het adres of de body.
+               (e.target kan een subelement zonder id zijn → daardoor faalde het verslepen) */
+            e.dataTransfer.setData("text", e.currentTarget.id);
         }
 
         function drop(e) {
