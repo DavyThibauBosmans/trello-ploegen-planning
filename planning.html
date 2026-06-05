@@ -45,6 +45,7 @@
             background-color: #f4f5f7;
             border-radius: 6px;
             padding: 8px;
+            min-height: 200px;
         }
 
         #sidebar-pool.dragover {
@@ -64,6 +65,7 @@
             justify-content: space-between;
             align-items: flex-start;
             transition: box-shadow 0.15s, transform 0.1s;
+            position: relative;
         }
 
         .planning-card:hover {
@@ -92,6 +94,32 @@
             line-height: 1.2;
             outline: none;
             word-break: break-word;
+            transition: opacity 0.15s, max-height 0.15s, margin 0.15s;
+        }
+
+        /* Verberg 'Voeg adres toe...' placeholder standaard */
+        .planning-card .card-address[contenteditable="true"] {
+            opacity: 0;
+            max-height: 0;
+            overflow: hidden;
+            margin: 0;
+        }
+
+        /* Toon het lege adresveld zodra de muis over de SPECIFIEKE kaart beweegt OF als er al echte tekst in staat */
+        .planning-card:hover .card-address[contenteditable="true"],
+        .planning-card .card-address[contenteditable="true"]:not(:empty) {
+            opacity: 0.7;
+            max-height: 40px;
+            margin-top: 2px;
+        }
+
+        /* Geef extra focus-styling als Lauren er effectief in typt */
+        .planning-card .card-address[contenteditable="true"]:focus {
+            opacity: 1 !important;
+            max-height: 40px;
+            background-color: rgba(255, 255, 255, 0.5);
+            padding: 2px;
+            border-radius: 2px;
         }
 
         /* ── INFO PLAATSING STYLING ── */
@@ -133,6 +161,7 @@
             gap: 6px;
             align-items: center;
             margin-left: 6px;
+            position: relative;
         }
 
         .color-btn, .delete-btn {
@@ -142,6 +171,34 @@
             transition: opacity 0.15s;
         }
         .color-btn:hover, .delete-btn:hover { opacity: 1; }
+
+        /* Inline Kleurenkiezer Pop-over */
+        .color-picker-menu {
+            position: absolute;
+            top: 22px;
+            right: 0;
+            background: white;
+            border: 1px solid #dfe1e6;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            padding: 6px;
+            display: grid;
+            grid-template-columns: repeat(4, 22px);
+            gap: 6px;
+            z-index: 100;
+        }
+
+        .color-swatch {
+            width: 22px;
+            height: 22px;
+            border-radius: 3px;
+            cursor: pointer;
+            border: 1px solid rgba(0,0,0,0.1);
+            transition: transform 0.1s;
+        }
+        .color-swatch:hover {
+            transform: scale(1.15);
+        }
 
         /* ── HOOFDSCHERM & TABEL ── */
         .main-content {
@@ -187,8 +244,9 @@
         
         /* Dropzones & de Cel-acties */
         .dropzone { 
-            min-height: 90px; 
+            min-height: 110px; 
             position: relative;
+            padding-bottom: 26px !important;
         }
         .dropzone.dragover { background-color: #dce9fc; outline: 2px dashed #0052cc; }
         
@@ -229,8 +287,11 @@
             body { background-color: #fff !important; overflow: visible !important; height: auto !important; }
             .sidebar { display: none !important; }
             .main-content { padding: 0 !important; margin: 0 !important; width: 100% !important; }
-            .card-controls, .cell-add-btn { display: none !important; }
+            .card-controls, .cell-add-btn, .color-picker-menu { display: none !important; }
             .card-info-placement:empty { display: none !important; }
+            /* Verberg lege adres placeholders volledig tijdens print */
+            .card-address { display: none !important; }
+            .card-address:not(:empty) { display: block !important; }
             .card-info-placement {
                 background-color: transparent !important;
                 border-left: 2px solid #5e6c84 !important;
@@ -276,15 +337,20 @@
         var datumsVanDeWeek = [];
 
         var CUSTOM_COLORS = [
-            { bg: '#dfe1e6', text: '#172b4d' },
-            { bg: '#ff9f1a', text: '#172b4d' },
-            { bg: '#61bd4f', text: '#ffffff' },
-            { bg: '#f2d600', text: '#172b4d' },
-            { bg: '#0079bf', text: '#ffffff' },
-            { bg: '#89609e', text: '#ffffff' },
-            { bg: '#ec4c3c', text: '#ffffff' },
-            { bg: '#00c2e0', text: '#172b4d' }
+            { bg: '#dfe1e6', text: '#172b4d' }, 
+            { bg: '#ff9f1a', text: '#172b4d' }, 
+            { bg: '#61bd4f', text: '#ffffff' }, 
+            { bg: '#f2d600', text: '#172b4d' }, 
+            { bg: '#0079bf', text: '#ffffff' }, 
+            { bg: '#89609e', text: '#ffffff' }, 
+            { bg: '#ec4c3c', text: '#ffffff' }, 
+            { bg: '#00c2e0', text: '#172b4d' }  
         ];
+
+        document.addEventListener('click', function() {
+            var openMenus = document.querySelectorAll('.color-picker-menu');
+            openMenus.forEach(function(m) { m.remove(); });
+        });
 
         /* ── OMSCHRIJVING PARSER ── */
         function parseDescriptionFields(desc) {
@@ -369,19 +435,17 @@
                     td.dataset.ploeg  = ploeg;
                     td.dataset.datum  = datumsVanDeWeek[i];
                     
-                    /* Drag and Drop Listeners */
                     td.addEventListener('dragover',  allowDrop);
                     td.addEventListener('dragleave', dragLeave);
                     td.addEventListener('drop',      drop);
                     
-                    /* Knopje toevoegen dat enkel verschijnt bij hover op de cel */
                     var addBtn = document.createElement('button');
                     addBtn.className = 'cell-add-btn';
                     addBtn.innerHTML = '+';
                     addBtn.type = 'button';
-                    addBtn.title = 'Snelle interventie toevoegen op deze dag/ploeg';
+                    addBtn.title = 'Snelle interventie toevoegen';
                     addBtn.addEventListener('click', function(e) {
-                        e.stopPropagation(); // Voorkom bijwerkingen op de cel
+                        e.stopPropagation();
                         var pzone = this.parentElement;
                         voegDirecteInterventieToe(pzone.dataset.ploeg, pzone.dataset.datum);
                     });
@@ -397,7 +461,6 @@
             return 'zone-' + ploeg.replace(/[\s\/]+/g, '-') + '-' + datum;
         }
 
-        /* ── KLEUR OP BASIS VAN TRELLO-LID ── */
         function bepaalTrelloKaartStijl(members) {
             var standaard = { bg: '#eaecf0', text: '#172b4d' };
             if (!members || members.length === 0) return standaard;
@@ -428,7 +491,6 @@
                 var interventions = resultaten[1];
                 loadingMsg.style.display = 'none';
 
-                /* Laad planning + infoPlaatsing per Trello-kaart */
                 var cardPromises = cards.map(function(card) {
                     return Promise.all([
                         t.get(card.id, 'shared', 'planning',      null),
@@ -445,7 +507,7 @@
                         alleItems.push({
                             type:          'intervention',
                             card:          int,
-                            planning:      { ploeg: int.ploeg, datum: int.datum }, // Zorgt dat de data direct gekoppeld is
+                            planning:      { ploeg: int.ploeg, datum: int.datum },
                             infoPlaatsing: int.infoPlaatsing || ''
                         });
                     });
@@ -465,8 +527,7 @@
                         if (item.planning && item.planning.ploeg && item.planning.datum) {
                             var zone = document.getElementById(maakZoneId(item.planning.ploeg, item.planning.datum));
                             if (zone) { 
-                                // Plaats de kaart vóór het toevoegknopje in de cel
-                                zone.insertBefore(cardEl, zone.lastChild); 
+                                zone.appendChild(cardEl); 
                                 return; 
                             }
                         }
@@ -510,15 +571,26 @@
                 var addressEl = document.createElement('div');
                 addressEl.className       = 'card-address';
                 addressEl.contentEditable = true;
-                addressEl.innerText       = adres || '📍 Voeg adres toe...';
+                
+                // Als er geen adres is, laten we de div leeg in plaats van de placeholder er hard in te zetten.
+                // CSS regelt via :empty dat het veld onzichtbaar is tenzij we over de kaart hoveren.
+                if (adres && adres !== '📍 Voeg adres toe...') {
+                    addressEl.innerText = adres;
+                } else {
+                    addressEl.innerText = '';
+                }
+
+                // Placeholder-tekst gedrag bij focus
                 addressEl.addEventListener('focus', function() {
                     el.draggable = false;
-                    if (addressEl.innerText === '📍 Voeg adres toe...') addressEl.innerText = '';
+                    if (addressEl.innerText === '') {
+                        addressEl.setAttribute('placeholder-fallback', '');
+                    }
                 });
+                
                 addressEl.addEventListener('blur', function() {
                     el.draggable = true;
                     var txt = addressEl.innerText.trim();
-                    if (!txt) addressEl.innerText = '📍 Voeg adres toe...';
                     updateInterventionAddress(id, txt);
                 });
                 bodyContainer.appendChild(addressEl);
@@ -560,7 +632,7 @@
             bodyContainer.appendChild(infoEl);
             el.appendChild(bodyContainer);
 
-            /* 4. Kleur & knoppen */
+            /* 4. Kleur & Knoppen */
             if (isIntervention) {
                 var stijl = savedColorObj || CUSTOM_COLORS[0];
                 el.style.backgroundColor = stijl.bg;
@@ -572,9 +644,29 @@
                 var colorBtn = document.createElement('span');
                 colorBtn.className = 'color-btn';
                 colorBtn.innerHTML = '🎨';
+                
                 colorBtn.addEventListener('click', function(e) {
                     e.stopPropagation();
-                    cycleInterventionColor(id, el);
+                    
+                    var openMenus = document.querySelectorAll('.color-picker-menu');
+                    openMenus.forEach(function(m) { m.remove(); });
+
+                    var pickerMenu = document.createElement('div');
+                    pickerMenu.className = 'color-picker-menu';
+
+                    CUSTOM_COLORS.forEach(function(kleur) {
+                        var swatch = document.createElement('div');
+                        swatch.className = 'color-swatch';
+                        swatch.style.backgroundColor = kleur.bg;
+                        swatch.addEventListener('click', function(e2) {
+                            e2.stopPropagation();
+                            setInterventionColor(id, el, kleur);
+                            pickerMenu.remove();
+                        });
+                        pickerMenu.appendChild(swatch);
+                    });
+
+                    controls.appendChild(pickerMenu);
                 });
                 controls.appendChild(colorBtn);
 
@@ -627,27 +719,17 @@
             });
         }
 
-        function cycleInterventionColor(id, kaartEl) {
+        function setInterventionColor(id, kaartEl, gekozenKleurObj) {
             t.get('board', 'shared', 'interventions', []).then(function(lijst) {
-                var volgendeKleur = null;
                 var geupdatet = lijst.map(function(item) {
                     if (item.id === id) {
-                        var idx = 0;
-                        if (item.colorObj) {
-                            for (var i = 0; i < CUSTOM_COLORS.length; i++) {
-                                if (CUSTOM_COLORS[i].bg === item.colorObj.bg) { idx = i; break; }
-                            }
-                        }
-                        item.colorObj = CUSTOM_COLORS[(idx + 1) % CUSTOM_COLORS.length];
-                        volgendeKleur = item.colorObj;
+                        item.colorObj = gekozenKleurObj;
                     }
                     return item;
                 });
                 return t.set('board', 'shared', 'interventions', geupdatet).then(function() {
-                    if (volgendeKleur) {
-                        kaartEl.style.backgroundColor = volgendeKleur.bg;
-                        kaartEl.style.color           = volgendeKleur.text;
-                    }
+                    kaartEl.style.backgroundColor = gekozenKleurObj.bg;
+                    kaartEl.style.color           = gekozenKleurObj.text;
                 });
             });
         }
@@ -660,8 +742,8 @@
             var nieuw = {
                 id:            'int-' + Date.now(),
                 name:          naam.trim(),
-                ploeg:         ploeg,      // Slaat direct de ploeg op van de cel waar geklikt is
-                datum:         datum,      // Slaat direct de datum op van de cel waar geklikt is
+                ploeg:         ploeg,
+                datum:         datum,
                 members:       [],
                 address:       '',
                 infoPlaatsing: '',
@@ -699,12 +781,31 @@
         function drop(e) {
             e.preventDefault();
             this.classList.remove('dragover');
+            
             var id = e.dataTransfer.getData("text");
             var cardEl = document.getElementById(id);
             if (!cardEl) return;
 
             var nieuwePloeg = this.dataset.ploeg;
             var nieuweDatum = this.dataset.datum;
+
+            if (!nieuwePloeg) {
+                if (id.indexOf('int-') === 0) {
+                    t.get('board', 'shared', 'interventions', []).then(function(lijst) {
+                        var geupdatet = lijst.map(function(item) {
+                            if (item.id === id) {
+                                item.ploeg = null;
+                                item.datum = null;
+                            }
+                            return item;
+                        });
+                        return t.set('board', 'shared', 'interventions', geupdatet);
+                    });
+                } else {
+                    t.remove(id, 'shared', 'planning');
+                }
+                return;
+            }
 
             if (id.indexOf('int-') === 0) {
                 t.get('board', 'shared', 'interventions', []).then(function(lijst) {
@@ -721,6 +822,11 @@
                 t.set(id, 'shared', 'planning', { ploeg: nieuwePloeg, datum: nieuweDatum });
             }
         }
+
+        var poolEl = document.getElementById('sidebar-pool');
+        poolEl.addEventListener('dragover', allowDrop);
+        poolEl.addEventListener('dragleave', dragLeave);
+        poolEl.addEventListener('drop', drop);
     </script>
 </body>
 </html>
