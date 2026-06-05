@@ -2,14 +2,12 @@
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
-    <!-- 1. Laad de Trello bibliotheek in -->
     <script src="https://p.trellocdn.com/power-up.min.js"></script>
 </head>
 <body>
-
-    <!-- 2. De eigenlijke JavaScript code MOET binnen script tags staan! -->
     <script>
         TrelloPowerUp.initialize({
+
             'board-buttons': function (t, opts) {
                 return [{
                     icon: 'https://cdn.jsdelivr.net/gh/clistudios/trello-planning@main/icon.svg',
@@ -23,24 +21,25 @@
                     }
                 }];
             },
-            
+
             'card-back-section': function(t, options) {
                 return t.get('card', 'shared', 'infoPlaatsing')
-                .then(function(infoPlaatsing) {
-                    if (infoPlaatsing && infoPlaatsing.trim() !== "") {
-                        return {
-                            title: 'ℹ️ Info Plaatsing (Planning)',
-                            icon: 'https://cdn.jsdelivr.net/gh/clistudios/trello-planning@main/icon.svg',
-                            content: {
-                                type: 'iframe',
-                                url: './card-back.html',
-                                height: 50
-                            }
-                        };
-                    }
-                    return null;
-                });
+                    .then(function(infoPlaatsing) {
+                        if (infoPlaatsing && infoPlaatsing.trim() !== '') {
+                            return {
+                                title: 'ℹ️ Info Plaatsing (Planning)',
+                                icon: 'https://cdn.jsdelivr.net/gh/clistudios/trello-planning@main/icon.svg',
+                                content: {
+                                    type: 'iframe',
+                                    url: './card-back.html',
+                                    height: 50
+                                }
+                            };
+                        }
+                        return null;
+                    });
             }
+
         });
     </script>
 </body>
