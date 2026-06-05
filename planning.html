@@ -94,32 +94,6 @@
             line-height: 1.2;
             outline: none;
             word-break: break-word;
-            transition: opacity 0.15s, max-height 0.15s, margin 0.15s;
-        }
-
-        /* Verberg 'Voeg adres toe...' placeholder standaard */
-        .planning-card .card-address[contenteditable="true"] {
-            opacity: 0;
-            max-height: 0;
-            overflow: hidden;
-            margin: 0;
-        }
-
-        /* Toon het lege adresveld zodra de muis over de SPECIFIEKE kaart beweegt OF als er al echte tekst in staat */
-        .planning-card:hover .card-address[contenteditable="true"],
-        .planning-card .card-address[contenteditable="true"]:not(:empty) {
-            opacity: 0.7;
-            max-height: 40px;
-            margin-top: 2px;
-        }
-
-        /* Geef extra focus-styling als Lauren er effectief in typt */
-        .planning-card .card-address[contenteditable="true"]:focus {
-            opacity: 1 !important;
-            max-height: 40px;
-            background-color: rgba(255, 255, 255, 0.5);
-            padding: 2px;
-            border-radius: 2px;
         }
 
         /* ── INFO PLAATSING STYLING ── */
@@ -246,7 +220,7 @@
         .dropzone { 
             min-height: 110px; 
             position: relative;
-            padding-bottom: 26px !important;
+            padding-bottom: 26px !important; /* Ruimte onderin voor de + knop zodat kaarten er niet overheen vallen */
         }
         .dropzone.dragover { background-color: #dce9fc; outline: 2px dashed #0052cc; }
         
@@ -289,12 +263,9 @@
             .main-content { padding: 0 !important; margin: 0 !important; width: 100% !important; }
             .card-controls, .cell-add-btn, .color-picker-menu { display: none !important; }
             .card-info-placement:empty { display: none !important; }
-            /* Verberg lege adres placeholders volledig tijdens print */
-            .card-address { display: none !important; }
-            .card-address:not(:empty) { display: block !important; }
             .card-info-placement {
                 background-color: transparent !important;
-                border-left: 2px solid #5e6c84 !important;
+                border-left: 2px solid #5e6484 !important;
                 padding: 2px 0 0 4px !important;
                 margin-top: 4px !important;
             }
@@ -337,16 +308,17 @@
         var datumsVanDeWeek = [];
 
         var CUSTOM_COLORS = [
-            { bg: '#dfe1e6', text: '#172b4d' }, 
-            { bg: '#ff9f1a', text: '#172b4d' }, 
-            { bg: '#61bd4f', text: '#ffffff' }, 
-            { bg: '#f2d600', text: '#172b4d' }, 
-            { bg: '#0079bf', text: '#ffffff' }, 
-            { bg: '#89609e', text: '#ffffff' }, 
-            { bg: '#ec4c3c', text: '#ffffff' }, 
-            { bg: '#00c2e0', text: '#172b4d' }  
+            { bg: '#dfe1e6', text: '#172b4d' }, // Standaard Grijs
+            { bg: '#ff9f1a', text: '#172b4d' }, // Oranje
+            { bg: '#61bd4f', text: '#ffffff' }, // Groen
+            { bg: '#f2d600', text: '#172b4d' }, // Geel
+            { bg: '#0079bf', text: '#ffffff' }, // Blauw
+            { bg: '#89609e', text: '#ffffff' }, // Paars
+            { bg: '#ec4c3c', text: '#ffffff' }, // Rood
+            { bg: '#00c2e0', text: '#172b4d' }  // Turkoois
         ];
 
+        /* Sluit openstaande kleurmenu's als er ergens anders wordt geklikt */
         document.addEventListener('click', function() {
             var openMenus = document.querySelectorAll('.color-picker-menu');
             openMenus.forEach(function(m) { m.remove(); });
@@ -434,11 +406,13 @@
                     td.id = maakZoneId(ploeg, datumsVanDeWeek[i]);
                     td.dataset.ploeg  = ploeg;
                     td.dataset.datum  = datumsVanDeWeek[i];
-                    
+
+                    /* Drag and Drop Listeners op de cel zelf */
                     td.addEventListener('dragover',  allowDrop);
                     td.addEventListener('dragleave', dragLeave);
                     td.addEventListener('drop',      drop);
-                    
+
+                    /* Inline plus-knopje: verschijnt bij hover over de cel en maakt een snelle interventie aan */
                     var addBtn = document.createElement('button');
                     addBtn.className = 'cell-add-btn';
                     addBtn.innerHTML = '+';
@@ -450,7 +424,7 @@
                         voegDirecteInterventieToe(pzone.dataset.ploeg, pzone.dataset.datum);
                     });
                     td.appendChild(addBtn);
-                    
+
                     tr.appendChild(td);
                 }
                 tbody.appendChild(tr);
@@ -461,6 +435,7 @@
             return 'zone-' + ploeg.replace(/[\s\/]+/g, '-') + '-' + datum;
         }
 
+        /* ── KLEUR OP BASIS VAN TRELLO-LID ── */
         function bepaalTrelloKaartStijl(members) {
             var standaard = { bg: '#eaecf0', text: '#172b4d' };
             if (!members || members.length === 0) return standaard;
@@ -527,6 +502,7 @@
                         if (item.planning && item.planning.ploeg && item.planning.datum) {
                             var zone = document.getElementById(maakZoneId(item.planning.ploeg, item.planning.datum));
                             if (zone) { 
+                                // Drag-veilig: kaarten worden nu netjes boven de plus-knop geplaatst
                                 zone.appendChild(cardEl); 
                                 return; 
                             }
@@ -571,26 +547,15 @@
                 var addressEl = document.createElement('div');
                 addressEl.className       = 'card-address';
                 addressEl.contentEditable = true;
-                
-                // Als er geen adres is, laten we de div leeg in plaats van de placeholder er hard in te zetten.
-                // CSS regelt via :empty dat het veld onzichtbaar is tenzij we over de kaart hoveren.
-                if (adres && adres !== '📍 Voeg adres toe...') {
-                    addressEl.innerText = adres;
-                } else {
-                    addressEl.innerText = '';
-                }
-
-                // Placeholder-tekst gedrag bij focus
+                addressEl.innerText       = adres || '📍 Voeg adres toe...';
                 addressEl.addEventListener('focus', function() {
                     el.draggable = false;
-                    if (addressEl.innerText === '') {
-                        addressEl.setAttribute('placeholder-fallback', '');
-                    }
+                    if (addressEl.innerText === '📍 Voeg adres toe...') addressEl.innerText = '';
                 });
-                
                 addressEl.addEventListener('blur', function() {
                     el.draggable = true;
                     var txt = addressEl.innerText.trim();
+                    if (!txt) addressEl.innerText = '📍 Voeg adres toe...';
                     updateInterventionAddress(id, txt);
                 });
                 bodyContainer.appendChild(addressEl);
@@ -645,9 +610,11 @@
                 colorBtn.className = 'color-btn';
                 colorBtn.innerHTML = '🎨';
                 
+                /* KLIJK OP PALET: Open inline menu */
                 colorBtn.addEventListener('click', function(e) {
-                    e.stopPropagation();
+                    e.stopPropagation(); // Voorkom direct sluiten via document click listener
                     
+                    // Verwijder eventuele andere openstaande menu's
                     var openMenus = document.querySelectorAll('.color-picker-menu');
                     openMenus.forEach(function(m) { m.remove(); });
 
@@ -719,6 +686,7 @@
             });
         }
 
+        /* Directe kleurtoewijzing via menu */
         function setInterventionColor(id, kaartEl, gekozenKleurObj) {
             t.get('board', 'shared', 'interventions', []).then(function(lijst) {
                 var geupdatet = lijst.map(function(item) {
@@ -764,7 +732,7 @@
             });
         }
 
-        /* ── DRAG AND DROP LOGICA ── */
+        /* ── DRAG AND DROP LOGICA (HERSTELD & STABIEL) ── */
         function allowDrop(e) {
             e.preventDefault();
             this.classList.add('dragover');
@@ -789,8 +757,10 @@
             var nieuwePloeg = this.dataset.ploeg;
             var nieuweDatum = this.dataset.datum;
 
+            // Als er geen ploeg/datum is (omdat er naar de linker zijbalk gesleept is)
             if (!nieuwePloeg) {
                 if (id.indexOf('int-') === 0) {
+                    /* Custom interventie terug naar zijbalk: ontkoppel datum/ploeg */
                     t.get('board', 'shared', 'interventions', []).then(function(lijst) {
                         var geupdatet = lijst.map(function(item) {
                             if (item.id === id) {
@@ -802,11 +772,13 @@
                         return t.set('board', 'shared', 'interventions', geupdatet);
                     });
                 } else {
+                    /* Trello-kaart terug naar zijbalk */
                     t.remove(id, 'shared', 'planning');
                 }
                 return;
             }
 
+            // Slepen NAAR een cel in het rooster
             if (id.indexOf('int-') === 0) {
                 t.get('board', 'shared', 'interventions', []).then(function(lijst) {
                     var geupdatet = lijst.map(function(item) {
@@ -823,6 +795,7 @@
             }
         }
 
+        // Zorg dat de sidebar-pool ook een geldige dropzone is om kaarten terug te slepen
         var poolEl = document.getElementById('sidebar-pool');
         poolEl.addEventListener('dragover', allowDrop);
         poolEl.addEventListener('dragleave', dragLeave);
