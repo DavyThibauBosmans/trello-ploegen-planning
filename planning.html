@@ -96,6 +96,25 @@
             word-break: break-word;
         }
 
+        /* ── GEPLAND-BADGE (Stap 1.2) ──
+           Subtiele pill onderaan de bron-kaart in de zijbalk die toont
+           hoe vaak het project al is ingepland. Witte translucente achtergrond
+           zodat hij op elke kaartkleur leesbaar blijft. Verborgen bij 0×. */
+        .plan-badge {
+            display: none;
+            align-self: flex-start;
+            margin-top: 5px;
+            font-size: 10px;
+            font-weight: 700;
+            line-height: 1.4;
+            background-color: rgba(255, 255, 255, 0.85);
+            color: #172b4d;
+            padding: 1px 7px;
+            border-radius: 10px;
+            letter-spacing: 0.02em;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.12);
+        }
+
         /* ── INFO PLAATSING STYLING ── */
         .card-info-placement {
             font-size: 11px;
@@ -338,6 +357,11 @@
         var WEEKDAGEN = ['Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag'];
         var datumsVanDeWeek = [];
 
+        /* Cache van de volledige Trello-kaartdata (naam, adres, desc, members),
+           zodat we bij een drop een nieuwe instantie kunnen opbouwen zonder
+           opnieuw bij Trello te moeten gaan halen. */
+        var trelloKaartCache = {};
+
         var CUSTOM_COLORS = [
             { bg: '#dfe1e6', text: '#172b4d' }, // Standaard Grijs
             { bg: '#ff9f1a', text: '#172b4d' }, // Oranje
@@ -478,10 +502,19 @@
             return standaard;
         }
 
+        /* ── HULP: UNIEKE INSTANTIE-ID ── */
+        function genInstanceId(cardId) {
+            return cardId + '::' + Date.now() + '-' + Math.floor(Math.random() * 9999);
+        }
+        function cardIdVanInstantie(instanceId) {
+            return instanceId.split('::')[0];
+        }
+
         /* ── RENDER ── */
         t.render(function() {
             berekenWeekDatums();
             bouwTabel();
+            trelloKaartCache = {};
 
             var pool       = document.getElementById('sidebar-pool');
             var loadingMsg = document.getElementById('loading-msg');
@@ -499,46 +532,60 @@
 
                 var cardPromises = cards.map(function(card) {
                     return Promise.all([
-                        t.get(card.id, 'shared', 'planning',      null),
-                        t.get(card.id, 'shared', 'infoPlaatsing', '')
+                        t.get(card.id, 'shared', 'placements',    null),  // nieuw model (lijst van instanties)
+                        t.get(card.id, 'shared', 'planning',      null),  // legacy enkelvoudig
+                        t.get(card.id, 'shared', 'infoPlaatsing', '')     // legacy info
                     ]).then(function(stored) {
-                        return { type: 'trello', card: card, planning: stored[0], infoPlaatsing: stored[1] };
+                        var placements = stored[0];
+
+                        /* MIGRATIE: bestond er nog geen placements-lijst maar wél een
+                           oude enkelvoudige planning? Zet die om naar één instantie.
+                           Oude sleutels blijven staan (veilig, niet-destructief). */
+                        if (!Array.isArray(placements)) {
+                            var oud = stored[1];
+                            if (oud && oud.ploeg && oud.datum) {
+                                placements = [{
+                                    instanceId:    genInstanceId(card.id),
+                                    ploeg:         oud.ploeg,
+                                    datum:         oud.datum,
+                                    infoPlaatsing: stored[2] || ''
+                                }];
+                                t.set(card.id, 'shared', 'placements', placements);
+                            } else {
+                                placements = [];
+                            }
+                        }
+                        return { card: card, placements: placements };
                     });
                 });
 
                 return Promise.all(cardPromises).then(function(trelloResultaten) {
-                    var alleItems = [];
-                    trelloResultaten.forEach(function(r)  { alleItems.push(r); });
-                    interventions.forEach(function(int) {
-                        alleItems.push({
-                            type:          'intervention',
-                            card:          int,
-                            planning:      { ploeg: int.ploeg, datum: int.datum },
-                            infoPlaatsing: int.infoPlaatsing || ''
+                    /* 1) Trello-projecten: bron blijft ALTIJD in de zijbalk,
+                          elke instantie verschijnt in zijn cel. */
+                    trelloResultaten.forEach(function(r) {
+                        trelloKaartCache[r.card.id] = r.card;
+
+                        var bron = maakTrelloBronKaart(r.card, r.placements.length);
+                        pool.appendChild(bron);
+
+                        r.placements.forEach(function(p) {
+                            if (!p.ploeg || !p.datum) return;
+                            var zone = document.getElementById(maakZoneId(p.ploeg, p.datum));
+                            if (zone) {
+                                zone.appendChild(maakTrelloInstantieKaart(r.card, p));
+                            }
                         });
                     });
 
-                    alleItems.forEach(function(item) {
-                        var cardEl = maakKaartElement(
-                            item.card.id,
-                            item.card.name,
-                            item.card.members,
-                            (item.type === 'intervention'),
-                            item.card.colorObj,
-                            item.card.address,
-                            item.infoPlaatsing,
-                            item.card.desc
-                        );
-
-                        if (item.planning && item.planning.ploeg && item.planning.datum) {
-                            var zone = document.getElementById(maakZoneId(item.planning.ploeg, item.planning.datum));
-                            if (zone) {
-                                // Drag-veilig: kaarten worden nu netjes boven de plus-knop geplaatst
-                                zone.appendChild(cardEl);
-                                return;
-                            }
+                    /* 2) Interventies (snelle kaartjes): ongewijzigd gedrag. */
+                    interventions.forEach(function(int) {
+                        var el = maakInterventieKaart(int);
+                        if (int.ploeg && int.datum) {
+                            var zone = document.getElementById(maakZoneId(int.ploeg, int.datum));
+                            (zone || pool).appendChild(el);
+                        } else {
+                            pool.appendChild(el);
                         }
-                        pool.appendChild(cardEl);
                     });
                 });
             })
@@ -583,132 +630,199 @@
             });
         }
 
-        /* ── KAART GENERATOR ── */
-        function maakKaartElement(id, naam, members, isIntervention, savedColorObj, adres, infoPlaatsingText, desc) {
-            var el = document.createElement('div');
-            el.className = 'planning-card';
-            el.id        = id;
-            el.draggable = true;
-
-            var bodyContainer = document.createElement('div');
-            bodyContainer.className = 'card-body';
-
-            /* 1. Titel */
+        /* ── GEDEELDE PROJECTINHOUD (read-only uit Trello) ── */
+        function vulTrelloBasis(bodyContainer, card) {
             var titleEl = document.createElement('div');
             titleEl.className = 'card-title';
-            titleEl.innerText = naam;
-            if (isIntervention) {
-                maakBewerkbaarVeld(titleEl, function(txt) {
-                    updateInterventionText(id, txt);
-                });
-            }
+            titleEl.innerText = card.name;
             bodyContainer.appendChild(titleEl);
 
-            /* 2. Adres & extra velden */
-            if (isIntervention) {
-                var addressEl = document.createElement('div');
-                addressEl.className = 'card-address card-address-editable';
-                addressEl.innerText = adres || '';
-                // Pinnetje (📍) wordt via CSS getoond zodra het veld NIET leeg is.
-                maakBewerkbaarVeld(addressEl, function(txt) {
-                    updateInterventionAddress(id, txt);
-                });
-                bodyContainer.appendChild(addressEl);
-            } else {
-                if (adres) {
-                    var adresEl = document.createElement('div');
-                    adresEl.className = 'card-address';
-                    adresEl.innerText = '📍 ' + adres;
-                    bodyContainer.appendChild(adresEl);
-                }
-                if (desc) {
-                    var extraFields = parseDescriptionFields(desc);
-                    for (var label in extraFields) {
-                        if (label.indexOf('Adres') !== -1 && adres) continue;
-                        var fieldEl = document.createElement('div');
-                        fieldEl.className = 'card-address';
-                        fieldEl.innerText = label + ': ' + extraFields[label];
-                        bodyContainer.appendChild(fieldEl);
-                    }
+            if (card.address) {
+                var adresEl = document.createElement('div');
+                adresEl.className = 'card-address';
+                adresEl.innerText = '📍 ' + card.address;
+                bodyContainer.appendChild(adresEl);
+            }
+            if (card.desc) {
+                var extraFields = parseDescriptionFields(card.desc);
+                for (var label in extraFields) {
+                    if (label.indexOf('Adres') !== -1 && card.address) continue;
+                    var fieldEl = document.createElement('div');
+                    fieldEl.className = 'card-address';
+                    fieldEl.innerText = label + ': ' + extraFields[label];
+                    bodyContainer.appendChild(fieldEl);
                 }
             }
+        }
 
-            /* 3. Info Plaatsing */
+        /* ── BRON-KAART (zijbalk, blijft altijd staan) ── */
+        function maakTrelloBronKaart(card, aantalGepland) {
+            var el = document.createElement('div');
+            el.className = 'planning-card';
+            el.id        = card.id;
+            el.draggable = true;
+            el.dataset.rol = 'bron';
+
+            var body = document.createElement('div');
+            body.className = 'card-body';
+            vulTrelloBasis(body, card);
+
+            var badge = document.createElement('span');
+            badge.className = 'plan-badge';
+            body.appendChild(badge);
+
+            el.appendChild(body);
+
+            var stijl = bepaalTrelloKaartStijl(card.members);
+            el.style.backgroundColor = stijl.bg;
+            el.style.color           = stijl.text;
+
+            el.addEventListener('dragstart', drag);
+
+            zetBronBadge(el, aantalGepland);
+            return el;
+        }
+
+        function zetBronBadge(el, count) {
+            if (!el) return;
+            var badge = el.querySelector('.plan-badge');
+            if (!badge) return;
+            if (count > 0) {
+                badge.innerText = '📌 ' + count + '× ingepland';
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        function updateBronBadgeById(cardId, count) {
+            zetBronBadge(document.getElementById(cardId), count);
+        }
+
+        /* ── INSTANTIE-KAART (in een cel, één concrete inplanning) ── */
+        function maakTrelloInstantieKaart(card, placement) {
+            var el = document.createElement('div');
+            el.className = 'planning-card';
+            el.id        = placement.instanceId;
+            el.draggable = true;
+            el.dataset.rol = 'instantie';
+
+            var body = document.createElement('div');
+            body.className = 'card-body';
+            vulTrelloBasis(body, card);
+
+            /* Info plaatsing: per instantie opgeslagen */
             var infoEl = document.createElement('div');
             infoEl.className = 'card-info-placement';
-            infoEl.innerText = infoPlaatsingText || '';
+            infoEl.innerText = placement.infoPlaatsing || '';
             maakBewerkbaarVeld(infoEl, function(txt) {
-                if (isIntervention) { updateInterventionInfo(id, txt); }
-                else                { updateTrelloCardInfo(id, txt);   }
+                updateInstantieInfo(card.id, placement.instanceId, txt);
             });
-            bodyContainer.appendChild(infoEl);
-            el.appendChild(bodyContainer);
+            body.appendChild(infoEl);
 
-            /* 4. Kleur & Knoppen */
-            if (isIntervention) {
-                var stijl = savedColorObj || CUSTOM_COLORS[0];
-                el.style.backgroundColor = stijl.bg;
-                el.style.color           = stijl.text;
+            el.appendChild(body);
 
-                var controls = document.createElement('div');
-                controls.className = 'card-controls';
-
-                var colorBtn = document.createElement('span');
-                colorBtn.className = 'color-btn';
-                colorBtn.innerHTML = '🎨';
-
-                /* KLIK OP PALET: Open inline menu */
-                colorBtn.addEventListener('click', function(e) {
-                    e.stopPropagation(); // Voorkom direct sluiten via document click listener
-
-                    // Verwijder eventuele andere openstaande menu's
-                    var openMenus = document.querySelectorAll('.color-picker-menu');
-                    openMenus.forEach(function(m) { m.remove(); });
-
-                    var pickerMenu = document.createElement('div');
-                    pickerMenu.className = 'color-picker-menu';
-
-                    CUSTOM_COLORS.forEach(function(kleur) {
-                        var swatch = document.createElement('div');
-                        swatch.className = 'color-swatch';
-                        swatch.style.backgroundColor = kleur.bg;
-                        swatch.addEventListener('click', function(e2) {
-                            e2.stopPropagation();
-                            setInterventionColor(id, el, kleur);
-                            pickerMenu.remove();
-                        });
-                        pickerMenu.appendChild(swatch);
-                    });
-
-                    controls.appendChild(pickerMenu);
-                });
-                controls.appendChild(colorBtn);
-
-                var delBtn = document.createElement('span');
-                delBtn.className = 'delete-btn';
-                delBtn.innerHTML = '&times;';
-                delBtn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    verwijderInterventie(id);
-                });
-                controls.appendChild(delBtn);
-                el.appendChild(controls);
-            } else {
-                var stijl = bepaalTrelloKaartStijl(members);
-                el.style.backgroundColor = stijl.bg;
-                el.style.color           = stijl.text;
-            }
+            var stijl = bepaalTrelloKaartStijl(card.members);
+            el.style.backgroundColor = stijl.bg;
+            el.style.color           = stijl.text;
 
             el.addEventListener('dragstart', drag);
             return el;
         }
 
-        /* ── DATA OPSLAG ── */
-        function updateTrelloCardInfo(id, tekst) {
-            if (!tekst) { t.remove(id, 'shared', 'infoPlaatsing'); }
-            else        { t.set(id,   'shared', 'infoPlaatsing', tekst); }
+        /* ── INTERVENTIE-KAART (snelle interventie, ongewijzigd gedrag) ── */
+        function maakInterventieKaart(int) {
+            var id = int.id;
+            var el = document.createElement('div');
+            el.className = 'planning-card';
+            el.id        = id;
+            el.draggable = true;
+            el.dataset.rol = 'interventie';
+
+            var body = document.createElement('div');
+            body.className = 'card-body';
+
+            /* Titel (bewerkbaar) */
+            var titleEl = document.createElement('div');
+            titleEl.className = 'card-title';
+            titleEl.innerText = int.name;
+            maakBewerkbaarVeld(titleEl, function(txt) { updateInterventionText(id, txt); });
+            body.appendChild(titleEl);
+
+            /* Adres (bewerkbaar) – pinnetje via CSS bij ingevuld adres */
+            var addressEl = document.createElement('div');
+            addressEl.className = 'card-address card-address-editable';
+            addressEl.innerText = int.address || '';
+            maakBewerkbaarVeld(addressEl, function(txt) { updateInterventionAddress(id, txt); });
+            body.appendChild(addressEl);
+
+            /* Info plaatsing (bewerkbaar) */
+            var infoEl = document.createElement('div');
+            infoEl.className = 'card-info-placement';
+            infoEl.innerText = int.infoPlaatsing || '';
+            maakBewerkbaarVeld(infoEl, function(txt) { updateInterventionInfo(id, txt); });
+            body.appendChild(infoEl);
+
+            el.appendChild(body);
+
+            /* Kleur & knoppen */
+            var stijl = int.colorObj || CUSTOM_COLORS[0];
+            el.style.backgroundColor = stijl.bg;
+            el.style.color           = stijl.text;
+
+            var controls = document.createElement('div');
+            controls.className = 'card-controls';
+
+            var colorBtn = document.createElement('span');
+            colorBtn.className = 'color-btn';
+            colorBtn.innerHTML = '🎨';
+            colorBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var openMenus = document.querySelectorAll('.color-picker-menu');
+                openMenus.forEach(function(m) { m.remove(); });
+
+                var pickerMenu = document.createElement('div');
+                pickerMenu.className = 'color-picker-menu';
+                CUSTOM_COLORS.forEach(function(kleur) {
+                    var swatch = document.createElement('div');
+                    swatch.className = 'color-swatch';
+                    swatch.style.backgroundColor = kleur.bg;
+                    swatch.addEventListener('click', function(e2) {
+                        e2.stopPropagation();
+                        setInterventionColor(id, el, kleur);
+                        pickerMenu.remove();
+                    });
+                    pickerMenu.appendChild(swatch);
+                });
+                controls.appendChild(pickerMenu);
+            });
+            controls.appendChild(colorBtn);
+
+            var delBtn = document.createElement('span');
+            delBtn.className = 'delete-btn';
+            delBtn.innerHTML = '&times;';
+            delBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                verwijderInterventie(id);
+            });
+            controls.appendChild(delBtn);
+            el.appendChild(controls);
+
+            el.addEventListener('dragstart', drag);
+            return el;
         }
 
+        /* ── DATA OPSLAG: TRELLO-INSTANTIES ── */
+        function updateInstantieInfo(cardId, instanceId, tekst) {
+            t.get(cardId, 'shared', 'placements', []).then(function(lijst) {
+                var arr = Array.isArray(lijst) ? lijst : [];
+                return t.set(cardId, 'shared', 'placements',
+                    arr.map(function(p) { if (p.instanceId === instanceId) p.infoPlaatsing = tekst; return p; })
+                );
+            });
+        }
+
+        /* ── DATA OPSLAG: INTERVENTIES ── */
         function updateInterventionText(id, tekst) {
             t.get('board', 'shared', 'interventions', []).then(function(lijst) {
                 return t.set('board', 'shared', 'interventions',
@@ -733,13 +847,10 @@
             });
         }
 
-        /* Directe kleurtoewijzing via menu */
         function setInterventionColor(id, kaartEl, gekozenKleurObj) {
             t.get('board', 'shared', 'interventions', []).then(function(lijst) {
                 var geupdatet = lijst.map(function(item) {
-                    if (item.id === id) {
-                        item.colorObj = gekozenKleurObj;
-                    }
+                    if (item.id === id) { item.colorObj = gekozenKleurObj; }
                     return item;
                 });
                 return t.set('board', 'shared', 'interventions', geupdatet).then(function() {
@@ -771,11 +882,7 @@
                 return t.set('board', 'shared', 'interventions', lijst);
             })
             .then(function() {
-                // Direct in de DOM tonen (niet wachten op re-render)
-                var cardEl = maakKaartElement(
-                    nieuw.id, nieuw.name, nieuw.members, true,
-                    nieuw.colorObj, nieuw.address, nieuw.infoPlaatsing, null
-                );
+                var cardEl = maakInterventieKaart(nieuw);
                 var zone = document.getElementById(maakZoneId(ploeg, datum));
                 if (zone) { zone.appendChild(cardEl); }
                 else      { document.getElementById('sidebar-pool').appendChild(cardEl); }
@@ -788,7 +895,6 @@
                 return t.set('board', 'shared', 'interventions', gefilterd);
             })
             .then(function() {
-                // Direct uit de DOM verwijderen (niet wachten op re-render)
                 var el = document.getElementById(id);
                 if (el && el.parentNode) { el.parentNode.removeChild(el); }
             });
@@ -806,8 +912,7 @@
 
         function drag(e) {
             /* currentTarget = het element waarop de listener staat (de kaart zelf),
-               ongeacht waar je de kaart vastpakt.
-               (e.target kan een subelement zonder id zijn → daardoor faalde het verslepen) */
+               ongeacht waar je de kaart vastpakt. */
             e.dataTransfer.setData("text", e.currentTarget.id);
         }
 
@@ -815,55 +920,89 @@
             e.preventDefault();
             this.classList.remove('dragover');
 
-            var id = e.dataTransfer.getData("text");
-            var cardEl = document.getElementById(id);
+            var doelZone = this;                 // vastleggen vóór async (this verandert later)
+            var id       = e.dataTransfer.getData("text");
+            var cardEl   = document.getElementById(id);
             if (!cardEl) return;
 
-            var nieuwePloeg = this.dataset.ploeg;
-            var nieuweDatum = this.dataset.datum;
-            var isIntervention = (id.indexOf('int-') === 0);
+            var doelPloeg   = doelZone.dataset.ploeg;
+            var doelDatum   = doelZone.dataset.datum;
+            var naarZijbalk = !doelPloeg;        // geen ploeg → gesleept naar de zijbalk
 
-            // Geen ploeg/datum → er is naar de linker zijbalk gesleept
-            if (!nieuwePloeg) {
-                // 1) DOM direct verplaatsen voor onmiddellijke feedback
-                document.getElementById('sidebar-pool').appendChild(cardEl);
+            var soort;
+            if (id.indexOf('int-') === 0)      soort = 'interventie';
+            else if (id.indexOf('::') !== -1)  soort = 'instantie';
+            else                               soort = 'bron';
 
-                // 2) Data bijwerken
-                if (isIntervention) {
-                    t.get('board', 'shared', 'interventions', []).then(function(lijst) {
-                        var geupdatet = lijst.map(function(item) {
-                            if (item.id === id) {
-                                item.ploeg = null;
-                                item.datum = null;
-                            }
-                            return item;
-                        });
-                        return t.set('board', 'shared', 'interventions', geupdatet);
+            /* ── BRON-KAART ──
+               Blijft altijd in de zijbalk. Slepen naar een cel maakt een NIEUWE instantie. */
+            if (soort === 'bron') {
+                if (naarZijbalk) return;         // al in de zijbalk → niets doen
+
+                var card = trelloKaartCache[id];
+                if (!card) return;
+
+                var nieuwePlacement = {
+                    instanceId:    genInstanceId(id),
+                    ploeg:         doelPloeg,
+                    datum:         doelDatum,
+                    infoPlaatsing: ''
+                };
+
+                t.get(id, 'shared', 'placements', []).then(function(lijst) {
+                    var arr = Array.isArray(lijst) ? lijst : [];
+                    arr.push(nieuwePlacement);
+                    return t.set(id, 'shared', 'placements', arr).then(function() { return arr.length; });
+                }).then(function(aantal) {
+                    doelZone.appendChild(maakTrelloInstantieKaart(card, nieuwePlacement));
+                    updateBronBadgeById(id, aantal);
+                });
+                return;
+            }
+
+            /* ── TRELLO-INSTANTIE ──
+               Naar cel = verplaatsen, naar zijbalk = die instantie verwijderen. */
+            if (soort === 'instantie') {
+                var cardId = cardIdVanInstantie(id);
+
+                if (naarZijbalk) {
+                    if (cardEl.parentNode) cardEl.parentNode.removeChild(cardEl);
+                    t.get(cardId, 'shared', 'placements', []).then(function(lijst) {
+                        var arr = (Array.isArray(lijst) ? lijst : []).filter(function(p) { return p.instanceId !== id; });
+                        return t.set(cardId, 'shared', 'placements', arr).then(function() { return arr.length; });
+                    }).then(function(aantal) {
+                        updateBronBadgeById(cardId, aantal);
                     });
                 } else {
-                    t.remove(id, 'shared', 'planning');
+                    doelZone.appendChild(cardEl);
+                    t.get(cardId, 'shared', 'placements', []).then(function(lijst) {
+                        var arr = Array.isArray(lijst) ? lijst : [];
+                        return t.set(cardId, 'shared', 'placements', arr.map(function(p) {
+                            if (p.instanceId === id) { p.ploeg = doelPloeg; p.datum = doelDatum; }
+                            return p;
+                        }));
+                    });
                 }
                 return;
             }
 
-            // Slepen NAAR een cel in het rooster
-            // 1) DOM direct verplaatsen (de + knop is absoluut gepositioneerd, volgorde maakt niet uit)
-            this.appendChild(cardEl);
-
-            // 2) Data bijwerken
-            if (isIntervention) {
+            /* ── INTERVENTIE ── (ongewijzigd) */
+            if (naarZijbalk) {
+                document.getElementById('sidebar-pool').appendChild(cardEl);
                 t.get('board', 'shared', 'interventions', []).then(function(lijst) {
-                    var geupdatet = lijst.map(function(item) {
-                        if (item.id === id) {
-                            item.ploeg = nieuwePloeg;
-                            item.datum = nieuweDatum;
-                        }
+                    return t.set('board', 'shared', 'interventions', lijst.map(function(item) {
+                        if (item.id === id) { item.ploeg = null; item.datum = null; }
                         return item;
-                    });
-                    return t.set('board', 'shared', 'interventions', geupdatet);
+                    }));
                 });
             } else {
-                t.set(id, 'shared', 'planning', { ploeg: nieuwePloeg, datum: nieuweDatum });
+                doelZone.appendChild(cardEl);
+                t.get('board', 'shared', 'interventions', []).then(function(lijst) {
+                    return t.set('board', 'shared', 'interventions', lijst.map(function(item) {
+                        if (item.id === id) { item.ploeg = doelPloeg; item.datum = doelDatum; }
+                        return item;
+                    }));
+                });
             }
         }
 
