@@ -434,7 +434,13 @@
             openMenus.forEach(function(m) { m.remove(); });
         });
 
-        /* ── OMSCHRIJVING PARSER ── */
+        /* ── OMSCHRIJVING PARSER ──
+           DATA-BELEID (Stap 1.5): de Trello-kaartomschrijving is voor deze
+           Power-Up uitsluitend ALLEEN-LEZEN. We parsen hem hier enkel om de
+           projectvelden te tónen. Er wordt NOOIT planningsdata teruggeschreven
+           naar de omschrijving (of via de Trello REST API). Alle planningsdata
+           — placements, interventies, archief-index — leeft puur in plugin-data
+           via t.set. Voeg hier dus nooit schrijflogica naar card.desc toe. */
         function parseDescriptionFields(desc) {
             if (!desc) return {};
             var lines = desc.split('\n');
@@ -666,7 +672,7 @@
             pool.innerHTML = '';
 
             return Promise.all([
-                t.cards('id', 'name', 'members', 'address', 'desc', 'idList'),
+                t.cards('id', 'name', 'members', 'address', 'desc', 'idList'),  // 'desc' is ALLEEN-LEZEN (zie data-beleid)
                 t.lists('id', 'name'),
                 t.get('board', 'shared', 'interventions', []),
                 t.get('board', 'shared', 'plannedCardIds', [])
