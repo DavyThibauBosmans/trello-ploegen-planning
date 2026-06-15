@@ -240,6 +240,44 @@
             text-align: center;
             margin-top: 8px;
         }
+
+        /* Volledige omschrijving + extra secties in de popup (Stap 2.1) */
+        .card-popup-section-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #5e6c84;
+            margin-top: 14px;
+            padding-top: 10px;
+            border-top: 1px solid #ebecf0;
+        }
+        .card-popup-desc {
+            white-space: pre-wrap;       /* behoudt regeleinden uit de Trello-omschrijving */
+            word-break: break-word;
+            font-size: 13px;
+            line-height: 1.5;
+            color: #172b4d;
+            margin-top: 6px;
+        }
+        .card-popup-labels {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin: 8px 0 4px;
+        }
+        .card-popup-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 4px;
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.15);
+        }
+
+        /* ── INFO PLAATSING STYLING ── */
+        .card-info-placement {
+            font-size: 11px;
             font-weight: 500;
             margin-top: 5px;
             padding: 4px 6px;
@@ -743,7 +781,7 @@
             pool.innerHTML = '';
 
             return Promise.all([
-                t.cards('id', 'name', 'members', 'address', 'desc', 'idList', 'url'),  // 'desc' is ALLEEN-LEZEN (zie data-beleid); 'url' voor t.navigate bij archief
+                t.cards('id', 'name', 'members', 'address', 'desc', 'idList', 'url', 'labels', 'due', 'dueComplete', 'locationName'),  // 'desc' ALLEEN-LEZEN; 'url' voor archief; labels/due/locationName voor de info-popup
                 t.lists('id', 'name'),
                 t.get('board', 'shared', 'interventions', []),
                 t.get('board', 'shared', 'plannedCardIds', [])
@@ -972,6 +1010,28 @@
             if (bestaand && bestaand.parentNode) bestaand.parentNode.removeChild(bestaand);
         }
 
+        /* Trello label-kleuren → hex (donker/licht-varianten vallen terug op de basiskleur) */
+        var TRELLO_LABEL_KLEUREN = {
+            green:'#61bd4f', yellow:'#f2d600', orange:'#ff9f1a', red:'#eb5a46',
+            purple:'#c377e0', blue:'#0079bf', sky:'#00c2e0', lime:'#51e898',
+            pink:'#ff78cb', black:'#344563'
+        };
+        function labelKleur(c) {
+            if (!c) return '#b3bac5';
+            var basis = String(c).split('_')[0];   // 'green_dark' → 'green'
+            return TRELLO_LABEL_KLEUREN[basis] || '#b3bac5';
+        }
+        function formatteerDatum(iso) {
+            if (!iso) return '';
+            var d = new Date(iso);
+            if (isNaN(d.getTime())) return '';
+            var dd = String(d.getDate()).padStart(2, '0');
+            var mm = String(d.getMonth() + 1).padStart(2, '0');
+            var hh = String(d.getHours()).padStart(2, '0');
+            var mi = String(d.getMinutes()).padStart(2, '0');
+            return dd + '/' + mm + '/' + d.getFullYear() + ' ' + hh + ':' + mi;
+        }
+
         function toonKaartPopup(kaartData, info) {
             sluitKaartPopup();
 
@@ -1010,33 +1070,79 @@
             titel.innerText = kaartData.name || '(naam onbekend)';
             popup.appendChild(titel);
 
-            if (kaartData.address) {
+            /* Projectleider(s) / leden */
+            var ledenNamen = (kaartData.members || []).map(function(m) {
+                return m.fullName || m.username || m.initials || '';
+            }).filter(function(n) { return n; });
+            if (ledenNamen.length) {
+                var leden = document.createElement('div');
+                leden.className = 'card-popup-field';
+                leden.innerText = '👥 ' + ledenNamen.join(', ');
+                popup.appendChild(leden);
+            }
+
+            /* Labels (Trello-kleurlabels) */
+            if (kaartData.labels && kaartData.labels.length) {
+                var labelWrap = document.createElement('div');
+                labelWrap.className = 'card-popup-labels';
+                kaartData.labels.forEach(function(lbl) {
+                    var chip = document.createElement('span');
+                    chip.className = 'card-popup-label';
+                    chip.style.backgroundColor = labelKleur(lbl.color);
+                    chip.innerText = lbl.name || (lbl.color || 'label');
+                    labelWrap.appendChild(chip);
+                });
+                popup.appendChild(labelWrap);
+            }
+
+            /* Vervaldatum */
+            if (kaartData.due) {
+                var due = document.createElement('div');
+                due.className = 'card-popup-field';
+                due.innerText = '📅 Vervaldatum: ' + formatteerDatum(kaartData.due)
+                    + (kaartData.dueComplete ? ' ✓ voltooid' : '');
+                popup.appendChild(due);
+            }
+
+            /* Adres / locatie */
+            var adresTekst = kaartData.address || kaartData.locationName || '';
+            if (adresTekst) {
                 var adr = document.createElement('div');
                 adr.className = 'card-popup-field';
-                adr.innerText = '📍 ' + kaartData.address;
+                adr.innerText = '📍 ' + adresTekst;
                 popup.appendChild(adr);
             }
 
-            /* Achtergrondvelden uit de omschrijving (zelfde parser als de kaarten) */
-            var heeftVelden = false;
-            if (kaartData.desc) {
-                var velden = parseDescriptionFields(kaartData.desc);
-                for (var label in velden) {
-                    if (label.indexOf('Adres') !== -1 && kaartData.address) continue;
-                    var f = document.createElement('div');
-                    f.className = 'card-popup-field';
-                    f.innerText = label + ': ' + velden[label];
-                    popup.appendChild(f);
-                    heeftVelden = true;
-                }
-            }
-            if (!kaartData.address && !heeftVelden) {
+            /* Volledige omschrijving (alle kaartinfo, niet enkel de planningsvelden) */
+            if (kaartData.desc && kaartData.desc.trim()) {
+                var descLabel = document.createElement('div');
+                descLabel.className = 'card-popup-section-label';
+                descLabel.innerText = '📝 Omschrijving';
+                popup.appendChild(descLabel);
+
+                var descBlok = document.createElement('div');
+                descBlok.className = 'card-popup-desc';
+                descBlok.innerText = kaartData.desc;   // innerText = veilig, behoudt regeleinden via pre-wrap
+                popup.appendChild(descBlok);
+            } else if (!adresTekst && !ledenNamen.length) {
                 var leeg = document.createElement('div');
                 leeg.className = 'card-popup-field';
                 leeg.style.fontStyle = 'italic';
                 leeg.style.opacity = '0.7';
                 leeg.innerText = 'Geen extra info beschikbaar — open de volledige kaart voor alle details.';
                 popup.appendChild(leeg);
+            }
+
+            /* Voor gearchiveerde kaarten hebben we enkel de bewaarde momentopname;
+               wijs erop dat de volledige (actuele) inhoud achter de knop zit. */
+            if (!info.kanTonen) {
+                var archiefNoot = document.createElement('div');
+                archiefNoot.className = 'card-popup-field';
+                archiefNoot.style.fontStyle = 'italic';
+                archiefNoot.style.opacity = '0.7';
+                archiefNoot.style.marginTop = '8px';
+                archiefNoot.innerText = '📦 Gearchiveerde kaart — beperkte momentopname.';
+                popup.appendChild(archiefNoot);
             }
 
             /* Knop naar de échte kaart (sluit de planning, zoals voorheen) */
