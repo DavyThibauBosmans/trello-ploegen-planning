@@ -287,6 +287,7 @@
             outline: none;
             color: #172b4d !important;
             word-break: break-word;
+            white-space: pre-wrap; /* Enter/Shift+Enter fix: regeleinden tonen */
         }
 
         .card-info-placement:focus {
@@ -393,10 +394,103 @@
             flex-direction: column;
         }
 
+        .main-content-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
         .main-content h2 {
             font-size: 16px;
             font-weight: 700;
-            margin: 0 0 14px 0;
+            margin: 0;
+        }
+
+        /* ── STAP 2.2: KLEURENLEGENDE PROJECTLEIDERS ──
+           Subtiele, inklapbare legende die kleurcodes koppelt aan projectleiders. */
+        .legenda {
+            background-color: #fff;
+            border: 1px solid #dfe1e6;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            font-size: 12px;
+            overflow: hidden;
+        }
+        .legenda-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            cursor: pointer;
+            font-weight: 700;
+            color: #5e6c84;
+            user-select: none;
+            background: none;
+            border: none;
+            font-family: inherit;
+            font-size: 12px;
+        }
+        .legenda-toggle .chev {
+            transition: transform 0.15s;
+            display: inline-block;
+        }
+        .legenda.open .legenda-toggle .chev {
+            transform: rotate(90deg);
+        }
+        .legenda-items {
+            display: none;
+            flex-wrap: wrap;
+            gap: 6px 12px;
+            padding: 0 10px 10px 10px;
+        }
+        .legenda.open .legenda-items {
+            display: flex;
+        }
+        .legenda-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+        .legenda-swatch {
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+            border: 1px solid rgba(0,0,0,0.1);
+            flex-shrink: 0;
+        }
+
+        /* ── STAP 2.3: VIEW-ONLY INDICATOR ── */
+        .mode-indicator {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 12px;
+            white-space: nowrap;
+            letter-spacing: 0.02em;
+        }
+        .mode-indicator.view-only {
+            background-color: #ebecf0;
+            color: #5e6c84;
+        }
+        .mode-indicator.edit-mode {
+            background-color: #e3fcef;
+            color: #006644;
+        }
+
+        /* View-only: visuele hints dat slepen/bewerken niet kan */
+        body.view-only-mode .planning-card {
+            cursor: default;
+        }
+        body.view-only-mode .cell-add-btn,
+        body.view-only-mode .card-controls {
+            display: none !important;
+        }
+        body.view-only-mode .card-info-placement:empty,
+        body.view-only-mode .card-address-editable:empty {
+            display: none !important;
         }
 
         .planning-table {
@@ -471,7 +565,7 @@
             body { background-color: #fff !important; overflow: visible !important; height: auto !important; }
             .sidebar { display: none !important; }
             .main-content { padding: 0 !important; margin: 0 !important; width: 100% !important; }
-            .card-controls, .cell-add-btn, .color-picker-menu, .card-popup-overlay { display: none !important; }
+            .card-controls, .cell-add-btn, .color-picker-menu, .card-popup-overlay, .mode-indicator, .legenda { display: none !important; }
             .card-info-placement:empty { display: none !important; }
             .card-info-placement {
                 background-color: transparent !important;
@@ -497,7 +591,18 @@
     </div>
 
     <div class="main-content">
-        <h2>📅 Ploegen Planning – deze week</h2>
+        <div class="main-content-header">
+            <h2>📅 Ploegen Planning – deze week</h2>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div class="legenda" id="legenda">
+                    <button type="button" class="legenda-toggle" id="legenda-toggle">
+                        <span class="chev">▶</span> Legende projectleiders
+                    </button>
+                    <div class="legenda-items" id="legenda-items"></div>
+                </div>
+                <span class="mode-indicator" id="mode-indicator"></span>
+            </div>
+        </div>
         <table class="planning-table">
             <thead>
                 <tr>
@@ -536,11 +641,101 @@
             { bg: '#00c2e0', text: '#172b4d' }  // Turkoois
         ];
 
+        /* ── STAP 2.2: PROJECTLEIDERS / LEGENDE ──
+           Centrale lijst die de kleur-per-persoon koppeling definieert. Wordt
+           gebruikt door bepaalTrelloKaartStijl() (kleur van de kaarten) EN om
+           de legende-items te genereren. Lauren Absillis heeft hier een eigen
+           unieke kleurcode (los van de CUSTOM_COLORS-set voor interventies). */
+        var PROJECTLEIDERS = [
+            { username: 'jenstriest',   naam: 'Jens',            bg: '#ff9f1a', text: '#172b4d' },
+            { username: 'evageeroms',   naam: 'Eva',             bg: '#61bd4f', text: '#ffffff' },
+            { username: 'davythibau01', naam: 'Davy',            bg: '#f2d600', text: '#172b4d' },
+            { username: 'bertdebie1',   naam: 'Bert',            bg: '#0079bf', text: '#ffffff' },
+            { username: 'laurenabsillis', naam: 'Lauren Absillis', bg: '#c377e0', text: '#ffffff' }
+        ];
+        var STANDAARD_KAART_STIJL = { bg: '#eaecf0', text: '#172b4d' };
+
+        /* ── STAP 2.3: VIEW-ONLY MODUS & ADMIN TOGGLE ──
+           Standaard staat de planning in 'View-Only': niet slepen, niet
+           bewerken, geen +/kleur/verwijder-knoppen. Enkel Lauren en Davy
+           (voor ontwikkeling) krijgen bewerkrechten.
+
+           - DEV_MODE = true  → forceert overal admin-rechten (handig tijdens
+             lokaal ontwikkelen, los van wie er ingelogd is).
+           - Anders wordt de huidige Trello-gebruikersnaam (t.member('username'))
+             vergeleken met ADMIN_USERNAMES.
+           ADMIN_GEDRAG wordt na het ophalen van het Trello-lid bepaald en
+           daarna toegepast via toepassenAdminStatus(). */
+        var DEV_MODE = false; // zet op true om lokaal altijd als admin te werken
+
+        var ADMIN_USERNAMES = ['laurenabsillis', 'davythibau01'];
+
+        var isAdmin = false; // wordt na t.member() bepaald; tot dan = view-only
+
+        function toepassenAdminStatus() {
+            var indicator = document.getElementById('mode-indicator');
+            if (isAdmin) {
+                document.body.classList.remove('view-only-mode');
+                if (indicator) {
+                    indicator.textContent = '✏️ Bewerken ingeschakeld';
+                    indicator.className = 'mode-indicator edit-mode';
+                }
+            } else {
+                document.body.classList.add('view-only-mode');
+                if (indicator) {
+                    indicator.textContent = '👁️ Alleen-kijken modus';
+                    indicator.className = 'mode-indicator view-only';
+                }
+            }
+        }
+
         /* Sluit openstaande kleurmenu's als er ergens anders wordt geklikt */
         document.addEventListener('click', function() {
             var openMenus = document.querySelectorAll('.color-picker-menu');
             openMenus.forEach(function(m) { m.remove(); });
         });
+
+        /* ── STAP 2.2: LEGENDE OPBOUW ── */
+        function bouwLegende() {
+            var container = document.getElementById('legenda-items');
+            if (!container) return;
+            container.innerHTML = '';
+
+            PROJECTLEIDERS.forEach(function(p) {
+                var item = document.createElement('div');
+                item.className = 'legenda-item';
+
+                var swatch = document.createElement('span');
+                swatch.className = 'legenda-swatch';
+                swatch.style.backgroundColor = p.bg;
+                item.appendChild(swatch);
+
+                var label = document.createElement('span');
+                label.innerText = p.naam;
+                item.appendChild(label);
+
+                container.appendChild(item);
+            });
+
+            /* Standaardkleur (geen herkende projectleider) ook tonen */
+            var item = document.createElement('div');
+            item.className = 'legenda-item';
+            var swatch = document.createElement('span');
+            swatch.className = 'legenda-swatch';
+            swatch.style.backgroundColor = STANDAARD_KAART_STIJL.bg;
+            item.appendChild(swatch);
+            var label = document.createElement('span');
+            label.innerText = 'Overig / onbekend';
+            item.appendChild(label);
+            container.appendChild(item);
+        }
+
+        var legendaToggle = document.getElementById('legenda-toggle');
+        if (legendaToggle) {
+            legendaToggle.addEventListener('click', function() {
+                document.getElementById('legenda').classList.toggle('open');
+            });
+        }
 
         /* ── OMSCHRIJVING PARSER ──
            DATA-BELEID (Stap 1.5): de Trello-kaartomschrijving is voor deze
@@ -644,6 +839,7 @@
                     addBtn.title = 'Snelle interventie toevoegen';
                     addBtn.addEventListener('click', function(e) {
                         e.stopPropagation();
+                        if (!isAdmin) return;   // Stap 2.3: view-only kan geen interventies toevoegen
                         var pzone = this.parentElement;
                         voegDirecteInterventieToe(pzone.dataset.ploeg, pzone.dataset.datum);
                     });
@@ -659,16 +855,16 @@
             return 'zone-' + ploeg.replace(/[\s\/]+/g, '-') + '-' + datum;
         }
 
-        /* ── KLEUR OP BASIS VAN TRELLO-LID ── */
+        /* ── KLEUR OP BASIS VAN TRELLO-LID (Stap 2.2: via PROJECTLEIDERS) ── */
         function bepaalTrelloKaartStijl(members) {
-            var standaard = { bg: '#eaecf0', text: '#172b4d' };
-            if (!members || members.length === 0) return standaard;
+            if (!members || members.length === 0) return STANDAARD_KAART_STIJL;
             var usernames = members.map(function(m) { return m.username; });
-            if (usernames.indexOf('jenstriest')    !== -1) return { bg: '#ff9f1a', text: '#172b4d' };
-            if (usernames.indexOf('evageeroms')    !== -1) return { bg: '#61bd4f', text: '#ffffff' };
-            if (usernames.indexOf('davythibau01')  !== -1) return { bg: '#f2d600', text: '#172b4d' };
-            if (usernames.indexOf('bertdebie1')    !== -1) return { bg: '#0079bf', text: '#ffffff' };
-            return standaard;
+            for (var i = 0; i < PROJECTLEIDERS.length; i++) {
+                if (usernames.indexOf(PROJECTLEIDERS[i].username) !== -1) {
+                    return { bg: PROJECTLEIDERS[i].bg, text: PROJECTLEIDERS[i].text };
+                }
+            }
+            return STANDAARD_KAART_STIJL;
         }
 
         /* ── HULP: UNIEKE INSTANTIE-ID ── */
@@ -773,12 +969,32 @@
         t.render(function() {
             berekenWeekDatums();
             bouwTabel();
+            bouwLegende();
             trelloKaartCache = {};
 
             var pool       = document.getElementById('sidebar-pool');
             var loadingMsg = document.getElementById('loading-msg');
             var errorMsg   = document.getElementById('error-msg');
             pool.innerHTML = '';
+
+            /* ── STAP 2.3: ADMIN-STATUS BEPALEN ──
+               DEV_MODE forceert admin-rechten (lokaal ontwikkelen). Anders wordt
+               de huidige Trello-gebruikersnaam vergeleken met ADMIN_USERNAMES
+               (standaard: Lauren en Davy). Tot dit is opgelost staat de UI
+               voorzichtigheidshalve in view-only. */
+            if (DEV_MODE) {
+                isAdmin = true;
+                toepassenAdminStatus();
+            } else {
+                t.member('username').then(function(member) {
+                    var username = (member && member.username) ? member.username.toLowerCase() : '';
+                    isAdmin = ADMIN_USERNAMES.indexOf(username) !== -1;
+                    toepassenAdminStatus();
+                }).catch(function() {
+                    isAdmin = false;
+                    toepassenAdminStatus();
+                });
+            }
 
             return Promise.all([
                 t.cards('id', 'name', 'members', 'address', 'desc', 'idList', 'url', 'labels', 'due', 'dueComplete', 'locationName'),  // 'desc' ALLEEN-LEZEN; 'url' voor archief; labels/due/locationName voor de info-popup
@@ -927,11 +1143,24 @@
            Een element met draggable="true" wordt door Chrome NIET meer sleepbaar
            zodra het een contenteditable-kind bevat. Daarom staat elk bewerkbaar veld
            standaard op contentEditable=false (kaart blijft sleepbaar) en wordt het
-           pas bij een KLIK bewerkbaar, en bij blur weer uit. */
+           pas bij een KLIK bewerkbaar, en bij blur weer uit.
+
+           ENTER-GEDRAG (Stap 2.3-extra):
+           - Enter (zonder Shift)  → voorkomt nieuwe regel, verlaat het veld (blur),
+             waardoor de tekst wordt opgeslagen — zoals voorheen.
+           - Shift+Enter           → voegt een nieuwe regel toe in het tekstveld
+             (via document.execCommand('insertLineBreak') met <br>-fallback),
+             zonder het veld te verlaten.
+
+           VIEW-ONLY (Stap 2.3):
+           Als isAdmin === false wordt het veld nooit bewerkbaar: de klik-listener
+           doet dan niets, zodat reguliere gebruikers niet per ongeluk content
+           kunnen wijzigen. */
         function maakBewerkbaarVeld(veldEl, opslaanCallback) {
             veldEl.contentEditable = false;
 
             veldEl.addEventListener('click', function() {
+                if (!isAdmin) return;          // Stap 2.3: view-only → nooit bewerkbaar
                 if (veldEl.isContentEditable) return;
                 veldEl.contentEditable = true;
                 veldEl.focus();
@@ -952,7 +1181,32 @@
             });
 
             veldEl.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') { e.preventDefault(); veldEl.blur(); }
+                if (e.key === 'Enter') {
+                    if (e.shiftKey) {
+                        // Shift+Enter → nieuwe regel invoegen, veld blijft open
+                        e.preventDefault();
+                        if (document.queryCommandSupported && document.queryCommandSupported('insertLineBreak')) {
+                            document.execCommand('insertLineBreak');
+                        } else {
+                            // Fallback: <br> handmatig invoegen op de cursorpositie
+                            var sel = window.getSelection();
+                            if (sel && sel.rangeCount > 0) {
+                                var range = sel.getRangeAt(0);
+                                range.deleteContents();
+                                var br = document.createElement('br');
+                                range.insertNode(br);
+                                range.setStartAfter(br);
+                                range.setEndAfter(br);
+                                sel.removeAllRanges();
+                                sel.addRange(range);
+                            }
+                        }
+                    } else {
+                        // Enter (zonder Shift) → veld verlaten en opslaan
+                        e.preventDefault();
+                        veldEl.blur();
+                    }
+                }
             });
         }
 
@@ -1176,7 +1430,7 @@
             var el = document.createElement('div');
             el.className = 'planning-card';
             el.id        = card.id;
-            el.draggable = true;
+            el.draggable = isAdmin;            // Stap 2.3: view-only → niet sleepbaar
             el.dataset.rol = 'bron';
 
             var body = document.createElement('div');
@@ -1230,7 +1484,7 @@
             var el = document.createElement('div');
             el.className = 'planning-card';
             el.id        = placement.instanceId;
-            el.draggable = true;
+            el.draggable = isAdmin;            // Stap 2.3: view-only → niet sleepbaar
             el.dataset.rol = 'instantie';
 
             var body = document.createElement('div');
@@ -1279,7 +1533,7 @@
             var el = document.createElement('div');
             el.className = 'planning-card';
             el.id        = id;
-            el.draggable = true;
+            el.draggable = isAdmin;            // Stap 2.3: view-only → niet sleepbaar
             el.dataset.rol = 'interventie';
 
             var body = document.createElement('div');
@@ -1313,43 +1567,49 @@
             el.style.backgroundColor = stijl.bg;
             el.style.color           = stijl.text;
 
-            var controls = document.createElement('div');
-            controls.className = 'card-controls';
+            /* Stap 2.3: controls (kleur/verwijder) enkel tonen/aanmaken voor admins.
+               (Ook al verbergt CSS body.view-only-mode .card-controls deze sowieso,
+               we bouwen ze voor niet-admins niet eens op — minder DOM, geen
+               niet-werkende knoppen die per ongeluk toch klikbaar zouden zijn.) */
+            if (isAdmin) {
+                var controls = document.createElement('div');
+                controls.className = 'card-controls';
 
-            var colorBtn = document.createElement('span');
-            colorBtn.className = 'color-btn';
-            colorBtn.innerHTML = '🎨';
-            colorBtn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                var openMenus = document.querySelectorAll('.color-picker-menu');
-                openMenus.forEach(function(m) { m.remove(); });
+                var colorBtn = document.createElement('span');
+                colorBtn.className = 'color-btn';
+                colorBtn.innerHTML = '🎨';
+                colorBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    var openMenus = document.querySelectorAll('.color-picker-menu');
+                    openMenus.forEach(function(m) { m.remove(); });
 
-                var pickerMenu = document.createElement('div');
-                pickerMenu.className = 'color-picker-menu';
-                CUSTOM_COLORS.forEach(function(kleur) {
-                    var swatch = document.createElement('div');
-                    swatch.className = 'color-swatch';
-                    swatch.style.backgroundColor = kleur.bg;
-                    swatch.addEventListener('click', function(e2) {
-                        e2.stopPropagation();
-                        setInterventionColor(id, el, kleur);
-                        pickerMenu.remove();
+                    var pickerMenu = document.createElement('div');
+                    pickerMenu.className = 'color-picker-menu';
+                    CUSTOM_COLORS.forEach(function(kleur) {
+                        var swatch = document.createElement('div');
+                        swatch.className = 'color-swatch';
+                        swatch.style.backgroundColor = kleur.bg;
+                        swatch.addEventListener('click', function(e2) {
+                            e2.stopPropagation();
+                            setInterventionColor(id, el, kleur);
+                            pickerMenu.remove();
+                        });
+                        pickerMenu.appendChild(swatch);
                     });
-                    pickerMenu.appendChild(swatch);
+                    controls.appendChild(pickerMenu);
                 });
-                controls.appendChild(pickerMenu);
-            });
-            controls.appendChild(colorBtn);
+                controls.appendChild(colorBtn);
 
-            var delBtn = document.createElement('span');
-            delBtn.className = 'delete-btn';
-            delBtn.innerHTML = '&times;';
-            delBtn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                verwijderInterventie(id);
-            });
-            controls.appendChild(delBtn);
-            el.appendChild(controls);
+                var delBtn = document.createElement('span');
+                delBtn.className = 'delete-btn';
+                delBtn.innerHTML = '&times;';
+                delBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    verwijderInterventie(id);
+                });
+                controls.appendChild(delBtn);
+                el.appendChild(controls);
+            }
 
             el.addEventListener('dragstart', drag);
             return el;
@@ -1405,6 +1665,8 @@
 
         /* ── INTERVENTIES CREATIE IN DE CORRECTE CEL ── */
         function voegDirecteInterventieToe(ploeg, datum) {
+            if (!isAdmin) return;   // Stap 2.3: extra vangnet voor view-only
+
             /* Geen prompt() gebruiken: window.prompt/alert/confirm worden door de
                gesandboxde Trello Power-Up iframe geblokkeerd (geen 'allow-modals'),
                waardoor er niets gebeurde. In plaats daarvan maken we de kaart
@@ -1451,6 +1713,8 @@
         }
 
         function verwijderInterventie(id) {
+            if (!isAdmin) return;   // Stap 2.3: extra vangnet voor view-only
+
             t.get('board', 'shared', 'interventions', []).then(function(lijst) {
                 var gefilterd = lijst.filter(function(i) { return i.id !== id; });
                 return t.set('board', 'shared', 'interventions', gefilterd);
@@ -1461,8 +1725,13 @@
             });
         }
 
-        /* ── DRAG AND DROP LOGICA (STABIEL) ── */
+        /* ── DRAG AND DROP LOGICA (STABIEL) ──
+           Stap 2.3: alle handlers checken isAdmin als extra vangnet (naast
+           draggable=false en het ontbreken van de dragover/drop-listeners op
+           niet-bestaande knoppen). Dit voorkomt dat een view-only gebruiker
+           via een omweg toch iets zou kunnen verplaatsen. */
         function allowDrop(e) {
+            if (!isAdmin) return;
             e.preventDefault();
             this.classList.add('dragover');
         }
@@ -1472,12 +1741,14 @@
         }
 
         function drag(e) {
+            if (!isAdmin) { e.preventDefault(); return; }
             /* currentTarget = het element waarop de listener staat (de kaart zelf),
                ongeacht waar je de kaart vastpakt. */
             e.dataTransfer.setData("text", e.currentTarget.id);
         }
 
         function drop(e) {
+            if (!isAdmin) return;
             e.preventDefault();
             this.classList.remove('dragover');
 
