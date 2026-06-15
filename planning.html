@@ -379,7 +379,7 @@
 <body>
 
     <div class="sidebar">
-        <h2>📋 Nog in te plannen</h2>
+        <h2>📋 Alle huidige projecten</h2>
         <input type="text" id="sidebar-search" class="sidebar-search"
                placeholder="🔍 Zoek op naam of adres…" autocomplete="off">
         <div id="loading-msg">Kaarten laden…</div>
@@ -1078,12 +1078,15 @@
 
         /* ── INTERVENTIES CREATIE IN DE CORRECTE CEL ── */
         function voegDirecteInterventieToe(ploeg, datum) {
-            var naam = prompt("Naam snelle interventie:");
-            if (!naam || !naam.trim()) return;
-
+            /* Geen prompt() gebruiken: window.prompt/alert/confirm worden door de
+               gesandboxde Trello Power-Up iframe geblokkeerd (geen 'allow-modals'),
+               waardoor er niets gebeurde. In plaats daarvan maken we de kaart
+               meteen aan met een standaardnaam en zetten we de titel direct in
+               bewerk-modus (alles geselecteerd) zodat de naam meteen overtypt
+               kan worden — consistent met de inline-bewerking elders in de app. */
             var nieuw = {
                 id:            'int-' + Date.now(),
-                name:          naam.trim(),
+                name:          'Nieuwe interventie',
                 ploeg:         ploeg,
                 datum:         datum,
                 members:       [],
@@ -1094,14 +1097,29 @@
 
             t.get('board', 'shared', 'interventions', [])
             .then(function(lijst) {
-                lijst.push(nieuw);
-                return t.set('board', 'shared', 'interventions', lijst);
+                var arr = Array.isArray(lijst) ? lijst : [];
+                arr.push(nieuw);
+                return t.set('board', 'shared', 'interventions', arr);
             })
             .then(function() {
                 var cardEl = maakInterventieKaart(nieuw);
                 var zone = document.getElementById(maakZoneId(ploeg, datum));
-                if (zone) { zone.appendChild(cardEl); }
-                else      { document.getElementById('sidebar-pool').appendChild(cardEl); }
+                (zone || document.getElementById('sidebar-pool')).appendChild(cardEl);
+
+                /* Titel direct laten benoemen: in bewerk-modus zetten, focussen
+                   en de volledige tekst selecteren zodat de eerste toetsaanslag
+                   'Nieuwe interventie' vervangt. De bestaande blur/Enter-logica
+                   (via maakBewerkbaarVeld) slaat de nieuwe naam vanzelf op. */
+                var titleEl = cardEl.querySelector('.card-title');
+                if (titleEl) {
+                    titleEl.contentEditable = true;
+                    titleEl.focus();
+                    var range = document.createRange();
+                    range.selectNodeContents(titleEl);
+                    var sel = window.getSelection();
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                }
             });
         }
 
