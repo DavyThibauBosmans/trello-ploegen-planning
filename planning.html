@@ -167,9 +167,79 @@
             letter-spacing: 0.02em;
         }
 
-        /* ── INFO PLAATSING STYLING ── */
-        .card-info-placement {
+        /* ── KAART-INFO POPUP (Stap 2.1) ──
+           Eigen popup bovenop de planning. De planning blijft eronder open,
+           zodat sluiten meteen terugbrengt naar het plannen. */
+        .card-popup-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(9, 30, 66, 0.45);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .card-popup {
+            position: relative;
+            background: #fff;
+            border-radius: 8px;
+            width: min(420px, 92vw);
+            max-height: 86vh;
+            overflow-y: auto;
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.30);
+            padding: 18px 20px;
+        }
+        .card-popup-close {
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            cursor: pointer;
+            font-size: 22px;
+            line-height: 1;
+            color: #5e6c84;
+            opacity: 0.7;
+        }
+        .card-popup-close:hover { opacity: 1; }
+        .card-popup-color-bar {
+            height: 6px;
+            border-radius: 3px;
+            margin-bottom: 12px;
+        }
+        .card-popup-title {
+            font-size: 16px;
+            font-weight: 700;
+            line-height: 1.3;
+            margin: 0 26px 8px 0;
+        }
+        .card-popup-field {
+            font-size: 13px;
+            line-height: 1.4;
+            margin: 4px 0;
+            word-break: break-word;
+        }
+        .card-popup-open-btn {
+            display: block;
+            width: 100%;
+            margin-top: 16px;
+            background: #0052cc;
+            color: #fff;
+            border: none;
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background-color 0.15s;
+        }
+        .card-popup-open-btn:hover { background: #0747a6; }
+        .card-popup-hint {
             font-size: 11px;
+            color: #5e6c84;
+            font-style: italic;
+            text-align: center;
+            margin-top: 8px;
+        }
             font-weight: 500;
             margin-top: 5px;
             padding: 4px 6px;
@@ -363,7 +433,7 @@
             body { background-color: #fff !important; overflow: visible !important; height: auto !important; }
             .sidebar { display: none !important; }
             .main-content { padding: 0 !important; margin: 0 !important; width: 100% !important; }
-            .card-controls, .cell-add-btn, .color-picker-menu { display: none !important; }
+            .card-controls, .cell-add-btn, .color-picker-menu, .card-popup-overlay { display: none !important; }
             .card-info-placement:empty { display: none !important; }
             .card-info-placement {
                 background-color: transparent !important;
@@ -873,30 +943,128 @@
             }
         }
 
-        /* ── BRON-KAART (zijbalk, blijft altijd staan) ── */
-        /* ── KAART OPENEN BIJ KLIK (Stap 2.1) ──
-           Koppelt een klik op een Trello-kaart aan het openen van de originele
-           kaart, zodat Lauren foto's en achtergrondinfo direct kan raadplegen.
-           - Zichtbare kaart op het board → t.showCard(cardId) (snelste weg).
-           - Gearchiveerde kaart → t.showCard werkt niet; we vallen terug op
-             t.navigate({url}) met de in de snapshot bewaarde kaart-url.
+        /* ── KAART-INFO POPUP BIJ KLIK (Stap 2.1) ──
+           Trello laat de échte kaart niet bovenop onze planning-modal zweven
+           (de modal zou sluiten). Daarom tonen we bij een klik een eigen popup
+           BOVENOP de planning met de achtergrondinfo die we al uit de kaart
+           halen (adres + omschrijvingsvelden). De planning blijft eronder open,
+           dus sluiten = meteen terug. Enkel via de knop 'Volledige kaart openen'
+           ga je naar de echte Trello-kaart (en sluit de planning, zoals vroeger):
+           - Zichtbare kaart op het board → t.showCard(cardId).
+           - Gearchiveerde kaart → t.navigate({url}) met de bewaarde kaart-url.
+
            Een klik en een drag bijten elkaar niet: na een geslaagde sleep vuurt
            er geen 'click'. Klikken op een bewerkbaar veld of een knop opent de
-           kaart niet (target-check), net zomin als wanneer er tekst geselecteerd is. */
+           popup niet (target-check), net zomin als wanneer er tekst geselecteerd is. */
         function koppelKaartOpenen(el, info) {
             if (!info || (!info.cardId && !info.url)) return;
-            el.title = 'Klik om de Trello-kaart te openen';
+            el.title = 'Klik voor kaartinfo — de planning blijft open';
             el.addEventListener('click', function(e) {
                 if (e.target.closest('.card-info-placement, .card-address-editable, .card-controls')) return;
                 var sel = window.getSelection();
                 if (sel && sel.toString().length > 0) return;   // niet openen tijdens tekstselectie
+                toonKaartPopup(info.kaartData || {}, info);
+            });
+        }
+
+        function sluitKaartPopup() {
+            var bestaand = document.getElementById('card-popup-overlay');
+            if (bestaand && bestaand.parentNode) bestaand.parentNode.removeChild(bestaand);
+        }
+
+        function toonKaartPopup(kaartData, info) {
+            sluitKaartPopup();
+
+            var overlay = document.createElement('div');
+            overlay.className = 'card-popup-overlay';
+            overlay.id        = 'card-popup-overlay';
+            overlay.addEventListener('click', function(e) {
+                if (e.target === overlay) sluitKaartPopup();   // klik op de achtergrond sluit
+            });
+
+            /* Escape sluit de popup en geeft de planning terug */
+            function onEsc(ev) {
+                if (ev.key === 'Escape') { sluitKaartPopup(); document.removeEventListener('keydown', onEsc); }
+            }
+            document.addEventListener('keydown', onEsc);
+
+            var popup = document.createElement('div');
+            popup.className = 'card-popup';
+
+            var sluit = document.createElement('span');
+            sluit.className = 'card-popup-close';
+            sluit.innerHTML = '&times;';
+            sluit.title = 'Sluiten (terug naar planning)';
+            sluit.addEventListener('click', sluitKaartPopup);
+            popup.appendChild(sluit);
+
+            /* Kleurbalk op basis van projectleider */
+            var stijl = bepaalTrelloKaartStijl(kaartData.members);
+            var bar = document.createElement('div');
+            bar.className = 'card-popup-color-bar';
+            bar.style.backgroundColor = stijl.bg;
+            popup.appendChild(bar);
+
+            var titel = document.createElement('div');
+            titel.className = 'card-popup-title';
+            titel.innerText = kaartData.name || '(naam onbekend)';
+            popup.appendChild(titel);
+
+            if (kaartData.address) {
+                var adr = document.createElement('div');
+                adr.className = 'card-popup-field';
+                adr.innerText = '📍 ' + kaartData.address;
+                popup.appendChild(adr);
+            }
+
+            /* Achtergrondvelden uit de omschrijving (zelfde parser als de kaarten) */
+            var heeftVelden = false;
+            if (kaartData.desc) {
+                var velden = parseDescriptionFields(kaartData.desc);
+                for (var label in velden) {
+                    if (label.indexOf('Adres') !== -1 && kaartData.address) continue;
+                    var f = document.createElement('div');
+                    f.className = 'card-popup-field';
+                    f.innerText = label + ': ' + velden[label];
+                    popup.appendChild(f);
+                    heeftVelden = true;
+                }
+            }
+            if (!kaartData.address && !heeftVelden) {
+                var leeg = document.createElement('div');
+                leeg.className = 'card-popup-field';
+                leeg.style.fontStyle = 'italic';
+                leeg.style.opacity = '0.7';
+                leeg.innerText = 'Geen extra info beschikbaar — open de volledige kaart voor alle details.';
+                popup.appendChild(leeg);
+            }
+
+            /* Knop naar de échte kaart (sluit de planning, zoals voorheen) */
+            var btn = document.createElement('button');
+            btn.className = 'card-popup-open-btn';
+            btn.type = 'button';
+            btn.innerText = '📇 Volledige kaart openen in Trello';
+            btn.addEventListener('click', function() {
+                document.removeEventListener('keydown', onEsc);
+                sluitKaartPopup();
                 if (info.kanTonen && info.cardId) {
                     t.showCard(info.cardId);
                 } else if (info.url) {
-                    t.navigate({ url: info.url });              // gearchiveerde kaart
+                    t.navigate({ url: info.url });
                 }
             });
+            popup.appendChild(btn);
+
+            var hint = document.createElement('div');
+            hint.className = 'card-popup-hint';
+            hint.innerText = 'Sluit deze popup (Esc of ×) om verder te plannen — de planning blijft open.';
+            popup.appendChild(hint);
+
+            overlay.appendChild(popup);
+            document.body.appendChild(overlay);
         }
+
+        /* ── BRON-KAART (zijbalk, blijft altijd staan) ── */
 
         function maakTrelloBronKaart(card, aantalGepland) {
             var el = document.createElement('div');
@@ -922,7 +1090,7 @@
             el.addEventListener('dragstart', drag);
 
             /* Bron-kaarten zijn altijd zichtbare board-kaarten → showCard kan. */
-            koppelKaartOpenen(el, { kanTonen: true, cardId: card.id, url: card.url || '' });
+            koppelKaartOpenen(el, { kaartData: card, kanTonen: true, cardId: card.id, url: card.url || '' });
 
             zetBronBadge(el, aantalGepland);
             return el;
@@ -988,11 +1156,12 @@
 
             el.addEventListener('dragstart', drag);
 
-            /* Klik opent de originele Trello-kaart (Stap 2.1) */
+            /* Klik toont de kaartinfo-popup bovenop de planning (Stap 2.1) */
             koppelKaartOpenen(el, {
-                kanTonen: !!opts.kanTonen,
-                cardId:   cardIdVanInstantie(placement.instanceId),
-                url:      opts.url || ''
+                kaartData: card,
+                kanTonen:  !!opts.kanTonen,
+                cardId:    cardIdVanInstantie(placement.instanceId),
+                url:       opts.url || ''
             });
 
             return el;
