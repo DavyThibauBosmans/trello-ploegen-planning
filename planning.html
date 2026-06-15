@@ -593,6 +593,7 @@
             return {
                 name:    card.name || '',
                 address: card.address || '',
+                url:     card.url || '',     // Stap 2.1: nodig om gearchiveerde kaart te openen via t.navigate
                 members: (card.members || []).map(function(m) { return { username: m.username }; })
             };
         }
@@ -672,7 +673,7 @@
             pool.innerHTML = '';
 
             return Promise.all([
-                t.cards('id', 'name', 'members', 'address', 'desc', 'idList'),  // 'desc' is ALLEEN-LEZEN (zie data-beleid)
+                t.cards('id', 'name', 'members', 'address', 'desc', 'idList', 'url'),  // 'desc' is ALLEEN-LEZEN (zie data-beleid); 'url' voor t.navigate bij archief
                 t.lists('id', 'name'),
                 t.get('board', 'shared', 'interventions', []),
                 t.get('board', 'shared', 'plannedCardIds', [])
@@ -776,7 +777,12 @@
                             var zone = document.getElementById(maakZoneId(p.ploeg, p.datum));
                             if (!zone) return;   // valt buiten de huidige week
                             var kaartData = isZichtbaar ? liveCard : snapshotNaarKaart(p.snapshot || {});
-                            zone.appendChild(maakTrelloInstantieKaart(kaartData, p, verbergUitZijbalk));
+                            var openUrl   = isZichtbaar ? (liveCard.url || '') : ((p.snapshot && p.snapshot.url) || '');
+                            zone.appendChild(maakTrelloInstantieKaart(kaartData, p, {
+                                isArchief: verbergUitZijbalk,
+                                kanTonen:  isZichtbaar,   // alleen zichtbare board-kaarten via showCard
+                                url:       openUrl
+                            }));
                         });
                     });
 
@@ -868,6 +874,30 @@
         }
 
         /* ── BRON-KAART (zijbalk, blijft altijd staan) ── */
+        /* ── KAART OPENEN BIJ KLIK (Stap 2.1) ──
+           Koppelt een klik op een Trello-kaart aan het openen van de originele
+           kaart, zodat Lauren foto's en achtergrondinfo direct kan raadplegen.
+           - Zichtbare kaart op het board → t.showCard(cardId) (snelste weg).
+           - Gearchiveerde kaart → t.showCard werkt niet; we vallen terug op
+             t.navigate({url}) met de in de snapshot bewaarde kaart-url.
+           Een klik en een drag bijten elkaar niet: na een geslaagde sleep vuurt
+           er geen 'click'. Klikken op een bewerkbaar veld of een knop opent de
+           kaart niet (target-check), net zomin als wanneer er tekst geselecteerd is. */
+        function koppelKaartOpenen(el, info) {
+            if (!info || (!info.cardId && !info.url)) return;
+            el.title = 'Klik om de Trello-kaart te openen';
+            el.addEventListener('click', function(e) {
+                if (e.target.closest('.card-info-placement, .card-address-editable, .card-controls')) return;
+                var sel = window.getSelection();
+                if (sel && sel.toString().length > 0) return;   // niet openen tijdens tekstselectie
+                if (info.kanTonen && info.cardId) {
+                    t.showCard(info.cardId);
+                } else if (info.url) {
+                    t.navigate({ url: info.url });              // gearchiveerde kaart
+                }
+            });
+        }
+
         function maakTrelloBronKaart(card, aantalGepland) {
             var el = document.createElement('div');
             el.className = 'planning-card';
@@ -891,6 +921,9 @@
 
             el.addEventListener('dragstart', drag);
 
+            /* Bron-kaarten zijn altijd zichtbare board-kaarten → showCard kan. */
+            koppelKaartOpenen(el, { kanTonen: true, cardId: card.id, url: card.url || '' });
+
             zetBronBadge(el, aantalGepland);
             return el;
         }
@@ -912,9 +945,14 @@
         }
 
         /* ── INSTANTIE-KAART (in een cel, één concrete inplanning) ──
-           isArchief = true → bronkaart is gearchiveerd of staat in 'Te archiveren'.
-           De kaart blijft als historiek staan en krijgt een subtiel 📦-label. */
-        function maakTrelloInstantieKaart(card, placement, isArchief) {
+           opts = {
+             isArchief : bronkaart is gearchiveerd of staat in 'Te archiveren'
+                         → toont subtiel 📦-label, blijft als historiek staan;
+             kanTonen  : true als de kaart zichtbaar op het board is (t.showCard);
+             url       : kaart-url als terugval voor gearchiveerde kaarten.
+           } */
+        function maakTrelloInstantieKaart(card, placement, opts) {
+            opts = opts || {};
             var el = document.createElement('div');
             el.className = 'planning-card';
             el.id        = placement.instanceId;
@@ -926,7 +964,7 @@
             vulTrelloBasis(body, card);
 
             /* Archief-label (Stap 1.4) */
-            if (isArchief) {
+            if (opts.isArchief) {
                 var tag = document.createElement('span');
                 tag.className = 'archief-tag';
                 tag.innerText = '📦 Archief';
@@ -949,6 +987,14 @@
             el.style.color           = stijl.text;
 
             el.addEventListener('dragstart', drag);
+
+            /* Klik opent de originele Trello-kaart (Stap 2.1) */
+            koppelKaartOpenen(el, {
+                kanTonen: !!opts.kanTonen,
+                cardId:   cardIdVanInstantie(placement.instanceId),
+                url:      opts.url || ''
+            });
+
             return el;
         }
 
@@ -1195,7 +1241,11 @@
                     arr.push(nieuwePlacement);
                     return t.set(id, 'shared', 'placements', arr).then(function() { return arr.length; });
                 }).then(function(aantal) {
-                    doelZone.appendChild(maakTrelloInstantieKaart(card, nieuwePlacement, false));
+                    doelZone.appendChild(maakTrelloInstantieKaart(card, nieuwePlacement, {
+                        isArchief: false,
+                        kanTonen:  true,
+                        url:       card.url || ''
+                    }));
                     updateBronBadgeById(id, aantal);
                     voegCardToeAanIndex(id);     // Stap 1.4: id opnemen in board-index
                 });
