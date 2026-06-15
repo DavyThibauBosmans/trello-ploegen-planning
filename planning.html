@@ -149,6 +149,24 @@
             box-shadow: 0 1px 2px rgba(0,0,0,0.12);
         }
 
+        /* ── ARCHIEF-TAG (Stap 1.4) ──
+           Subtiel label op een ingeplande kaart waarvan de bronkaart is
+           gearchiveerd of in de lijst 'Te archiveren' staat. Het blokje blijft
+           als historiek in de tabel staan, maar verdwijnt uit de zijbalk. */
+        .archief-tag {
+            display: inline-block;
+            align-self: flex-start;
+            margin-top: 5px;
+            font-size: 10px;
+            font-weight: 700;
+            line-height: 1.4;
+            background-color: rgba(0, 0, 0, 0.18);
+            color: inherit;
+            padding: 1px 7px;
+            border-radius: 10px;
+            letter-spacing: 0.02em;
+        }
+
         /* ── INFO PLAATSING STYLING ── */
         .card-info-placement {
             font-size: 11px;
@@ -396,7 +414,7 @@
 
         /* Cache van de volledige Trello-kaartdata (naam, adres, desc, members),
            zodat we bij een drop een nieuwe instantie kunnen opbouwen zonder
-           opnieuw bij Trello te moeten gaan halen. */
+           opnieuw bij Trello te moeten gaan halen. Bevat enkel ZICHTBARE kaarten. */
         var trelloKaartCache = {};
 
         var CUSTOM_COLORS = [
@@ -547,15 +565,68 @@
             return instanceId.split('::')[0];
         }
 
-        /* ── ZOEKFUNCTIE LINKERKOLOM (Stap 1.3) ──
-           Live filter op de kaarten in de zijbalk. Doorzoekt de volledige
-           tekst van de .card-body (titel + adres + omschrijvingsvelden), zodat
-           zowel projectnaam als adres worden gevonden — bij Trello-bronkaarten
-           én bij niet-ingeplande interventies.
+        /* ── ARCHIEF-DETECTIE (Stap 1.4) ──
+           Een lijst telt als 'archief' wanneer de naam (genormaliseerd) verwijst
+           naar archiveren. Zo kan Lauren een lijst 'Te archiveren', 'Archief' of
+           'Archive' gebruiken; kaarten daarin verdwijnen uit de zijbalk. */
+        function isArchiefLijst(naam) {
+            if (!naam) return false;
+            var n = naam.trim().toLowerCase();
+            return n.indexOf('archiveren') !== -1
+                || n.indexOf('archief')    !== -1
+                || n.indexOf('archive')    !== -1;
+        }
 
-           Werkt puur visueel via display:none en wijzigt GEEN opgeslagen data
-           (t.set/t.get) en raakt de drag-and-drop-listeners niet aan. Verborgen
-           kaarten zijn niet sleepbaar, wat het gewenste gedrag is. */
+        /* ── SNAPSHOT (Stap 1.4) ──
+           Kleine momentopname van de bronkaart, opgeslagen IN elke placement.
+           Hierdoor blijft een ingepland blokje in de tabel correct getekend, ook
+           nadat de bronkaart in Trello gearchiveerd is (en dus niet meer door
+           t.cards() wordt teruggegeven). We bewaren bewust alleen het minimum:
+           naam, adres en de leden (voor de projectleider-kleur). */
+        function maakKaartSnapshot(card) {
+            return {
+                name:    card.name || '',
+                address: card.address || '',
+                members: (card.members || []).map(function(m) { return { username: m.username }; })
+            };
+        }
+        function snapshotNaarKaart(snap) {
+            return {
+                name:    (snap && snap.name) ? snap.name : '(gearchiveerd project)',
+                address: (snap && snap.address) ? snap.address : '',
+                desc:    '',
+                members: (snap && snap.members) ? snap.members : []
+            };
+        }
+
+        /* ── BOARD-INDEX VAN INGEPLANDE KAART-ID'S (Stap 1.4) ──
+           Lijst van Trello-kaart-id's die minstens één placement hebben. Nodig om
+           de placements van GEARCHIVEERDE kaarten te kunnen terugvinden: die id's
+           komen immers niet meer uit t.cards(). De index houdt zichzelf bij in
+           render() en bij elke drop/verwijdering. */
+        function voegCardToeAanIndex(cardId) {
+            return t.get('board', 'shared', 'plannedCardIds', []).then(function(lijst) {
+                var arr = Array.isArray(lijst) ? lijst : [];
+                if (arr.indexOf(cardId) === -1) {
+                    arr.push(cardId);
+                    return t.set('board', 'shared', 'plannedCardIds', arr);
+                }
+            });
+        }
+        function verwijderCardUitIndex(cardId) {
+            return t.get('board', 'shared', 'plannedCardIds', []).then(function(lijst) {
+                var arr = Array.isArray(lijst) ? lijst : [];
+                var gefilterd = arr.filter(function(x) { return x !== cardId; });
+                if (gefilterd.length !== arr.length) {
+                    return t.set('board', 'shared', 'plannedCardIds', gefilterd);
+                }
+            });
+        }
+
+        /* ── ZOEKFUNCTIE LINKERKOLOM (Stap 1.3) ──
+           Live filter op de kaarten in de zijbalk. Doorzoekt de volledige tekst
+           van de .card-body (titel + adres + omschrijvingsvelden). Werkt puur
+           visueel via display:none en wijzigt GEEN opgeslagen data. */
         function filterZijbalk(zoekterm) {
             var q = (zoekterm || '').trim().toLowerCase();
             var pool = document.getElementById('sidebar-pool');
@@ -576,7 +647,6 @@
                 }
             });
 
-            /* Toon een nette melding wanneer er wél gezocht wordt maar niets matcht */
             var leegMsg = document.getElementById('search-empty');
             if (leegMsg) {
                 leegMsg.style.display = (q !== '' && kaarten.length > 0 && zichtbaar === 0)
@@ -596,62 +666,120 @@
             pool.innerHTML = '';
 
             return Promise.all([
-                t.cards('id', 'name', 'members', 'address', 'desc'),
-                t.get('board', 'shared', 'interventions', [])
+                t.cards('id', 'name', 'members', 'address', 'desc', 'idList'),
+                t.lists('id', 'name'),
+                t.get('board', 'shared', 'interventions', []),
+                t.get('board', 'shared', 'plannedCardIds', [])
             ])
             .then(function(resultaten) {
-                var cards         = resultaten[0];
-                var interventions = resultaten[1];
+                var cards         = resultaten[0];                               // enkel ZICHTBARE kaarten
+                var lists         = resultaten[1];
+                var interventions = resultaten[2];
+                var indexIds      = Array.isArray(resultaten[3]) ? resultaten[3] : [];
                 loadingMsg.style.display = 'none';
 
-                var cardPromises = cards.map(function(card) {
+                /* 1) Welke lijst-id's tellen als archief? (bv. 'Te archiveren') */
+                var archiefLijstIds = {};
+                lists.forEach(function(l) { if (isArchiefLijst(l.name)) archiefLijstIds[l.id] = true; });
+
+                /* 2) Zichtbare kaarten indexeren op id voor snelle opzoeking */
+                var visibleById = {};
+                cards.forEach(function(c) { visibleById[c.id] = c; });
+
+                /* 3) Alle kaart-id's waarvan we placements moeten ophalen:
+                      de zichtbare kaarten PLUS de id's uit de board-index
+                      (die kan gearchiveerde kaarten bevatten → historiek). */
+                var alleIds = [];
+                var gezien  = {};
+                cards.forEach(function(c)  { if (!gezien[c.id]) { gezien[c.id] = true; alleIds.push(c.id); } });
+                indexIds.forEach(function(id) { if (!gezien[id]) { gezien[id] = true; alleIds.push(id); } });
+
+                /* 4) Per id de placements ophalen (incl. migratie oud datamodel) */
+                var idPromises = alleIds.map(function(cardId) {
                     return Promise.all([
-                        t.get(card.id, 'shared', 'placements',    null),  // nieuw model (lijst van instanties)
-                        t.get(card.id, 'shared', 'planning',      null),  // legacy enkelvoudig
-                        t.get(card.id, 'shared', 'infoPlaatsing', '')     // legacy info
+                        t.get(cardId, 'shared', 'placements',    null),  // nieuw model (lijst van instanties)
+                        t.get(cardId, 'shared', 'planning',      null),  // legacy enkelvoudig
+                        t.get(cardId, 'shared', 'infoPlaatsing', '')     // legacy info
                     ]).then(function(stored) {
                         var placements = stored[0];
 
-                        /* MIGRATIE: bestond er nog geen placements-lijst maar wél een
-                           oude enkelvoudige planning? Zet die om naar één instantie.
+                        /* MIGRATIE: oude enkelvoudige planning → één instantie.
                            Oude sleutels blijven staan (veilig, niet-destructief). */
                         if (!Array.isArray(placements)) {
                             var oud = stored[1];
                             if (oud && oud.ploeg && oud.datum) {
                                 placements = [{
-                                    instanceId:    genInstanceId(card.id),
+                                    instanceId:    genInstanceId(cardId),
                                     ploeg:         oud.ploeg,
                                     datum:         oud.datum,
                                     infoPlaatsing: stored[2] || ''
                                 }];
-                                t.set(card.id, 'shared', 'placements', placements);
+                                t.set(cardId, 'shared', 'placements', placements);
                             } else {
                                 placements = [];
                             }
                         }
-                        return { card: card, placements: placements };
+                        return { cardId: cardId, placements: placements };
                     });
                 });
 
-                return Promise.all(cardPromises).then(function(trelloResultaten) {
-                    /* 1) Trello-projecten: bron blijft ALTIJD in de zijbalk,
-                          elke instantie verschijnt in zijn cel. */
-                    trelloResultaten.forEach(function(r) {
-                        trelloKaartCache[r.card.id] = r.card;
+                return Promise.all(idPromises).then(function(resultatenPerId) {
+                    var nieuweIndex = [];
 
-                        var bron = maakTrelloBronKaart(r.card, r.placements.length);
-                        pool.appendChild(bron);
+                    resultatenPerId.forEach(function(r) {
+                        var cardId     = r.cardId;
+                        var placements = r.placements;
+                        var liveCard   = visibleById[cardId];     // undefined → gearchiveerd / niet zichtbaar
+                        var isZichtbaar    = !!liveCard;
+                        var inArchiefLijst = isZichtbaar && !!archiefLijstIds[liveCard.idList];
+                        /* 'Verbergen uit zijbalk' = gearchiveerd OF in een archief-lijst.
+                           De ingeplande blokjes blijven sowieso in de tabel staan. */
+                        var verbergUitZijbalk = (!isZichtbaar) || inArchiefLijst;
 
-                        r.placements.forEach(function(p) {
+                        /* Board-index bijhouden: enkel id's met ≥1 placement bewaren */
+                        if (placements.length > 0 && nieuweIndex.indexOf(cardId) === -1) {
+                            nieuweIndex.push(cardId);
+                        }
+
+                        /* Snapshot verversen voor zichtbare kaarten, zodat de
+                           historiek later (na archivering) correct blijft tekenen.
+                           Enkel wegschrijven als er écht iets veranderd is. */
+                        if (isZichtbaar) {
+                            trelloKaartCache[cardId] = liveCard;
+                            var verseSnap = maakKaartSnapshot(liveCard);
+                            var verseSnapStr = JSON.stringify(verseSnap);
+                            var gewijzigd = false;
+                            placements.forEach(function(p) {
+                                if (JSON.stringify(p.snapshot) !== verseSnapStr) {
+                                    p.snapshot = verseSnap;
+                                    gewijzigd = true;
+                                }
+                            });
+                            if (gewijzigd) { t.set(cardId, 'shared', 'placements', placements); }
+                        }
+
+                        /* BRON-kaart in de zijbalk: enkel voor zichtbare,
+                           niet-gearchiveerde kaarten. */
+                        if (isZichtbaar && !verbergUitZijbalk) {
+                            pool.appendChild(maakTrelloBronKaart(liveCard, placements.length));
+                        }
+
+                        /* INSTANTIES in de tabel: altijd renderen (historiek). */
+                        placements.forEach(function(p) {
                             if (!p.ploeg || !p.datum) return;
                             var zone = document.getElementById(maakZoneId(p.ploeg, p.datum));
-                            if (zone) {
-                                zone.appendChild(maakTrelloInstantieKaart(r.card, p));
-                            }
+                            if (!zone) return;   // valt buiten de huidige week
+                            var kaartData = isZichtbaar ? liveCard : snapshotNaarKaart(p.snapshot || {});
+                            zone.appendChild(maakTrelloInstantieKaart(kaartData, p, verbergUitZijbalk));
                         });
                     });
 
-                    /* 2) Interventies (snelle kaartjes): ongewijzigd gedrag. */
+                    /* Board-index wegschrijven indien gewijzigd (volgorde-onafhankelijk) */
+                    if (JSON.stringify(nieuweIndex.slice().sort()) !== JSON.stringify(indexIds.slice().sort())) {
+                        t.set('board', 'shared', 'plannedCardIds', nieuweIndex);
+                    }
+
+                    /* Interventies (snelle kaartjes): ongewijzigd gedrag. */
                     interventions.forEach(function(int) {
                         var el = maakInterventieKaart(int);
                         if (int.ploeg && int.datum) {
@@ -662,8 +790,7 @@
                         }
                     });
 
-                    /* 3) Herstel een eventueel actieve zoekfilter na de heropbouw
-                          van de pool (Trello kan render meermaals aanroepen). */
+                    /* Actieve zoekfilter herstellen (Stap 1.3) */
                     var zoekVeld = document.getElementById('sidebar-search');
                     if (zoekVeld) filterZijbalk(zoekVeld.value);
                 });
@@ -778,8 +905,10 @@
             zetBronBadge(document.getElementById(cardId), count);
         }
 
-        /* ── INSTANTIE-KAART (in een cel, één concrete inplanning) ── */
-        function maakTrelloInstantieKaart(card, placement) {
+        /* ── INSTANTIE-KAART (in een cel, één concrete inplanning) ──
+           isArchief = true → bronkaart is gearchiveerd of staat in 'Te archiveren'.
+           De kaart blijft als historiek staan en krijgt een subtiel 📦-label. */
+        function maakTrelloInstantieKaart(card, placement, isArchief) {
             var el = document.createElement('div');
             el.className = 'planning-card';
             el.id        = placement.instanceId;
@@ -790,12 +919,20 @@
             body.className = 'card-body';
             vulTrelloBasis(body, card);
 
+            /* Archief-label (Stap 1.4) */
+            if (isArchief) {
+                var tag = document.createElement('span');
+                tag.className = 'archief-tag';
+                tag.innerText = '📦 Archief';
+                body.appendChild(tag);
+            }
+
             /* Info plaatsing: per instantie opgeslagen */
             var infoEl = document.createElement('div');
             infoEl.className = 'card-info-placement';
             infoEl.innerText = placement.infoPlaatsing || '';
             maakBewerkbaarVeld(infoEl, function(txt) {
-                updateInstantieInfo(card.id, placement.instanceId, txt);
+                updateInstantieInfo(cardIdVanInstantie(placement.instanceId), placement.instanceId, txt);
             });
             body.appendChild(infoEl);
 
@@ -1025,7 +1162,8 @@
                     instanceId:    genInstanceId(id),
                     ploeg:         doelPloeg,
                     datum:         doelDatum,
-                    infoPlaatsing: ''
+                    infoPlaatsing: '',
+                    snapshot:      maakKaartSnapshot(card)   // Stap 1.4: historiek-snapshot
                 };
 
                 t.get(id, 'shared', 'placements', []).then(function(lijst) {
@@ -1033,8 +1171,9 @@
                     arr.push(nieuwePlacement);
                     return t.set(id, 'shared', 'placements', arr).then(function() { return arr.length; });
                 }).then(function(aantal) {
-                    doelZone.appendChild(maakTrelloInstantieKaart(card, nieuwePlacement));
+                    doelZone.appendChild(maakTrelloInstantieKaart(card, nieuwePlacement, false));
                     updateBronBadgeById(id, aantal);
+                    voegCardToeAanIndex(id);     // Stap 1.4: id opnemen in board-index
                 });
                 return;
             }
@@ -1051,6 +1190,7 @@
                         return t.set(cardId, 'shared', 'placements', arr).then(function() { return arr.length; });
                     }).then(function(aantal) {
                         updateBronBadgeById(cardId, aantal);
+                        if (aantal === 0) verwijderCardUitIndex(cardId);   // Stap 1.4: index opschonen
                     });
                 } else {
                     doelZone.appendChild(cardEl);
