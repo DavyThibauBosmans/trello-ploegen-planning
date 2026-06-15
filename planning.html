@@ -39,6 +39,40 @@
             margin: 0 0 12px 0;
         }
 
+        /* ── ZOEKBALK (Stap 1.3) ──
+           Live filter op projectnaam of adres. Staat boven de kaartenlijst en
+           filtert puur visueel (display:none); raakt geen opgeslagen data aan. */
+        .sidebar-search {
+            width: 100%;
+            padding: 8px 10px;
+            margin-bottom: 10px;
+            border: 1px solid #dfe1e6;
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: inherit;
+            color: #172b4d;
+            background-color: #fafbfc;
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+        }
+        .sidebar-search:focus {
+            border-color: #0052cc;
+            background-color: #fff;
+            box-shadow: 0 0 0 2px rgba(0, 82, 204, 0.18);
+        }
+        .sidebar-search::placeholder {
+            color: #97a0af;
+        }
+
+        /* Subtiele melding wanneer een zoekterm geen resultaten oplevert */
+        #search-empty {
+            display: none;
+            font-size: 12px;
+            color: #5e6c84;
+            font-style: italic;
+            padding: 8px 4px;
+        }
+
         #sidebar-pool {
             flex-grow: 1;
             overflow-y: auto;
@@ -328,8 +362,11 @@
 
     <div class="sidebar">
         <h2>📋 Nog in te plannen</h2>
+        <input type="text" id="sidebar-search" class="sidebar-search"
+               placeholder="🔍 Zoek op naam of adres…" autocomplete="off">
         <div id="loading-msg">Kaarten laden…</div>
         <div id="error-msg">⚠️ Kon kaarten niet laden.</div>
+        <div id="search-empty">Geen kaarten gevonden voor deze zoekterm.</div>
         <div id="sidebar-pool"></div>
     </div>
 
@@ -510,6 +547,43 @@
             return instanceId.split('::')[0];
         }
 
+        /* ── ZOEKFUNCTIE LINKERKOLOM (Stap 1.3) ──
+           Live filter op de kaarten in de zijbalk. Doorzoekt de volledige
+           tekst van de .card-body (titel + adres + omschrijvingsvelden), zodat
+           zowel projectnaam als adres worden gevonden — bij Trello-bronkaarten
+           én bij niet-ingeplande interventies.
+
+           Werkt puur visueel via display:none en wijzigt GEEN opgeslagen data
+           (t.set/t.get) en raakt de drag-and-drop-listeners niet aan. Verborgen
+           kaarten zijn niet sleepbaar, wat het gewenste gedrag is. */
+        function filterZijbalk(zoekterm) {
+            var q = (zoekterm || '').trim().toLowerCase();
+            var pool = document.getElementById('sidebar-pool');
+            if (!pool) return;
+
+            var kaarten = pool.querySelectorAll('.planning-card');
+            var zichtbaar = 0;
+
+            kaarten.forEach(function(kaart) {
+                var body = kaart.querySelector('.card-body');
+                var tekst = (body ? body.textContent : kaart.textContent).toLowerCase();
+
+                if (q === '' || tekst.indexOf(q) !== -1) {
+                    kaart.style.display = '';   // terug naar CSS-default (flex)
+                    zichtbaar++;
+                } else {
+                    kaart.style.display = 'none';
+                }
+            });
+
+            /* Toon een nette melding wanneer er wél gezocht wordt maar niets matcht */
+            var leegMsg = document.getElementById('search-empty');
+            if (leegMsg) {
+                leegMsg.style.display = (q !== '' && kaarten.length > 0 && zichtbaar === 0)
+                    ? 'block' : 'none';
+            }
+        }
+
         /* ── RENDER ── */
         t.render(function() {
             berekenWeekDatums();
@@ -587,6 +661,11 @@
                             pool.appendChild(el);
                         }
                     });
+
+                    /* 3) Herstel een eventueel actieve zoekfilter na de heropbouw
+                          van de pool (Trello kan render meermaals aanroepen). */
+                    var zoekVeld = document.getElementById('sidebar-search');
+                    if (zoekVeld) filterZijbalk(zoekVeld.value);
                 });
             })
             .catch(function(err) {
@@ -995,6 +1074,10 @@
                         return item;
                     }));
                 });
+                /* Herstel zoekfilter: een kaart die terug in de zijbalk komt
+                   moet meteen de actieve filter respecteren. */
+                var zoekVeldA = document.getElementById('sidebar-search');
+                if (zoekVeldA) filterZijbalk(zoekVeldA.value);
             } else {
                 doelZone.appendChild(cardEl);
                 t.get('board', 'shared', 'interventions', []).then(function(lijst) {
@@ -1011,6 +1094,15 @@
         poolEl.addEventListener('dragover', allowDrop);
         poolEl.addEventListener('dragleave', dragLeave);
         poolEl.addEventListener('drop', drop);
+
+        /* ── ZOEKBALK LISTENER (Stap 1.3) ──
+           Live filteren terwijl je typt. */
+        var searchInput = document.getElementById('sidebar-search');
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                filterZijbalk(this.value);
+            });
+        }
     </script>
 </body>
 </html>
