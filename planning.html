@@ -20,131 +20,83 @@
 
         /* ── ZIJBALK ── */
         .sidebar {
-            width: 260px;
-            min-width: 260px;
+            width: 260px; min-width: 260px;
             background-color: #fff;
             border-right: 1px solid #dfe1e6;
-            display: flex;
-            flex-direction: column;
+            display: flex; flex-direction: column;
             padding: 16px;
             box-shadow: 2px 0 6px rgba(0,0,0,0.06);
         }
-
         .sidebar h2 {
-            font-size: 14px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #5e6c84;
-            margin: 0 0 12px 0;
+            font-size: 14px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.05em; color: #5e6c84; margin: 0 0 12px 0;
         }
 
         /* ── ZOEKBALK (Stap 1.3) ── */
         .sidebar-search {
-            width: 100%;
-            padding: 8px 10px;
-            margin-bottom: 10px;
-            border: 1px solid #dfe1e6;
-            border-radius: 6px;
-            font-size: 13px;
-            font-family: inherit;
-            color: #172b4d;
-            background-color: #fafbfc;
-            outline: none;
+            width: 100%; padding: 8px 10px; margin-bottom: 10px;
+            border: 1px solid #dfe1e6; border-radius: 6px;
+            font-size: 13px; font-family: inherit; color: #172b4d;
+            background-color: #fafbfc; outline: none;
             transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
         }
         .sidebar-search:focus {
-            border-color: #0052cc;
-            background-color: #fff;
+            border-color: #0052cc; background-color: #fff;
             box-shadow: 0 0 0 2px rgba(0, 82, 204, 0.18);
         }
         .sidebar-search::placeholder { color: #97a0af; }
 
         #search-empty {
-            display: none;
-            font-size: 12px;
-            color: #5e6c84;
-            font-style: italic;
-            padding: 8px 4px;
+            display: none; font-size: 12px; color: #5e6c84;
+            font-style: italic; padding: 8px 4px;
         }
 
         #sidebar-pool {
-            flex-grow: 1;
-            overflow-y: auto;
-            background-color: #f4f5f7;
-            border-radius: 6px;
-            padding: 8px;
-            min-height: 200px;
+            flex-grow: 1; overflow-y: auto;
+            background-color: #f4f5f7; border-radius: 6px;
+            padding: 8px; min-height: 200px;
         }
-        #sidebar-pool.dragover {
-            background-color: #dce9fc;
-            outline: 2px dashed #0052cc;
-        }
+        #sidebar-pool.dragover { background-color: #dce9fc; outline: 2px dashed #0052cc; }
 
         /* ── KAARTEN OPBOUW ── */
         .planning-card {
-            border-radius: 4px;
-            padding: 10px 12px;
-            margin-bottom: 8px;
+            border-radius: 4px; padding: 10px 12px; margin-bottom: 8px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.15);
-            cursor: grab;
-            user-select: none;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
+            cursor: grab; user-select: none;
+            display: flex; justify-content: space-between; align-items: flex-start;
             transition: box-shadow 0.15s, transform 0.1s;
             position: relative;
+            z-index: 2;   /* boven een eventuele doorlopende band */
         }
         .planning-card:hover {
             box-shadow: 0 4px 10px rgba(0,0,0,0.22);
             transform: translateY(-1px);
         }
         .card-body {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-            width: 100%;
+            flex-grow: 1; display: flex; flex-direction: column;
+            gap: 2px; width: 100%;
         }
         .card-title { font-size: 13px; font-weight: 700; line-height: 1.3; }
         .card-address {
-            font-size: 11px;
-            font-style: italic;
-            opacity: 0.85;
-            line-height: 1.2;
-            outline: none;
-            word-break: break-word;
+            font-size: 11px; font-style: italic; opacity: 0.85;
+            line-height: 1.2; outline: none; word-break: break-word;
         }
 
         /* ── GEPLAND-BADGE (Stap 1.2) ── */
         .plan-badge {
-            display: none;
-            align-self: flex-start;
-            margin-top: 5px;
-            font-size: 10px;
-            font-weight: 700;
-            line-height: 1.4;
-            background-color: rgba(255, 255, 255, 0.85);
-            color: #172b4d;
-            padding: 1px 7px;
-            border-radius: 10px;
-            letter-spacing: 0.02em;
+            display: none; align-self: flex-start; margin-top: 5px;
+            font-size: 10px; font-weight: 700; line-height: 1.4;
+            background-color: rgba(255, 255, 255, 0.85); color: #172b4d;
+            padding: 1px 7px; border-radius: 10px; letter-spacing: 0.02em;
             box-shadow: 0 1px 2px rgba(0,0,0,0.12);
         }
 
         /* ── ARCHIEF-TAG (Stap 1.4) ── */
         .archief-tag {
-            display: inline-block;
-            align-self: flex-start;
-            margin-top: 5px;
-            font-size: 10px;
-            font-weight: 700;
-            line-height: 1.4;
-            background-color: rgba(0, 0, 0, 0.18);
-            color: inherit;
-            padding: 1px 7px;
-            border-radius: 10px;
-            letter-spacing: 0.02em;
+            display: inline-block; align-self: flex-start; margin-top: 5px;
+            font-size: 10px; font-weight: 700; line-height: 1.4;
+            background-color: rgba(0, 0, 0, 0.18); color: inherit;
+            padding: 1px 7px; border-radius: 10px; letter-spacing: 0.02em;
         }
 
         /* ── KAART-INFO POPUP (Stap 2.1) ── */
@@ -155,14 +107,9 @@
             z-index: 1000;
         }
         .card-popup {
-            position: relative;
-            background: #fff;
-            border-radius: 8px;
-            width: min(420px, 92vw);
-            max-height: 86vh;
-            overflow-y: auto;
-            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.30);
-            padding: 18px 20px;
+            position: relative; background: #fff; border-radius: 8px;
+            width: min(420px, 92vw); max-height: 86vh; overflow-y: auto;
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.30); padding: 18px 20px;
         }
         .card-popup-close {
             position: absolute; top: 8px; right: 12px;
@@ -172,8 +119,7 @@
         .card-popup-close:hover { opacity: 1; }
         .card-popup-color-bar { height: 6px; border-radius: 3px; margin-bottom: 12px; }
         .card-popup-title {
-            font-size: 16px; font-weight: 700; line-height: 1.3;
-            margin: 0 26px 8px 0;
+            font-size: 16px; font-weight: 700; line-height: 1.3; margin: 0 26px 8px 0;
         }
         .card-popup-field { font-size: 13px; line-height: 1.4; margin: 4px 0; word-break: break-word; }
         .card-popup-open-btn {
@@ -191,8 +137,7 @@
         .card-popup-section-label {
             font-size: 11px; font-weight: 700; text-transform: uppercase;
             letter-spacing: 0.04em; color: #5e6c84;
-            margin-top: 14px; padding-top: 10px;
-            border-top: 1px solid #ebecf0;
+            margin-top: 14px; padding-top: 10px; border-top: 1px solid #ebecf0;
         }
         .card-popup-desc {
             white-space: pre-wrap; word-break: break-word;
@@ -233,6 +178,7 @@
         .card-address-editable:empty, .card-info-placement:empty { display: none; }
         .planning-card:hover .card-address-editable:empty,
         .planning-card:hover .card-info-placement:empty,
+        .placement-band:hover .card-info-placement:empty,
         .card-address-editable:empty:focus,
         .card-info-placement:empty:focus { display: block; }
 
@@ -242,8 +188,7 @@
             margin-left: 6px; position: relative;
         }
         .color-btn, .delete-btn {
-            cursor: pointer; font-size: 14px; opacity: 0.3;
-            transition: opacity 0.15s;
+            cursor: pointer; font-size: 14px; opacity: 0.3; transition: opacity 0.15s;
         }
         .color-btn:hover, .delete-btn:hover { opacity: 1; }
 
@@ -264,8 +209,8 @@
 
         /* ── HOOFDSCHERM & TABEL ── */
         .main-content {
-            flex-grow: 1; padding: 20px;
-            overflow: auto; display: flex; flex-direction: column;
+            flex-grow: 1; padding: 20px; overflow: auto;
+            display: flex; flex-direction: column;
         }
         .main-content-header {
             display: flex; align-items: center; justify-content: space-between;
@@ -275,11 +220,8 @@
 
         /* ── STAP 2.2: LEGENDE ── */
         .legenda {
-            background-color: #fff;
-            border: 1px solid #dfe1e6;
-            border-radius: 6px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-            font-size: 12px; overflow: hidden;
+            background-color: #fff; border: 1px solid #dfe1e6; border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08); font-size: 12px; overflow: hidden;
         }
         .legenda-toggle {
             display: flex; align-items: center; gap: 6px;
@@ -289,9 +231,7 @@
         }
         .legenda-toggle .chev { transition: transform 0.15s; display: inline-block; }
         .legenda.open .legenda-toggle .chev { transform: rotate(90deg); }
-        .legenda-items {
-            display: none; flex-wrap: wrap; gap: 6px 12px; padding: 0 10px 10px 10px;
-        }
+        .legenda-items { display: none; flex-wrap: wrap; gap: 6px 12px; padding: 0 10px 10px 10px; }
         .legenda.open .legenda-items { display: flex; }
         .legenda-item { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
         .legenda-swatch {
@@ -301,8 +241,7 @@
 
         /* ── STAP 2.3: VIEW-ONLY INDICATOR ── */
         .mode-indicator {
-            font-size: 11px; font-weight: 700;
-            padding: 4px 10px; border-radius: 12px;
+            font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 12px;
             white-space: nowrap; letter-spacing: 0.02em;
         }
         .mode-indicator.view-only { background-color: #ebecf0; color: #5e6c84; }
@@ -313,9 +252,10 @@
         body.view-only-mode .ploeg-delete-btn,
         body.view-only-mode .add-ploeg-row,
         body.view-only-mode .verlof-add-btn,
-        body.view-only-mode .verlof-resize-handle { display: none !important; }
+        body.view-only-mode .span-resize-handle { display: none !important; }
         body.view-only-mode .card-info-placement:empty,
         body.view-only-mode .card-address-editable:empty { display: none !important; }
+        body.view-only-mode .placement-band { cursor: default; }
 
         .planning-table {
             width: 100%; border-collapse: collapse;
@@ -324,19 +264,14 @@
             table-layout: fixed;
         }
         .planning-table th,
-        .planning-table td {
-            border: 1px solid #dfe1e6; padding: 8px; vertical-align: top;
-        }
+        .planning-table td { border: 1px solid #dfe1e6; padding: 8px; vertical-align: top; }
         .planning-table th {
-            background-color: #ebecf0; font-weight: 700;
-            font-size: 13px; text-align: left;
+            background-color: #ebecf0; font-weight: 700; font-size: 13px; text-align: left;
         }
         .col-ploeg { width: 130px; }
         .row-ploeg {
-            font-weight: 700; font-size: 13px;
-            background-color: #fafbfc;
-            vertical-align: middle !important;
-            position: relative;
+            font-weight: 700; font-size: 13px; background-color: #fafbfc;
+            vertical-align: middle !important; position: relative;
         }
 
         /* ── STAP 3.1: PLOEGNAAM INLINE BEWERKEN ── */
@@ -346,37 +281,22 @@
         }
         .ploeg-naam-editable {
             flex-grow: 1; outline: none; padding: 2px 4px; border-radius: 3px;
-            cursor: text;
-            transition: background-color 0.15s, box-shadow 0.15s;
+            cursor: text; transition: background-color 0.15s, box-shadow 0.15s;
             word-break: break-word;
         }
-        body:not(.view-only-mode) .ploeg-naam-editable:hover {
-            background-color: rgba(0, 82, 204, 0.07);
-        }
-        .ploeg-naam-editable:focus {
-            background-color: #fff;
-            box-shadow: 0 0 0 1px #0052cc;
-            cursor: text;
-        }
+        body:not(.view-only-mode) .ploeg-naam-editable:hover { background-color: rgba(0, 82, 204, 0.07); }
+        .ploeg-naam-editable:focus { background-color: #fff; box-shadow: 0 0 0 1px #0052cc; cursor: text; }
         body.view-only-mode .ploeg-naam-editable { cursor: default; }
 
         .ploeg-delete-btn {
-            cursor: pointer; font-size: 16px; line-height: 1;
-            color: #5e6c84; opacity: 0;
-            transition: opacity 0.15s, color 0.15s;
-            padding: 2px 6px; border-radius: 3px; user-select: none;
+            cursor: pointer; font-size: 16px; line-height: 1; color: #5e6c84; opacity: 0;
+            transition: opacity 0.15s, color 0.15s; padding: 2px 6px; border-radius: 3px; user-select: none;
         }
         .row-ploeg:hover .ploeg-delete-btn { opacity: 0.5; }
-        .ploeg-delete-btn:hover {
-            opacity: 1 !important; color: #bf2600;
-            background-color: rgba(191, 38, 0, 0.08);
-        }
+        .ploeg-delete-btn:hover { opacity: 1 !important; color: #bf2600; background-color: rgba(191, 38, 0, 0.08); }
 
         /* ── STAP 3.1: + PLOEG TOEVOEGEN RIJ ── */
-        .add-ploeg-row td {
-            background-color: #fafbfc; padding: 0;
-            border-top: 2px dashed #dfe1e6;
-        }
+        .add-ploeg-row td { background-color: #fafbfc; padding: 0; border-top: 2px dashed #dfe1e6; }
         .add-ploeg-btn {
             display: block; width: 100%; background: none; border: none;
             padding: 10px; font-family: inherit; font-size: 13px;
@@ -387,159 +307,134 @@
 
         /* ── STAP 3.1: INLINE WAARSCHUWING ── */
         .ploeg-warning {
-            position: absolute; top: 100%; left: 10px; right: 10px;
-            margin-top: 4px;
-            background-color: #fff4e5; border: 1px solid #ffab00;
-            color: #6f4e00; font-size: 11px; font-weight: 600;
-            padding: 6px 8px; border-radius: 4px;
+            position: absolute; top: 100%; left: 10px; right: 10px; margin-top: 4px;
+            background-color: #fff4e5; border: 1px solid #ffab00; color: #6f4e00;
+            font-size: 11px; font-weight: 600; padding: 6px 8px; border-radius: 4px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.08);
             z-index: 20; opacity: 0; transform: translateY(-4px);
             transition: opacity 0.15s, transform 0.15s; pointer-events: none;
         }
         .ploeg-warning.show { opacity: 1; transform: translateY(0); }
 
-        /* ── STAP 3.2: VERLOF-RIJ ──
-           KRITIEK: .verlof-zone moet zich als gewone <td> (table-cell) gedragen.
-           Een eerdere versie zette display:flex hierop, waardoor de tabel-layout
-           brak en alle dagen in maandag terechtkwamen. Verlof-segmenten zijn nu
-           block-level binnen elke cel en stapelen netjes onder elkaar. */
+        /* ── STAP 3.2: VERLOF-RIJ ── */
         .row-verlof-label {
-            font-weight: 700; font-size: 13px;
-            background-color: #fff8e1;
-            vertical-align: middle !important;
-            color: #6f4e00;
+            font-weight: 700; font-size: 13px; background-color: #fff8e1;
+            vertical-align: middle !important; color: #6f4e00;
             border-left: 4px solid #ffab00 !important;
         }
         .verlof-zone {
-            background-color: #fffdf5;
-            min-height: 60px;
-            padding-bottom: 26px !important; /* ruimte voor + knop */
-            position: relative;
+            background-color: #fffdf5; min-height: 60px;
+            padding-bottom: 26px !important; position: relative;
         }
-        .verlof-zone.dragover {
-            background-color: #fff4cc;
-            outline: 2px dashed #ffab00;
-        }
+        .verlof-zone.dragover { background-color: #fff4cc; outline: 2px dashed #ffab00; }
 
-        /* ── STAP 3.2: SEGMENTEN (multi-day stretch) ──
-           Een verlof-item dat zich uitstrekt over meerdere dagen wordt per dag
-           als segment getekend (één per cel). De segmenten vormen samen een
-           doorlopende balk via afgeronde uiteinden + rechthoekige tussenstukken. */
+        /* ── STAP 3.2: VERLOF-SEGMENTEN ──
+           UNIFIED kleur: één gele vulling voor 1-dag én meerdere dagen.
+           Geen gradient, geen aparte is-range achtergrond meer. */
         .verlof-segment {
             display: block;
-            background-color: #fff;
-            border: 1px solid #ffd54f;
-            border-radius: 12px;       /* 1-dag: beide uiteinden afgerond */
-            padding: 3px 8px;
-            margin-bottom: 4px;
-            min-height: 22px;
-            font-size: 11px;
-            font-weight: 600;
-            color: #6f4e00;
-            cursor: grab;
-            user-select: none;
-            position: relative;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.08);
-            transition: box-shadow 0.15s, transform 0.1s;
+            background-color: #ffe9a8;          /* unified geel */
+            border: 1px solid #f1c40f;
+            border-radius: 12px;                 /* 1-dag: beide uiteinden afgerond */
+            padding: 3px 8px; margin-bottom: 4px;
+            min-height: 22px; font-size: 11px; font-weight: 600; color: #5f4b00;
+            cursor: grab; user-select: none; position: relative;
+            transition: filter 0.12s;
         }
-        .verlof-segment:hover {
-            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-        }
-        /* Niet-eerste segmenten: linkerkant niet afgerond, geen linker-border */
+        .verlof-segment:hover { filter: brightness(0.97); }
+        /* Naadloze doorloop: niet-eerste segment bloedt links over de cel-grens */
         .verlof-segment.not-first {
-            border-top-left-radius: 0;
-            border-bottom-left-radius: 0;
-            border-left: 0;
-            margin-left: -1px;            /* visueel doortrekken over cel-border */
+            border-top-left-radius: 0; border-bottom-left-radius: 0;
+            border-left: 0; margin-left: -9px; padding-left: 10px;
         }
-        /* Niet-laatste segmenten: rechterkant niet afgerond, geen rechter-border */
         .verlof-segment.not-last {
-            border-top-right-radius: 0;
-            border-bottom-right-radius: 0;
-            border-right: 0;
-            margin-right: -1px;
+            border-top-right-radius: 0; border-bottom-right-radius: 0;
+            border-right: 0; margin-right: -9px;
         }
-        /* Tussensegment (geen naam): toont alleen de balk */
-        .verlof-segment.continuation {
-            color: transparent;
-            background-image: linear-gradient(180deg, #fff 0%, #fff8e1 100%);
-        }
-        /* Range > 1 dag krijgt iets meer "balk-gevoel": lichte achtergrond */
-        .verlof-segment.is-range { background-color: #fffaeb; }
+        .verlof-segment.continuation { color: transparent; }
 
-        .verlof-segment-body {
-            display: flex; align-items: center; gap: 6px;
-            min-height: 16px;
-        }
+        .verlof-segment-body { display: flex; align-items: center; gap: 6px; min-height: 16px; }
         .verlof-naam-editable {
-            outline: none; padding: 0 2px; border-radius: 2px;
-            cursor: text; min-width: 20px;
-            word-break: break-word; flex-grow: 1;
+            outline: none; padding: 0 2px; border-radius: 2px; cursor: text;
+            min-width: 20px; word-break: break-word; flex-grow: 1;
         }
-        .verlof-naam-editable:focus {
-            background-color: #fff8e1;
-            box-shadow: 0 0 0 1px #ffab00;
-        }
+        .verlof-naam-editable:focus { background-color: #fff8e1; box-shadow: 0 0 0 1px #ffab00; }
         body.view-only-mode .verlof-naam-editable { cursor: default; }
-        .verlof-segment .delete-btn {
-            font-size: 13px; opacity: 0.4;
-            color: #6f4e00;
-        }
+        .verlof-segment .delete-btn { font-size: 13px; opacity: 0.4; color: #6f4e00; }
         .verlof-segment:hover .delete-btn { opacity: 1; }
-
-        /* Resize-handle op het laatste zichtbare segment */
-        .verlof-resize-handle {
-            position: absolute;
-            right: -2px; top: 0; bottom: 0;
-            width: 10px;
-            cursor: ew-resize;
-            z-index: 5;
-        }
-        .verlof-resize-handle::after {
-            content: '';
-            position: absolute;
-            right: 3px; top: 50%;
-            transform: translateY(-50%);
-            width: 3px; height: 60%;
-            background-color: rgba(0,0,0,0.18);
-            border-radius: 2px;
-            transition: background-color 0.15s;
-        }
-        .verlof-segment:hover .verlof-resize-handle::after { background-color: rgba(0,0,0,0.45); }
-        body.verlof-resizing { cursor: ew-resize !important; user-select: none; }
-        body.verlof-resizing * { cursor: ew-resize !important; }
 
         .verlof-add-btn {
             position: absolute; bottom: 4px; right: 4px;
             background-color: #ffab00; color: #fff; border: none;
             width: 20px; height: 20px; border-radius: 50%;
-            font-size: 14px; font-weight: bold; line-height: 18px;
-            text-align: center; cursor: pointer;
-            opacity: 0; transition: opacity 0.15s, background-color 0.15s;
+            font-size: 14px; font-weight: bold; line-height: 18px; text-align: center;
+            cursor: pointer; opacity: 0; transition: opacity 0.15s, background-color 0.15s;
             z-index: 10; padding: 0;
         }
         .verlof-zone:hover .verlof-add-btn { opacity: 0.6; }
         .verlof-add-btn:hover { opacity: 1 !important; background-color: #ff8f00; }
 
-        /* Drop-cursor: visuele feedback dat een drop NIET kan in deze zone */
+        /* ── STAP 4.3: DOORLOPENDE PROJECT-BAND ──
+           Een placement over meerdere dagen wordt per dag als een segment getekend
+           dat de cel vult. De segmenten bloeden over de cel-grens zodat het visueel
+           één doorlopende kaart wordt. Kleur = projectleider-kleur (inline gezet). */
+        .placement-band {
+            position: absolute;
+            top: 6px; bottom: 6px; left: 0; right: 0;
+            border-radius: 6px;
+            padding: 8px 10px;
+            overflow: hidden;
+            cursor: grab; user-select: none;
+            z-index: 1;
+            box-shadow: inset 0 -3px 0 rgba(0,0,0,0.10);  /* subtiele diepte, doorlopend (inset → geen seam) */
+            transition: filter 0.12s;
+        }
+        .placement-band:hover { filter: brightness(0.97); }
+        .placement-band.band-not-first {
+            left: -9px;
+            border-top-left-radius: 0; border-bottom-left-radius: 0;
+        }
+        .placement-band.band-not-last {
+            right: -9px;
+            border-top-right-radius: 0; border-bottom-right-radius: 0;
+        }
+        .placement-band .card-body { width: 100%; }
+        .placement-band .card-title { font-size: 13px; font-weight: 700; line-height: 1.25; }
+        .placement-band .card-address { font-size: 11px; font-style: italic; opacity: 0.9; }
+
+        /* ── GENERIEK RESIZE-HANDVAT (verlof + kaarten) ── */
+        .span-resize-handle {
+            position: absolute; right: -2px; top: 0; bottom: 0;
+            width: 12px; cursor: ew-resize; z-index: 6;
+        }
+        .span-resize-handle::after {
+            content: ''; position: absolute; right: 3px; top: 50%;
+            transform: translateY(-50%); width: 3px; height: 55%;
+            background-color: rgba(0,0,0,0.20); border-radius: 2px;
+            transition: background-color 0.15s;
+        }
+        .verlof-segment:hover .span-resize-handle::after,
+        .placement-band:hover .span-resize-handle::after,
+        .planning-card:hover .span-resize-handle::after { background-color: rgba(0,0,0,0.5); }
+        body.span-resizing { cursor: ew-resize !important; user-select: none; }
+        body.span-resizing * { cursor: ew-resize !important; }
+
+        /* Drop-cursor feedback bij type-mismatch */
         body[data-drag-type="verlof"] .dropzone:not(.verlof-zone) { cursor: not-allowed; }
         body[data-drag-type="bron"] .verlof-zone,
         body[data-drag-type="instantie"] .verlof-zone,
         body[data-drag-type="interventie"] .verlof-zone { cursor: not-allowed; }
 
         /* Ploeg-rij dropzones */
-        .dropzone {
-            min-height: 110px; position: relative; padding-bottom: 26px !important;
-        }
+        .dropzone { min-height: 110px; position: relative; padding-bottom: 26px !important; }
         .dropzone.dragover { background-color: #dce9fc; outline: 2px dashed #0052cc; }
 
         .cell-add-btn {
             position: absolute; bottom: 4px; right: 4px;
             background-color: #0052cc; color: white; border: none;
             width: 20px; height: 20px; border-radius: 50%;
-            font-size: 14px; font-weight: bold; line-height: 18px;
-            text-align: center; cursor: pointer;
-            opacity: 0; transition: opacity 0.15s, background-color 0.15s;
+            font-size: 14px; font-weight: bold; line-height: 18px; text-align: center;
+            cursor: pointer; opacity: 0; transition: opacity 0.15s, background-color 0.15s;
             z-index: 10; padding: 0;
         }
         .dropzone:hover .cell-add-btn { opacity: 0.6; }
@@ -555,20 +450,17 @@
             .main-content { padding: 0 !important; margin: 0 !important; width: 100% !important; }
             .card-controls, .cell-add-btn, .color-picker-menu, .card-popup-overlay,
             .mode-indicator, .legenda, .ploeg-delete-btn, .add-ploeg-row,
-            .verlof-add-btn, .verlof-resize-handle,
+            .verlof-add-btn, .span-resize-handle,
             .verlof-segment .delete-btn { display: none !important; }
             .card-info-placement:empty { display: none !important; }
             .card-info-placement {
                 background-color: transparent !important;
                 border-left: 2px solid #5e6484 !important;
-                padding: 2px 0 0 4px !important;
-                margin-top: 4px !important;
+                padding: 2px 0 0 4px !important; margin-top: 4px !important;
             }
-            .planning-card, .verlof-segment {
-                box-shadow: none !important;
-                border: 1px solid #ccc !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
+            .planning-card, .verlof-segment, .placement-band {
+                box-shadow: none !important; border: 1px solid #ccc !important;
+                -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
             }
             .planning-table { box-shadow: none !important; }
         }
@@ -628,6 +520,11 @@
         var datumsVanDeWeek = [];
 
         var trelloKaartCache = {};
+
+        /* ── STAP 4.3: CONTEXT PER PLACEMENT ──
+           Bewaart per instanceId de kaartdata + render-context, zodat resize en
+           drag een placement kunnen hertekenen zonder volledige rerender. */
+        var placementCtx = {};
 
         var CUSTOM_COLORS = [
             { bg: '#dfe1e6', text: '#172b4d' },
@@ -757,11 +654,7 @@
             return extracted;
         }
 
-        /* ── DATUM HELPERS ──
-           DD-MM strings worden voor vergelijking en datumrekenwerk omgezet naar
-           Date-objecten met het HUIDIGE jaar als referentie. Edge case rond
-           jaarwissel (eind december ↔ begin januari) is acceptabel voor de
-           week-view; bij stap 4.x (maand-view) heroverwegen. */
+        /* ── DATUM HELPERS (herbruikbaar voor verlof én kaarten) ── */
         function ddMMNaarDate(ddmm) {
             if (!ddmm) return null;
             var parts = ddmm.split('-');
@@ -788,9 +681,6 @@
             d.setDate(d.getDate() + dagen);
             return dateNaarDdMM(d);
         }
-
-        /* Geeft per dag in de huidige week aan of die binnen [start..eind] valt.
-           Returnt array van {datum, isExactStart, isExactEind, isFirstVisible, isLastVisible}. */
         function dagenBinnenWeek(startDatum, eindDatum) {
             var sD = ddMMNaarDate(startDatum);
             var eD = ddMMNaarDate(eindDatum);
@@ -925,34 +815,23 @@
                         sel.removeAllRanges();
                         sel.addRange(range);
                     });
-
                     naamElement.addEventListener('blur', function() {
                         naamElement.contentEditable = false;
                         var nieuwe = naamElement.innerText.trim();
-                        if (!nieuwe || nieuwe === oudeNaam) {
-                            naamElement.innerText = oudeNaam;
-                            return;
-                        }
+                        if (!nieuwe || nieuwe === oudeNaam) { naamElement.innerText = oudeNaam; return; }
                         var bestaatAl = ploegen.some(function(p) {
                             return p !== oudeNaam && p.toLowerCase() === nieuwe.toLowerCase();
                         });
                         if (bestaatAl) {
                             naamElement.innerText = oudeNaam;
-                            toonPloegMelding(rijElement,
-                                'Er is al een ploeg met de naam "' + nieuwe + '".');
+                            toonPloegMelding(rijElement, 'Er is al een ploeg met de naam "' + nieuwe + '".');
                             return;
                         }
                         hernoemPloeg(oudeNaam, nieuwe);
                     });
-
                     naamElement.addEventListener('keydown', function(e) {
-                        if (e.key === 'Enter') {
-                            e.preventDefault();
-                            naamElement.blur();
-                        } else if (e.key === 'Escape') {
-                            naamElement.innerText = oudeNaam;
-                            naamElement.blur();
-                        }
+                        if (e.key === 'Enter') { e.preventDefault(); naamElement.blur(); }
+                        else if (e.key === 'Escape') { naamElement.innerText = oudeNaam; naamElement.blur(); }
                     });
                 })(ploeg, naamEl, tr);
 
@@ -1093,18 +972,13 @@
             kaarten.forEach(function(kaart) {
                 var body = kaart.querySelector('.card-body');
                 var tekst = (body ? body.textContent : kaart.textContent).toLowerCase();
-                if (q === '' || tekst.indexOf(q) !== -1) {
-                    kaart.style.display = '';
-                    zichtbaar++;
-                } else {
-                    kaart.style.display = 'none';
-                }
+                if (q === '' || tekst.indexOf(q) !== -1) { kaart.style.display = ''; zichtbaar++; }
+                else { kaart.style.display = 'none'; }
             });
 
             var leegMsg = document.getElementById('search-empty');
             if (leegMsg) {
-                leegMsg.style.display = (q !== '' && kaarten.length > 0 && zichtbaar === 0)
-                    ? 'block' : 'none';
+                leegMsg.style.display = (q !== '' && kaarten.length > 0 && zichtbaar === 0) ? 'block' : 'none';
             }
         }
 
@@ -1129,18 +1003,14 @@
 
             var promises = [];
             promises.push(t.set('board', 'shared', 'ploegen', ploegen));
-
             promises.push(
                 t.get('board', 'shared', 'interventions', []).then(function(lijst) {
                     var arr = Array.isArray(lijst) ? lijst : [];
                     var gewijzigd = false;
-                    arr.forEach(function(it) {
-                        if (it.ploeg === oudeNaam) { it.ploeg = nieuweNaam; gewijzigd = true; }
-                    });
+                    arr.forEach(function(it) { if (it.ploeg === oudeNaam) { it.ploeg = nieuweNaam; gewijzigd = true; } });
                     if (gewijzigd) return t.set('board', 'shared', 'interventions', arr);
                 })
             );
-
             promises.push(
                 t.get('board', 'shared', 'plannedCardIds', []).then(function(ids) {
                     var arr = Array.isArray(ids) ? ids : [];
@@ -1148,15 +1018,12 @@
                         return t.get(cid, 'shared', 'placements', []).then(function(plist) {
                             var pa = Array.isArray(plist) ? plist : [];
                             var gewijzigd = false;
-                            pa.forEach(function(p) {
-                                if (p.ploeg === oudeNaam) { p.ploeg = nieuweNaam; gewijzigd = true; }
-                            });
+                            pa.forEach(function(p) { if (p.ploeg === oudeNaam) { p.ploeg = nieuweNaam; gewijzigd = true; } });
                             if (gewijzigd) return t.set(cid, 'shared', 'placements', pa);
                         });
                     }));
                 })
             );
-
             return Promise.all(promises).then(laadEnRenderAlles);
         }
 
@@ -1168,11 +1035,9 @@
                 var ints = Array.isArray(r[0]) ? r[0] : [];
                 var heeftInterventies = ints.some(function(i) { return i.ploeg === naam; });
                 if (heeftInterventies) {
-                    toonPloegMelding(rijElement,
-                        'Deze ploeg bevat nog interventies. Verwijder of verplaats ze eerst.');
+                    toonPloegMelding(rijElement, 'Deze ploeg bevat nog interventies. Verwijder of verplaats ze eerst.');
                     return;
                 }
-
                 var ids = Array.isArray(r[1]) ? r[1] : [];
                 return Promise.all(ids.map(function(cid) {
                     return t.get(cid, 'shared', 'placements', []);
@@ -1182,8 +1047,7 @@
                         return pa.some(function(p) { return p.ploeg === naam; });
                     });
                     if (heeftPlacements) {
-                        toonPloegMelding(rijElement,
-                            'Deze ploeg bevat nog geplande projecten. Sleep ze eerst naar de zijbalk of een andere ploeg.');
+                        toonPloegMelding(rijElement, 'Deze ploeg bevat nog geplande projecten. Sleep ze eerst naar de zijbalk of een andere ploeg.');
                         return;
                     }
                     if (ploegen.length <= 1) {
@@ -1206,7 +1070,6 @@
                 eindDatum:  datum,
                 ploeg:      VERLOF_ROW_KEY
             };
-
             t.get('board', 'shared', 'verlofItems', [])
             .then(function(lijst) {
                 var arr = Array.isArray(lijst) ? lijst : [];
@@ -1215,10 +1078,7 @@
             })
             .then(function() {
                 tekenVerlofItem(nieuw);
-                /* Naam meteen in edit-modus in het eerste segment */
-                var eersteSegment = document.querySelector(
-                    '[data-verlof-id="' + nieuw.id + '"] .verlof-naam-editable'
-                );
+                var eersteSegment = document.querySelector('[data-verlof-id="' + nieuw.id + '"] .verlof-naam-editable');
                 if (eersteSegment) {
                     eersteSegment.contentEditable = true;
                     eersteSegment.focus();
@@ -1244,9 +1104,7 @@
             if (!isAdmin) return;
             t.get('board', 'shared', 'verlofItems', []).then(function(lijst) {
                 var arr = Array.isArray(lijst) ? lijst : [];
-                return t.set('board', 'shared', 'verlofItems',
-                    arr.filter(function(v) { return v.id !== id; })
-                );
+                return t.set('board', 'shared', 'verlofItems', arr.filter(function(v) { return v.id !== id; }));
             }).then(function() {
                 document.querySelectorAll('[data-verlof-id="' + id + '"]').forEach(function(el) {
                     if (el.parentNode) el.parentNode.removeChild(el);
@@ -1254,8 +1112,6 @@
             });
         }
 
-        /* Tekent ALLE segmenten van één verlof-item, na eerst eventuele oude
-           segmenten te verwijderen. Gebruikt door drop, resize en initiële render. */
         function hertekenEnkelVerlofItem(item) {
             document.querySelectorAll('[data-verlof-id="' + item.id + '"]').forEach(function(el) {
                 if (el.parentNode) el.parentNode.removeChild(el);
@@ -1266,15 +1122,13 @@
 
         function tekenVerlofItem(item) {
             var segmentDagen = dagenBinnenWeek(item.startDatum, item.eindDatum);
-            var isRange = (item.startDatum !== item.eindDatum);
             segmentDagen.forEach(function(dag) {
                 var zone = document.getElementById(maakZoneId(VERLOF_ROW_KEY, dag.datum));
                 if (!zone) return;
                 var seg = maakVerlofSegment(item, {
-                    datum:           dag.datum,
-                    isFirstVisible:  dag.isFirstVisible,
-                    isLastVisible:   dag.isLastVisible,
-                    isRange:         isRange
+                    datum:          dag.datum,
+                    isFirstVisible: dag.isFirstVisible,
+                    isLastVisible:  dag.isLastVisible
                 });
                 zone.appendChild(seg);
             });
@@ -1286,7 +1140,6 @@
             if (!opts.isFirstVisible) el.classList.add('not-first');
             if (!opts.isLastVisible)  el.classList.add('not-last');
             if (!opts.isFirstVisible && !opts.isLastVisible) el.classList.add('continuation');
-            if (opts.isRange) el.classList.add('is-range');
 
             el.id = 'vseg-' + item.id + '-' + opts.datum;
             el.dataset.verlofId = item.id;
@@ -1298,7 +1151,6 @@
             bodyEl.className = 'verlof-segment-body';
 
             if (opts.isFirstVisible) {
-                /* Naam editbaar in EERSTE zichtbare segment */
                 var naamEl = document.createElement('span');
                 naamEl.className = 'verlof-naam-editable';
                 naamEl.innerText = item.naam || 'Naam';
@@ -1319,20 +1171,12 @@
                     naamElement.addEventListener('blur', function() {
                         naamElement.contentEditable = false;
                         var txt = naamElement.innerText.trim();
-                        if (!txt) {
-                            naamElement.innerText = '(leeg)';
-                            updateVerlofNaam(itemId, '(leeg)');
-                        } else {
-                            updateVerlofNaam(itemId, txt);
-                        }
+                        if (!txt) { naamElement.innerText = '(leeg)'; updateVerlofNaam(itemId, '(leeg)'); }
+                        else { updateVerlofNaam(itemId, txt); }
                     });
                     naamElement.addEventListener('keydown', function(e) {
-                        if (e.key === 'Enter' || e.key === 'Escape') {
-                            e.preventDefault();
-                            naamElement.blur();
-                        }
+                        if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); naamElement.blur(); }
                     });
-                    /* Voorkom dat slepen vanaf de tekst-edit het drag-event triggert */
                     naamElement.addEventListener('mousedown', function(e) {
                         if (naamElement.isContentEditable) e.stopPropagation();
                     });
@@ -1346,35 +1190,22 @@
                     delBtn.innerHTML = '&times;';
                     delBtn.title = 'Verwijder verlof';
                     (function(itemId) {
-                        delBtn.addEventListener('click', function(e) {
-                            e.stopPropagation();
-                            verwijderVerlof(itemId);
-                        });
-                        delBtn.addEventListener('mousedown', function(e) {
-                            /* Voorkom drag-start vanuit het kruisje */
-                            e.stopPropagation();
-                        });
+                        delBtn.addEventListener('click', function(e) { e.stopPropagation(); verwijderVerlof(itemId); });
+                        delBtn.addEventListener('mousedown', function(e) { e.stopPropagation(); });
                     })(item.id);
                     bodyEl.appendChild(delBtn);
                 }
             } else {
-                /* Continuation-segment: lege placeholder zodat de balk hoogte houdt */
                 bodyEl.innerHTML = '&nbsp;';
             }
 
             el.appendChild(bodyEl);
 
-            /* Resize-handle op het LAATSTE zichtbare segment */
             if (opts.isLastVisible && isAdmin) {
-                var handle = document.createElement('div');
-                handle.className = 'verlof-resize-handle';
-                handle.title = 'Sleep om verlof uit te rekken of in te korten';
                 (function(itemSnapshot) {
-                    handle.addEventListener('mousedown', function(e) {
-                        startVerlofResize(e, itemSnapshot);
-                    });
+                    var handle = maakResizeHandle(function(e) { startVerlofResize(e, itemSnapshot); });
+                    el.appendChild(handle);
                 })(item);
-                el.appendChild(handle);
             }
 
             el.addEventListener('dragstart', drag);
@@ -1382,71 +1213,231 @@
             return el;
         }
 
-        /* ── STAP 3.2: RESIZE-LOGICA (multi-day stretch) ──
-           Live preview tijdens slepen: alleen DOM bijwerken, geen t.set per
-           mousemove. Bij mouseup → één keer persisten. Andere drag-and-drop
-           (HTML5 native) blijft onaangeraakt. */
-        var resizingState = null;
+        /* ── GENERIEK RESIZE-HANDVAT ── */
+        function maakResizeHandle(onStart) {
+            var h = document.createElement('div');
+            h.className = 'span-resize-handle';
+            h.title = 'Sleep om uit te rekken of in te korten';
+            h.addEventListener('mousedown', onStart);
+            return h;
+        }
 
+        /* ── VERLOF RESIZE ── */
+        var verlofResizeState = null;
         function startVerlofResize(e, itemSnapshot) {
             if (!isAdmin) return;
             e.preventDefault();
             e.stopPropagation();
-
-            resizingState = {
-                itemId:           itemSnapshot.id,
-                naam:             itemSnapshot.naam,
-                startDatum:       itemSnapshot.startDatum,
-                origineelEind:    itemSnapshot.eindDatum,
-                huidigEind:       itemSnapshot.eindDatum
+            verlofResizeState = {
+                itemId:        itemSnapshot.id,
+                naam:          itemSnapshot.naam,
+                startDatum:    itemSnapshot.startDatum,
+                origineelEind: itemSnapshot.eindDatum,
+                huidigEind:    itemSnapshot.eindDatum
             };
-            document.body.classList.add('verlof-resizing');
+            document.body.classList.add('span-resizing');
             document.addEventListener('mousemove', onVerlofResizeMove);
             document.addEventListener('mouseup',   onVerlofResizeEnd);
         }
-
         function onVerlofResizeMove(e) {
-            if (!resizingState) return;
+            if (!verlofResizeState) return;
             var el = document.elementFromPoint(e.clientX, e.clientY);
             if (!el) return;
             var zone = el.closest ? el.closest('.verlof-zone') : null;
             if (!zone || !zone.dataset.datum) return;
-
             var nieuweEind = zone.dataset.datum;
-            /* Eind mag niet vóór start; als de muis links daarvan komt, klem op start */
-            var sD = ddMMNaarDate(resizingState.startDatum);
+            var sD = ddMMNaarDate(verlofResizeState.startDatum);
             var nD = ddMMNaarDate(nieuweEind);
-            if (sD && nD && nD < sD) nieuweEind = resizingState.startDatum;
-
-            if (nieuweEind === resizingState.huidigEind) return;
-            resizingState.huidigEind = nieuweEind;
-
+            if (sD && nD && nD < sD) nieuweEind = verlofResizeState.startDatum;
+            if (nieuweEind === verlofResizeState.huidigEind) return;
+            verlofResizeState.huidigEind = nieuweEind;
             hertekenEnkelVerlofItem({
-                id:         resizingState.itemId,
-                naam:       resizingState.naam,
-                startDatum: resizingState.startDatum,
-                eindDatum:  resizingState.huidigEind,
-                ploeg:      VERLOF_ROW_KEY
+                id: verlofResizeState.itemId, naam: verlofResizeState.naam,
+                startDatum: verlofResizeState.startDatum, eindDatum: verlofResizeState.huidigEind,
+                ploeg: VERLOF_ROW_KEY
             });
         }
-
-        function onVerlofResizeEnd(e) {
-            if (!resizingState) return;
-            document.body.classList.remove('verlof-resizing');
+        function onVerlofResizeEnd() {
+            if (!verlofResizeState) return;
+            document.body.classList.remove('span-resizing');
             document.removeEventListener('mousemove', onVerlofResizeMove);
             document.removeEventListener('mouseup',   onVerlofResizeEnd);
-
-            var itemId  = resizingState.itemId;
-            var nieuweEind = resizingState.huidigEind;
-            var ongewijzigd = (nieuweEind === resizingState.origineelEind);
-            resizingState = null;
+            var itemId = verlofResizeState.itemId;
+            var nieuweEind = verlofResizeState.huidigEind;
+            var ongewijzigd = (nieuweEind === verlofResizeState.origineelEind);
+            verlofResizeState = null;
             if (ongewijzigd) return;
-
             t.get('board', 'shared', 'verlofItems', []).then(function(lijst) {
                 var arr = Array.isArray(lijst) ? lijst : [];
                 return t.set('board', 'shared', 'verlofItems', arr.map(function(v) {
-                    if (v.id === itemId) { v.eindDatum = nieuweEind; }
+                    if (v.id === itemId) v.eindDatum = nieuweEind;
                     return v;
+                }));
+            });
+        }
+
+        /* ── STAP 4.3: PLACEMENT TEKENEN (1 dag = kaart, meerdere = band) ── */
+        function placementStart(p) { return p.datum; }
+        function placementEind(p)  { return p.eindDatum || p.datum; }
+
+        function hertekenEnkelPlacement(p, ctx) {
+            document.querySelectorAll('[data-instance-id="' + p.instanceId + '"]').forEach(function(el) {
+                if (el.parentNode) el.parentNode.removeChild(el);
+            });
+            tekenPlacement(p, ctx);
+        }
+
+        function tekenPlacement(p, ctx) {
+            if (!p.ploeg || !p.datum) return;
+            placementCtx[p.instanceId] = ctx;
+
+            var start = placementStart(p);
+            var eind  = placementEind(p);
+            var dagen = dagenBinnenWeek(start, eind);
+            if (dagen.length === 0) return;
+
+            var meerdaags = (start !== eind) && (dagen.length > 1 ||
+                /* ook bij gedeeltelijk-in-week-zicht een band tonen */
+                (aantalDagenTussen(start, eind) > 0));
+
+            if (!meerdaags) {
+                /* 1 dag → volledige kaart (met resize-handvat) */
+                var zone = document.getElementById(maakZoneId(p.ploeg, start));
+                if (!zone) return;
+                var kaart = maakTrelloInstantieKaart(ctx.card, p, {
+                    isArchief: ctx.isArchief, kanTonen: ctx.kanTonen, url: ctx.url,
+                    metResize: true, ctx: ctx
+                });
+                zone.appendChild(kaart);
+            } else {
+                /* Meerdere dagen → doorlopende band, per dag een segment */
+                dagen.forEach(function(dag) {
+                    var zone = document.getElementById(maakZoneId(p.ploeg, dag.datum));
+                    if (!zone) return;
+                    var seg = maakPlacementBandSegment(ctx.card, p, {
+                        datum: dag.datum,
+                        isFirstVisible: dag.isFirstVisible,
+                        isLastVisible:  dag.isLastVisible,
+                        ctx: ctx
+                    });
+                    zone.appendChild(seg);
+                });
+            }
+        }
+
+        function maakPlacementBandSegment(card, p, opts) {
+            var ctx = opts.ctx;
+            var el = document.createElement('div');
+            el.className = 'placement-band';
+            if (!opts.isFirstVisible) el.classList.add('band-not-first');
+            if (!opts.isLastVisible)  el.classList.add('band-not-last');
+
+            el.id = 'pseg-' + p.instanceId + '-' + opts.datum;
+            el.dataset.instanceId = p.instanceId;
+            el.dataset.datum      = opts.datum;
+            el.dataset.rol        = 'instantie';
+            el.draggable = isAdmin;
+
+            var stijl = bepaalTrelloKaartStijl(card.members);
+            el.style.backgroundColor = stijl.bg;
+            el.style.color           = stijl.text;
+
+            if (opts.isFirstVisible) {
+                var body = document.createElement('div');
+                body.className = 'card-body';
+                vulTrelloBasis(body, card);
+
+                if (ctx.isArchief) {
+                    var tag = document.createElement('span');
+                    tag.className = 'archief-tag';
+                    tag.innerText = '📦 Archief';
+                    body.appendChild(tag);
+                }
+
+                var infoEl = document.createElement('div');
+                infoEl.className = 'card-info-placement';
+                infoEl.innerText = p.infoPlaatsing || '';
+                maakBewerkbaarVeld(infoEl, function(txt) {
+                    updateInstantieInfo(cardIdVanInstantie(p.instanceId), p.instanceId, txt);
+                });
+                body.appendChild(infoEl);
+
+                el.appendChild(body);
+            }
+            /* continuation-segmenten: enkel kleur, geen content (doorlopende balk) */
+
+            if (opts.isLastVisible && isAdmin) {
+                var handle = maakResizeHandle(function(e) { startPlacementResize(e, p, ctx); });
+                el.appendChild(handle);
+            }
+
+            el.addEventListener('dragstart', drag);
+            el.addEventListener('dragend',   dragEnd);
+
+            koppelKaartOpenen(el, {
+                kaartData: card, kanTonen: !!ctx.kanTonen,
+                cardId: cardIdVanInstantie(p.instanceId), url: ctx.url || ''
+            });
+
+            return el;
+        }
+
+        /* ── PLACEMENT RESIZE ── */
+        var placementResizeState = null;
+        function startPlacementResize(e, p, ctx) {
+            if (!isAdmin) return;
+            e.preventDefault();
+            e.stopPropagation();
+            placementResizeState = {
+                instanceId: p.instanceId,
+                cardId:     cardIdVanInstantie(p.instanceId),
+                ploeg:      p.ploeg,
+                start:      placementStart(p),
+                origEind:   placementEind(p),
+                huidigEind: placementEind(p),
+                werkItem:   {
+                    instanceId: p.instanceId, ploeg: p.ploeg,
+                    datum: placementStart(p), eindDatum: placementEind(p),
+                    infoPlaatsing: p.infoPlaatsing, snapshot: p.snapshot
+                },
+                ctx: ctx
+            };
+            document.body.classList.add('span-resizing');
+            document.addEventListener('mousemove', onPlacementResizeMove);
+            document.addEventListener('mouseup',   onPlacementResizeEnd);
+        }
+        function onPlacementResizeMove(e) {
+            if (!placementResizeState) return;
+            var el = document.elementFromPoint(e.clientX, e.clientY);
+            if (!el) return;
+            var zone = el.closest ? el.closest('.dropzone') : null;
+            if (!zone || zone.dataset.rowType !== 'ploeg') return;
+            if (zone.dataset.ploeg !== placementResizeState.ploeg) return;  // enkel binnen dezelfde ploeg-rij
+            var nieuwEind = zone.dataset.datum;
+            var sD = ddMMNaarDate(placementResizeState.start);
+            var nD = ddMMNaarDate(nieuwEind);
+            if (sD && nD && nD < sD) nieuwEind = placementResizeState.start;
+            if (nieuwEind === placementResizeState.huidigEind) return;
+            placementResizeState.huidigEind = nieuwEind;
+            placementResizeState.werkItem.eindDatum = nieuwEind;
+            hertekenEnkelPlacement(placementResizeState.werkItem, placementResizeState.ctx);
+        }
+        function onPlacementResizeEnd() {
+            if (!placementResizeState) return;
+            document.body.classList.remove('span-resizing');
+            document.removeEventListener('mousemove', onPlacementResizeMove);
+            document.removeEventListener('mouseup',   onPlacementResizeEnd);
+            var st = placementResizeState;
+            placementResizeState = null;
+            if (st.huidigEind === st.origEind) return;
+            t.get(st.cardId, 'shared', 'placements', []).then(function(lijst) {
+                var arr = Array.isArray(lijst) ? lijst : [];
+                return t.set(st.cardId, 'shared', 'placements', arr.map(function(p) {
+                    if (p.instanceId === st.instanceId) {
+                        if (st.huidigEind === p.datum) { delete p.eindDatum; }   // terug naar 1 dag
+                        else { p.eindDatum = st.huidigEind; }
+                    }
+                    return p;
                 }));
             });
         }
@@ -1456,6 +1447,7 @@
             berekenWeekDatums();
             bouwLegende();
             trelloKaartCache = {};
+            placementCtx = {};
 
             var pool       = document.getElementById('sidebar-pool');
             var loadingMsg = document.getElementById('loading-msg');
@@ -1473,10 +1465,7 @@
                     var username = (member && member.username) ? member.username.toLowerCase() : '';
                     isAdmin = ADMIN_USERNAMES.indexOf(username) !== -1;
                     toepassenAdminStatus();
-                }).catch(function() {
-                    isAdmin = false;
-                    toepassenAdminStatus();
-                });
+                }).catch(function() { isAdmin = false; toepassenAdminStatus(); });
             }
 
             return Promise.all([
@@ -1502,10 +1491,7 @@
                     t.set('board', 'shared', 'ploegen', ploegen);
                 }
 
-                /* ── Migratie verlof-items oude → nieuwe vorm ──
-                   Was: {datum} → Wordt: {startDatum, eindDatum}.
-                   Niet-destructief: we behouden 'datum' niet meer maar zetten
-                   start/eind gelijk. Eenmalige seed. */
+                /* Migratie verlof: oude {datum} → {startDatum, eindDatum} */
                 var verlofMigratieNodig = false;
                 verlofItems.forEach(function(v) {
                     if (!v.startDatum && v.datum) {
@@ -1514,17 +1500,11 @@
                         delete v.datum;
                         verlofMigratieNodig = true;
                     }
-                    if (!v.eindDatum && v.startDatum) {
-                        v.eindDatum = v.startDatum;
-                        verlofMigratieNodig = true;
-                    }
+                    if (!v.eindDatum && v.startDatum) { v.eindDatum = v.startDatum; verlofMigratieNodig = true; }
                 });
-                if (verlofMigratieNodig) {
-                    t.set('board', 'shared', 'verlofItems', verlofItems);
-                }
+                if (verlofMigratieNodig) t.set('board', 'shared', 'verlofItems', verlofItems);
 
                 bouwTabel();
-
                 if (loadingMsg) loadingMsg.style.display = 'none';
 
                 var archiefLijstIds = {};
@@ -1555,9 +1535,7 @@
                                     infoPlaatsing: stored[2] || ''
                                 }];
                                 t.set(cardId, 'shared', 'placements', placements);
-                            } else {
-                                placements = [];
-                            }
+                            } else { placements = []; }
                         }
                         return { cardId: cardId, placements: placements };
                     });
@@ -1574,9 +1552,7 @@
                         var inArchiefLijst = isZichtbaar && !!archiefLijstIds[liveCard.idList];
                         var verbergUitZijbalk = (!isZichtbaar) || inArchiefLijst;
 
-                        if (placements.length > 0 && nieuweIndex.indexOf(cardId) === -1) {
-                            nieuweIndex.push(cardId);
-                        }
+                        if (placements.length > 0 && nieuweIndex.indexOf(cardId) === -1) nieuweIndex.push(cardId);
 
                         if (isZichtbaar) {
                             trelloKaartCache[cardId] = liveCard;
@@ -1584,12 +1560,9 @@
                             var verseSnapStr = JSON.stringify(verseSnap);
                             var gewijzigd = false;
                             placements.forEach(function(p) {
-                                if (JSON.stringify(p.snapshot) !== verseSnapStr) {
-                                    p.snapshot = verseSnap;
-                                    gewijzigd = true;
-                                }
+                                if (JSON.stringify(p.snapshot) !== verseSnapStr) { p.snapshot = verseSnap; gewijzigd = true; }
                             });
-                            if (gewijzigd) { t.set(cardId, 'shared', 'placements', placements); }
+                            if (gewijzigd) t.set(cardId, 'shared', 'placements', placements);
                         }
 
                         if (isZichtbaar && !verbergUitZijbalk) {
@@ -1598,15 +1571,13 @@
 
                         placements.forEach(function(p) {
                             if (!p.ploeg || !p.datum) return;
-                            var zone = document.getElementById(maakZoneId(p.ploeg, p.datum));
-                            if (!zone) return;
                             var kaartData = isZichtbaar ? liveCard : snapshotNaarKaart(p.snapshot || {});
                             var openUrl   = isZichtbaar ? (liveCard.url || '') : ((p.snapshot && p.snapshot.url) || '');
-                            zone.appendChild(maakTrelloInstantieKaart(kaartData, p, {
-                                isArchief: verbergUitZijbalk,
-                                kanTonen:  isZichtbaar,
-                                url:       openUrl
-                            }));
+                            var ctx = {
+                                card: kaartData, kanTonen: isZichtbaar,
+                                url: openUrl, isArchief: verbergUitZijbalk, ploeg: p.ploeg
+                            };
+                            tekenPlacement(p, ctx);
                         });
                     });
 
@@ -1619,15 +1590,10 @@
                         if (int.ploeg && int.datum) {
                             var zone = document.getElementById(maakZoneId(int.ploeg, int.datum));
                             (zone || pool).appendChild(el);
-                        } else {
-                            pool.appendChild(el);
-                        }
+                        } else { pool.appendChild(el); }
                     });
 
-                    /* Verlof: één tekenroutine per item, die alle segmenten genereert */
-                    verlofItems.forEach(function(v) {
-                        tekenVerlofItem(v);
-                    });
+                    verlofItems.forEach(function(v) { tekenVerlofItem(v); });
 
                     var zoekVeld = document.getElementById('sidebar-search');
                     if (zoekVeld) filterZijbalk(zoekVeld.value);
@@ -1645,7 +1611,6 @@
         /* ── HULPFUNCTIE: VELD BEWERKBAAR MAKEN ── */
         function maakBewerkbaarVeld(veldEl, opslaanCallback) {
             veldEl.contentEditable = false;
-
             veldEl.addEventListener('click', function() {
                 if (!isAdmin) return;
                 if (veldEl.isContentEditable) return;
@@ -1658,14 +1623,12 @@
                 sel.removeAllRanges();
                 sel.addRange(range);
             });
-
             veldEl.addEventListener('blur', function() {
                 veldEl.contentEditable = false;
                 var txt = veldEl.innerText.trim();
                 if (!txt) { veldEl.innerHTML = ''; }
                 opslaanCallback(txt);
             });
-
             veldEl.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter') {
                     if (e.shiftKey) {
@@ -1685,10 +1648,7 @@
                                 sel.addRange(range);
                             }
                         }
-                    } else {
-                        e.preventDefault();
-                        veldEl.blur();
-                    }
+                    } else { e.preventDefault(); veldEl.blur(); }
                 }
             });
         }
@@ -1723,7 +1683,7 @@
             if (!info || (!info.cardId && !info.url)) return;
             el.title = 'Klik voor kaartinfo — de planning blijft open';
             el.addEventListener('click', function(e) {
-                if (e.target.closest('.card-info-placement, .card-address-editable, .card-controls')) return;
+                if (e.target.closest('.card-info-placement, .card-address-editable, .card-controls, .span-resize-handle')) return;
                 var sel = window.getSelection();
                 if (sel && sel.toString().length > 0) return;
                 toonKaartPopup(info.kaartData || {}, info);
@@ -1758,13 +1718,10 @@
 
         function toonKaartPopup(kaartData, info) {
             sluitKaartPopup();
-
             var overlay = document.createElement('div');
             overlay.className = 'card-popup-overlay';
             overlay.id        = 'card-popup-overlay';
-            overlay.addEventListener('click', function(e) {
-                if (e.target === overlay) sluitKaartPopup();
-            });
+            overlay.addEventListener('click', function(e) { if (e.target === overlay) sluitKaartPopup(); });
 
             function onEsc(ev) {
                 if (ev.key === 'Escape') { sluitKaartPopup(); document.removeEventListener('keydown', onEsc); }
@@ -1836,7 +1793,6 @@
                 descLabel.className = 'card-popup-section-label';
                 descLabel.innerText = '📝 Omschrijving';
                 popup.appendChild(descLabel);
-
                 var descBlok = document.createElement('div');
                 descBlok.className = 'card-popup-desc';
                 descBlok.innerText = kaartData.desc;
@@ -1867,11 +1823,8 @@
             btn.addEventListener('click', function() {
                 document.removeEventListener('keydown', onEsc);
                 sluitKaartPopup();
-                if (info.kanTonen && info.cardId) {
-                    t.showCard(info.cardId);
-                } else if (info.url) {
-                    t.navigate({ url: info.url });
-                }
+                if (info.kanTonen && info.cardId) { t.showCard(info.cardId); }
+                else if (info.url) { t.navigate({ url: info.url }); }
             });
             popup.appendChild(btn);
 
@@ -1918,23 +1871,20 @@
             if (!el) return;
             var badge = el.querySelector('.plan-badge');
             if (!badge) return;
-            if (count > 0) {
-                badge.innerText = '📌 ' + count + '× ingepland';
-                badge.style.display = 'inline-block';
-            } else {
-                badge.style.display = 'none';
-            }
+            if (count > 0) { badge.innerText = '📌 ' + count + '× ingepland'; badge.style.display = 'inline-block'; }
+            else { badge.style.display = 'none'; }
         }
         function updateBronBadgeById(cardId, count) {
             zetBronBadge(document.getElementById(cardId), count);
         }
 
-        /* ── INSTANTIE-KAART ── */
+        /* ── INSTANTIE-KAART (1 dag) ── */
         function maakTrelloInstantieKaart(card, placement, opts) {
             opts = opts || {};
             var el = document.createElement('div');
             el.className = 'planning-card';
             el.id        = placement.instanceId;
+            el.dataset.instanceId = placement.instanceId;
             el.draggable = isAdmin;
             el.dataset.rol = 'instantie';
 
@@ -1966,11 +1916,15 @@
             el.addEventListener('dragstart', drag);
             el.addEventListener('dragend',   dragEnd);
 
+            /* Resize-handvat → uitrekken naar meerdere dagen */
+            if (opts.metResize && isAdmin && opts.ctx) {
+                var handle = maakResizeHandle(function(e) { startPlacementResize(e, placement, opts.ctx); });
+                el.appendChild(handle);
+            }
+
             koppelKaartOpenen(el, {
-                kaartData: card,
-                kanTonen:  !!opts.kanTonen,
-                cardId:    cardIdVanInstantie(placement.instanceId),
-                url:       opts.url || ''
+                kaartData: card, kanTonen: !!opts.kanTonen,
+                cardId: cardIdVanInstantie(placement.instanceId), url: opts.url || ''
             });
 
             return el;
@@ -2023,7 +1977,6 @@
                     e.stopPropagation();
                     var openMenus = document.querySelectorAll('.color-picker-menu');
                     openMenus.forEach(function(m) { m.remove(); });
-
                     var pickerMenu = document.createElement('div');
                     pickerMenu.className = 'color-picker-menu';
                     CUSTOM_COLORS.forEach(function(kleur) {
@@ -2044,10 +1997,7 @@
                 var delBtn = document.createElement('span');
                 delBtn.className = 'delete-btn';
                 delBtn.innerHTML = '&times;';
-                delBtn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    verwijderInterventie(id);
-                });
+                delBtn.addEventListener('click', function(e) { e.stopPropagation(); verwijderInterventie(id); });
                 controls.appendChild(delBtn);
                 el.appendChild(controls);
             }
@@ -2104,16 +2054,10 @@
         function voegDirecteInterventieToe(ploeg, datum) {
             if (!isAdmin) return;
             var nieuw = {
-                id:            'int-' + Date.now(),
-                name:          'Nieuwe interventie',
-                ploeg:         ploeg,
-                datum:         datum,
-                members:       [],
-                address:       '',
-                infoPlaatsing: '',
-                colorObj:      CUSTOM_COLORS[0]
+                id: 'int-' + Date.now(), name: 'Nieuwe interventie',
+                ploeg: ploeg, datum: datum, members: [],
+                address: '', infoPlaatsing: '', colorObj: CUSTOM_COLORS[0]
             };
-
             t.get('board', 'shared', 'interventions', [])
             .then(function(lijst) {
                 var arr = Array.isArray(lijst) ? lijst : [];
@@ -2124,7 +2068,6 @@
                 var cardEl = maakInterventieKaart(nieuw);
                 var zone = document.getElementById(maakZoneId(ploeg, datum));
                 (zone || document.getElementById('sidebar-pool')).appendChild(cardEl);
-
                 var titleEl = cardEl.querySelector('.card-title');
                 if (titleEl) {
                     titleEl.contentEditable = true;
@@ -2143,10 +2086,9 @@
             t.get('board', 'shared', 'interventions', []).then(function(lijst) {
                 var gefilterd = lijst.filter(function(i) { return i.id !== id; });
                 return t.set('board', 'shared', 'interventions', gefilterd);
-            })
-            .then(function() {
+            }).then(function() {
                 var el = document.getElementById(id);
-                if (el && el.parentNode) { el.parentNode.removeChild(el); }
+                if (el && el.parentNode) el.parentNode.removeChild(el);
             });
         }
 
@@ -2157,25 +2099,25 @@
             var zoneIsVerlof = (this.dataset.rowType === 'verlof');
             if (dragType === 'verlof' && !zoneIsVerlof) return;
             if (dragType && dragType !== 'verlof' && zoneIsVerlof) return;
-
             e.preventDefault();
             this.classList.add('dragover');
         }
-
         function dragLeave(e) { this.classList.remove('dragover'); }
 
         function drag(e) {
             if (!isAdmin) { e.preventDefault(); return; }
             var rol = e.currentTarget.dataset.rol || '';
             document.body.dataset.dragType = rol;
-            /* Voor verlof: transfer-id = item-id (groepering over segmenten heen),
-               niet de unieke DOM-id van het specifieke segment. */
-            var transferId = (rol === 'verlof' && e.currentTarget.dataset.verlofId)
-                ? e.currentTarget.dataset.verlofId
-                : e.currentTarget.id;
+            var transferId;
+            if (rol === 'verlof' && e.currentTarget.dataset.verlofId) {
+                transferId = e.currentTarget.dataset.verlofId;
+            } else if (rol === 'instantie' && e.currentTarget.dataset.instanceId) {
+                transferId = e.currentTarget.dataset.instanceId;
+            } else {
+                transferId = e.currentTarget.id;
+            }
             e.dataTransfer.setData("text", transferId);
         }
-
         function dragEnd(e) { delete document.body.dataset.dragType; }
 
         function drop(e) {
@@ -2199,26 +2141,21 @@
             else if (id.indexOf('::') !== -1)  soort = 'instantie';
             else                               soort = 'bron';
 
-            /* ── VERLOF ──
-               Sleep verplaatst de hele range (lengte blijft behouden). */
+            /* ── VERLOF: hele range verplaatsen ── */
             if (soort === 'verlof') {
                 if (naarZijbalk || doelRowType !== 'verlof') return;
-
                 t.get('board', 'shared', 'verlofItems', []).then(function(lijst) {
                     var arr = Array.isArray(lijst) ? lijst : [];
                     var item = null;
                     arr.forEach(function(v) { if (v.id === id) item = v; });
                     if (!item) return;
-
                     var oudeStart = item.startDatum || item.datum;
                     var oudeEind  = item.eindDatum  || oudeStart;
-                    if (oudeStart === doelDatum) return; // niets veranderd
-
+                    if (oudeStart === doelDatum) return;
                     var rangeLengte = aantalDagenTussen(oudeStart, oudeEind);
                     item.startDatum = doelDatum;
                     item.eindDatum  = voegDagenToe(doelDatum, rangeLengte);
                     delete item.datum;
-
                     return t.set('board', 'shared', 'verlofItems', arr).then(function() {
                         hertekenEnkelVerlofItem(item);
                     });
@@ -2228,10 +2165,63 @@
 
             if (doelRowType === 'verlof' && soort !== 'verlof') return;
 
-            var cardEl = document.getElementById(id);
-            if (!cardEl) return;
+            /* ── TRELLO-INSTANTIE: hele range verplaatsen / naar zijbalk verwijderen ── */
+            if (soort === 'instantie') {
+                var cardId = cardIdVanInstantie(id);
+                var ctx = placementCtx[id];
 
-            /* ── BRON-KAART ── */
+                if (naarZijbalk) {
+                    document.querySelectorAll('[data-instance-id="' + id + '"]').forEach(function(el) {
+                        if (el.parentNode) el.parentNode.removeChild(el);
+                    });
+                    t.get(cardId, 'shared', 'placements', []).then(function(lijst) {
+                        var arr = (Array.isArray(lijst) ? lijst : []).filter(function(p) { return p.instanceId !== id; });
+                        return t.set(cardId, 'shared', 'placements', arr).then(function() { return arr.length; });
+                    }).then(function(aantal) {
+                        updateBronBadgeById(cardId, aantal);
+                        if (aantal === 0) verwijderCardUitIndex(cardId);
+                    });
+                    return;
+                }
+
+                t.get(cardId, 'shared', 'placements', []).then(function(lijst) {
+                    var arr = Array.isArray(lijst) ? lijst : [];
+                    var doelP = null;
+                    arr = arr.map(function(p) {
+                        if (p.instanceId === id) {
+                            var oudStart = p.datum;
+                            var oudEind  = p.eindDatum || p.datum;
+                            var len = aantalDagenTussen(oudStart, oudEind);
+                            p.ploeg = doelPloeg;
+                            p.datum = doelDatum;
+                            if (len > 0) { p.eindDatum = voegDagenToe(doelDatum, len); }
+                            else { delete p.eindDatum; }
+                            doelP = p;
+                        }
+                        return p;
+                    });
+                    return t.set(cardId, 'shared', 'placements', arr).then(function() { return doelP; });
+                }).then(function(doelP) {
+                    if (!doelP) return;
+                    if (ctx) { ctx.ploeg = doelPloeg; }
+                    else {
+                        /* Fallback context als die om een of andere reden ontbreekt */
+                        var liveCard = trelloKaartCache[cardId];
+                        ctx = {
+                            card: liveCard || snapshotNaarKaart(doelP.snapshot || {}),
+                            kanTonen: !!liveCard, url: (liveCard && liveCard.url) || '',
+                            isArchief: !liveCard, ploeg: doelPloeg
+                        };
+                    }
+                    hertekenEnkelPlacement(doelP, ctx);
+                });
+                return;
+            }
+
+            /* Voor bron & interventie: het DOM-element heeft id == transfer-id */
+            var cardEl = document.getElementById(id);
+
+            /* ── BRON-KAART → nieuwe instantie (1 dag) ── */
             if (soort === 'bron') {
                 if (naarZijbalk) return;
                 var card = trelloKaartCache[id];
@@ -2250,42 +2240,15 @@
                     arr.push(nieuwePlacement);
                     return t.set(id, 'shared', 'placements', arr).then(function() { return arr.length; });
                 }).then(function(aantal) {
-                    doelZone.appendChild(maakTrelloInstantieKaart(card, nieuwePlacement, {
-                        isArchief: false,
-                        kanTonen:  true,
-                        url:       card.url || ''
-                    }));
+                    var ctx = { card: card, kanTonen: true, url: card.url || '', isArchief: false, ploeg: doelPloeg };
+                    tekenPlacement(nieuwePlacement, ctx);
                     updateBronBadgeById(id, aantal);
                     voegCardToeAanIndex(id);
                 });
                 return;
             }
 
-            /* ── TRELLO-INSTANTIE ── */
-            if (soort === 'instantie') {
-                var cardId = cardIdVanInstantie(id);
-
-                if (naarZijbalk) {
-                    if (cardEl.parentNode) cardEl.parentNode.removeChild(cardEl);
-                    t.get(cardId, 'shared', 'placements', []).then(function(lijst) {
-                        var arr = (Array.isArray(lijst) ? lijst : []).filter(function(p) { return p.instanceId !== id; });
-                        return t.set(cardId, 'shared', 'placements', arr).then(function() { return arr.length; });
-                    }).then(function(aantal) {
-                        updateBronBadgeById(cardId, aantal);
-                        if (aantal === 0) verwijderCardUitIndex(cardId);
-                    });
-                } else {
-                    doelZone.appendChild(cardEl);
-                    t.get(cardId, 'shared', 'placements', []).then(function(lijst) {
-                        var arr = Array.isArray(lijst) ? lijst : [];
-                        return t.set(cardId, 'shared', 'placements', arr.map(function(p) {
-                            if (p.instanceId === id) { p.ploeg = doelPloeg; p.datum = doelDatum; }
-                            return p;
-                        }));
-                    });
-                }
-                return;
-            }
+            if (!cardEl) return;
 
             /* ── INTERVENTIE ── */
             if (naarZijbalk) {
@@ -2317,9 +2280,7 @@
             e.preventDefault();
             poolEl.classList.add('dragover');
         });
-        poolEl.addEventListener('dragleave', function() {
-            poolEl.classList.remove('dragover');
-        });
+        poolEl.addEventListener('dragleave', function() { poolEl.classList.remove('dragover'); });
         poolEl.addEventListener('drop', function(e) {
             if (!isAdmin) return;
             var dragType = document.body.dataset.dragType || '';
@@ -2333,9 +2294,7 @@
 
         var searchInput = document.getElementById('sidebar-search');
         if (searchInput) {
-            searchInput.addEventListener('input', function() {
-                filterZijbalk(this.value);
-            });
+            searchInput.addEventListener('input', function() { filterZijbalk(this.value); });
         }
     </script>
 </body>
