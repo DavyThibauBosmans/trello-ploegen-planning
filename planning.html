@@ -980,8 +980,9 @@
             /* ── STAP 2.3: ADMIN-STATUS BEPALEN ──
                DEV_MODE forceert admin-rechten (lokaal ontwikkelen). Anders wordt
                de huidige Trello-gebruikersnaam vergeleken met ADMIN_USERNAMES
-               (standaard: Lauren en Davy). Tot dit is opgelost staat de UI
-               voorzichtigheidshalve in view-only. */
+               (standaard: Lauren en Davy). De admin-check loopt volledig PARALLEL
+               aan het laden van de kaarten — een fout hier blokkeert nooit de
+               kaartenlading. */
             if (DEV_MODE) {
                 isAdmin = true;
                 toepassenAdminStatus();
@@ -997,7 +998,7 @@
             }
 
             return Promise.all([
-                t.cards('id', 'name', 'members', 'address', 'desc', 'idList', 'url', 'labels', 'due', 'dueComplete', 'locationName'),  // 'desc' ALLEEN-LEZEN; 'url' voor archief; labels/due/locationName voor de info-popup
+                t.cards('id', 'name', 'members', 'address', 'desc', 'idList', 'url', 'labels', 'due', 'dueComplete'),  // 'desc' ALLEEN-LEZEN; 'url' voor archief; labels/due voor de info-popup
                 t.lists('id', 'name'),
                 t.get('board', 'shared', 'interventions', []),
                 t.get('board', 'shared', 'plannedCardIds', [])
@@ -1132,7 +1133,7 @@
                 });
             })
             .catch(function(err) {
-                console.error('Fout bij laden kaarten:', err);
+                console.error('Fout bij laden kaarten:', err && err.message ? err.message : err);
                 loadingMsg.style.display = 'none';
                 errorMsg.style.display   = 'block';
             });
@@ -1359,7 +1360,7 @@
             }
 
             /* Adres / locatie */
-            var adresTekst = kaartData.address || kaartData.locationName || '';
+            var adresTekst = kaartData.address || '';
             if (adresTekst) {
                 var adr = document.createElement('div');
                 adr.className = 'card-popup-field';
