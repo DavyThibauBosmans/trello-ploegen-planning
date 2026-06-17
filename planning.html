@@ -252,7 +252,8 @@
         body.view-only-mode .ploeg-delete-btn,
         body.view-only-mode .add-ploeg-row,
         body.view-only-mode .verlof-add-btn,
-        body.view-only-mode .span-resize-handle { display: none !important; }
+        body.view-only-mode .span-resize-handle,
+        body.view-only-mode .zwevend-toggle-btn { display: none !important; }
         body.view-only-mode .card-info-placement:empty,
         body.view-only-mode .card-address-editable:empty { display: none !important; }
         body.view-only-mode .placement-band { cursor: default; }
@@ -374,34 +375,6 @@
         .verlof-zone:hover .verlof-add-btn { opacity: 0.6; }
         .verlof-add-btn:hover { opacity: 1 !important; background-color: #ff8f00; }
 
-        /* ── STAP 4.3: DOORLOPENDE PROJECT-BAND ──
-           Een placement over meerdere dagen wordt per dag als een segment getekend
-           dat de cel vult. De segmenten bloeden over de cel-grens zodat het visueel
-           één doorlopende kaart wordt. Kleur = projectleider-kleur (inline gezet). */
-        .placement-band {
-            position: absolute;
-            top: 6px; bottom: 6px; left: 0; right: 0;
-            border-radius: 6px;
-            padding: 8px 10px;
-            overflow: hidden;
-            cursor: grab; user-select: none;
-            z-index: 1;
-            box-shadow: inset 0 -3px 0 rgba(0,0,0,0.10);  /* subtiele diepte, doorlopend (inset → geen seam) */
-            transition: filter 0.12s;
-        }
-        .placement-band:hover { filter: brightness(0.97); }
-        .placement-band.band-not-first {
-            left: -9px;
-            border-top-left-radius: 0; border-bottom-left-radius: 0;
-        }
-        .placement-band.band-not-last {
-            right: -9px;
-            border-top-right-radius: 0; border-bottom-right-radius: 0;
-        }
-        .placement-band .card-body { width: 100%; }
-        .placement-band .card-title { font-size: 13px; font-weight: 700; line-height: 1.25; }
-        .placement-band .card-address { font-size: 11px; font-style: italic; opacity: 0.9; }
-
         /* ── GENERIEK RESIZE-HANDVAT (verlof + kaarten) ── */
         .span-resize-handle {
             position: absolute; right: -2px; top: 0; bottom: 0;
@@ -425,9 +398,87 @@
         body[data-drag-type="instantie"] .verlof-zone,
         body[data-drag-type="interventie"] .verlof-zone { cursor: not-allowed; }
 
-        /* Ploeg-rij dropzones */
+        /* ── STAP 4.3+: ZWEVENDE KAARTEN ──
+           Een zwevende kaart = nog niet zeker ingepland.
+           Visueel: licht transparant, diagonale streepjes rand, ☁ icoon. */
+        .planning-card.zwevend,
+        .placement-band.zwevend {
+            opacity: 0.72;
+            outline: 2px dashed rgba(0,0,0,0.30) !important;
+            outline-offset: -2px;
+        }
+        .placement-band.zwevend {
+            background-image: repeating-linear-gradient(
+                -45deg,
+                transparent,
+                transparent 6px,
+                rgba(255,255,255,0.22) 6px,
+                rgba(255,255,255,0.22) 12px
+            );
+        }
+        .zwevend-badge {
+            display: inline-block; font-size: 10px; font-weight: 700;
+            background-color: rgba(255,255,255,0.75); color: #5e6c84;
+            padding: 1px 6px; border-radius: 8px; margin-top: 4px;
+            letter-spacing: 0.02em;
+        }
+        .zwevend-toggle-btn {
+            cursor: pointer; font-size: 13px; opacity: 0.4;
+            transition: opacity 0.15s; user-select: none;
+        }
+        .zwevend-toggle-btn:hover { opacity: 1; }
+        .zwevend-toggle-btn.actief { opacity: 0.9; }
+
+        /* ── STAP 4.3+: STAPELLOGICA voor overlappende banden ──
+           Wanneer meerdere placements in dezelfde cel/ploeg overlappen,
+           worden ze verticaal gestapeld met een kleine offset. */
         .dropzone { min-height: 110px; position: relative; padding-bottom: 26px !important; }
         .dropzone.dragover { background-color: #dce9fc; outline: 2px dashed #0052cc; }
+
+        /* Band-segmenten in stapelvorm: absolute top/bottom met vaste hoogte per rij */
+        .placement-band {
+            position: absolute;
+            left: 0; right: 0;
+            border-radius: 6px;
+            padding: 6px 10px;
+            overflow: hidden;
+            cursor: grab; user-select: none;
+            z-index: 1;
+            box-shadow: inset 0 -3px 0 rgba(0,0,0,0.10);
+            transition: filter 0.12s;
+        }
+        .placement-band:hover { filter: brightness(0.97); z-index: 4 !important; }
+        .placement-band.band-not-first {
+            left: -9px;
+            border-top-left-radius: 0; border-bottom-left-radius: 0;
+        }
+        .placement-band.band-not-last {
+            right: -9px;
+            border-top-right-radius: 0; border-bottom-right-radius: 0;
+        }
+        .placement-band .card-body { width: 100%; overflow: hidden; }
+        .placement-band .card-title {
+            font-size: 12px; font-weight: 700; line-height: 1.2;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .placement-band .card-address {
+            font-size: 10px; font-style: italic; opacity: 0.9;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        /* In de band tonen we enkel titel + adres compact; info-veld blijft bewerkbaar maar kort */
+        .placement-band .card-info-placement { font-size: 10px; }
+        /* Controls (☁-knop) in de band: rechtsboven, los van de tekstflow */
+        .placement-band .band-controls {
+            position: absolute; top: 4px; right: 16px;
+            margin-left: 0; z-index: 5;
+        }
+
+        /* Ééndag kaart in cel: ook stapelbaar */
+        .dropzone > .planning-card {
+            position: relative;
+            z-index: 2;
+        }
 
         .cell-add-btn {
             position: absolute; bottom: 4px; right: 4px;
@@ -927,20 +978,27 @@
         }
 
         function maakKaartSnapshot(card) {
+            /* Compacte snapshot: enkel essentiële velden, geen overbodige data.
+               Dit minimaliseert de opgeslagen bytes per placement zodat
+               20+ placements per kaart mogelijk worden binnen Trello's limiet. */
             return {
-                name:    card.name || '',
-                address: card.address || '',
-                url:     card.url || '',
-                members: (card.members || []).map(function(m) { return { username: m.username }; })
+                n: card.name || '',
+                a: card.address || '',
+                u: card.url || '',
+                m: (card.members || []).map(function(m) { return m.username; })
             };
         }
         function snapshotNaarKaart(snap) {
-            return {
-                name:    (snap && snap.name) ? snap.name : '(gearchiveerd project)',
-                address: (snap && snap.address) ? snap.address : '',
-                desc:    '',
-                members: (snap && snap.members) ? snap.members : []
-            };
+            /* Ondersteunt zowel nieuw compact formaat {n,a,u,m} als oud formaat {name,address,url,members} */
+            var naam    = (snap && (snap.n || snap.name))    || '(gearchiveerd project)';
+            var adres   = (snap && (snap.a || snap.address)) || '';
+            var members = [];
+            if (snap && snap.m) {
+                members = snap.m.map(function(u) { return { username: u }; });
+            } else if (snap && snap.members) {
+                members = snap.members;
+            }
+            return { name: naam, address: adres, desc: '', members: members };
         }
 
         function voegCardToeAanIndex(cardId) {
@@ -1276,14 +1334,80 @@
             });
         }
 
-        /* ── STAP 4.3: PLACEMENT TEKENEN (1 dag = kaart, meerdere = band) ── */
+        /* ── STAP 4.3+: STAPELLOGICA ──
+           Per cel (zoneId) houden we bij welke stapel-rijen bezet zijn.
+           Een band die meerdere dagen beslaat krijgt de laagste rij die
+           over ALLE beslagen cellen vrij is, zodat overlappende banden
+           netjes onder elkaar komen i.p.v. over elkaar.
+           Structuur: stackMap[zoneId] = { rijIndex: instanceId, ... } */
+        var stackMap = {};
+        var BAND_HOOGTE = 56;   /* px hoogte per band-rij in de cel */
+        var BAND_GAP    = 4;    /* px ruimte tussen banden */
+        var BAND_TOP    = 6;    /* px afstand van cel-top */
+
+        function rijNaarTop(rij) { return BAND_TOP + rij * (BAND_HOOGTE + BAND_GAP); }
+
+        /* Vind de laagste rij die vrij is in elk van de opgegeven zones,
+           en reserveer die rij voor instanceId. Retourneert {rij, top}. */
+        function stapelReserveer(zoneIds, instanceId) {
+            zoneIds.forEach(function(zid) { if (!stackMap[zid]) stackMap[zid] = {}; });
+
+            var rij = 0;
+            while (true) {
+                var vrij = zoneIds.every(function(zid) {
+                    var bezetter = stackMap[zid][rij];
+                    return bezetter === undefined || bezetter === instanceId;
+                });
+                if (vrij) break;
+                rij++;
+                if (rij > 200) break; /* veiligheidsklep */
+            }
+
+            zoneIds.forEach(function(zid) { stackMap[zid][rij] = instanceId; });
+            zoneIds.forEach(updateZoneHoogte);
+            return { rij: rij, top: rijNaarTop(rij) };
+        }
+
+        /* Verwijder een instanceId uit alle zones in stackMap en update hoogtes. */
+        function stapelVrijgeven(instanceId) {
+            Object.keys(stackMap).forEach(function(zid) {
+                var zone = stackMap[zid];
+                Object.keys(zone).forEach(function(rij) {
+                    if (zone[rij] === instanceId) delete zone[rij];
+                });
+                updateZoneHoogte(zid);
+            });
+        }
+
+        /* Zet de minHeight van een zone op basis van de hoogst bezette rij. */
+        function updateZoneHoogte(zoneId) {
+            var zone = document.getElementById(zoneId);
+            if (!zone) return;
+            var zoneRijen = stackMap[zoneId] || {};
+            var maxRij = -1;
+            Object.keys(zoneRijen).forEach(function(r) {
+                var ri = parseInt(r, 10);
+                if (ri > maxRij) maxRij = ri;
+            });
+            if (maxRij < 0) {
+                zone.style.minHeight = '';   /* terug naar CSS-default (110px) */
+            } else {
+                var nodig = rijNaarTop(maxRij) + BAND_HOOGTE + 30 /* ruimte add-knop */;
+                zone.style.minHeight = Math.max(110, nodig) + 'px';
+            }
+        }
+
+        /* ── STAP 4.3+: PLACEMENT TEKENEN (1 dag = kaart, meerdere = gestapelde band) ── */
         function placementStart(p) { return p.datum; }
         function placementEind(p)  { return p.eindDatum || p.datum; }
 
         function hertekenEnkelPlacement(p, ctx) {
+            /* Verwijder alle DOM-segmenten van deze instantie */
             document.querySelectorAll('[data-instance-id="' + p.instanceId + '"]').forEach(function(el) {
                 if (el.parentNode) el.parentNode.removeChild(el);
             });
+            /* Geef de stapel-rijen vrij die deze instantie bezette */
+            stapelVrijgeven(p.instanceId);
             tekenPlacement(p, ctx);
         }
 
@@ -1310,7 +1434,11 @@
                 });
                 zone.appendChild(kaart);
             } else {
-                /* Meerdere dagen → doorlopende band, per dag een segment */
+                /* Meerdere dagen → doorlopende band, per dag een segment, gestapeld.
+                   Reserveer één rij die over ALLE beslagen cellen vrij is. */
+                var zoneIds = dagen.map(function(dag) { return maakZoneId(p.ploeg, dag.datum); });
+                var pos = stapelReserveer(zoneIds, p.instanceId);
+
                 dagen.forEach(function(dag) {
                     var zone = document.getElementById(maakZoneId(p.ploeg, dag.datum));
                     if (!zone) return;
@@ -1318,7 +1446,9 @@
                         datum: dag.datum,
                         isFirstVisible: dag.isFirstVisible,
                         isLastVisible:  dag.isLastVisible,
-                        ctx: ctx
+                        ctx: ctx,
+                        top:    pos.top,
+                        height: BAND_HOOGTE
                     });
                     zone.appendChild(seg);
                 });
@@ -1332,11 +1462,19 @@
             if (!opts.isFirstVisible) el.classList.add('band-not-first');
             if (!opts.isLastVisible)  el.classList.add('band-not-last');
 
+            /* Zwevend? */
+            if (p.zwevend) el.classList.add('zwevend');
+
             el.id = 'pseg-' + p.instanceId + '-' + opts.datum;
             el.dataset.instanceId = p.instanceId;
             el.dataset.datum      = opts.datum;
             el.dataset.rol        = 'instantie';
             el.draggable = isAdmin;
+
+            /* Stapelpositie: top en hoogte uit de berekende stack */
+            el.style.top    = (opts.top !== undefined ? opts.top : 6) + 'px';
+            el.style.height = (opts.height !== undefined ? opts.height : BAND_HOOGTE) + 'px';
+            el.style.bottom = 'auto';
 
             var stijl = bepaalTrelloKaartStijl(card.members);
             el.style.backgroundColor = stijl.bg;
@@ -1354,6 +1492,14 @@
                     body.appendChild(tag);
                 }
 
+                /* Zwevend-badge */
+                if (p.zwevend) {
+                    var zbadge = document.createElement('span');
+                    zbadge.className = 'zwevend-badge';
+                    zbadge.innerText = '☁ Onzeker';
+                    body.appendChild(zbadge);
+                }
+
                 var infoEl = document.createElement('div');
                 infoEl.className = 'card-info-placement';
                 infoEl.innerText = p.infoPlaatsing || '';
@@ -1363,8 +1509,26 @@
                 body.appendChild(infoEl);
 
                 el.appendChild(body);
+
+                /* Zwevend-toggle knop (enkel voor admin, in first segment) */
+                if (isAdmin) {
+                    var zwBtn = document.createElement('span');
+                    zwBtn.className = 'zwevend-toggle-btn' + (p.zwevend ? ' actief' : '');
+                    zwBtn.title = p.zwevend ? 'Markeer als zeker ingepland' : 'Markeer als onzeker (zwevend)';
+                    zwBtn.innerHTML = '☁';
+                    (function(placement, segEl) {
+                        zwBtn.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            toggleZwevend(placement, ctx);
+                        });
+                    })(p, el);
+
+                    var controls = document.createElement('div');
+                    controls.className = 'card-controls band-controls';
+                    controls.appendChild(zwBtn);
+                    el.appendChild(controls);
+                }
             }
-            /* continuation-segmenten: enkel kleur, geen content (doorlopende balk) */
 
             if (opts.isLastVisible && isAdmin) {
                 var handle = maakResizeHandle(function(e) { startPlacementResize(e, p, ctx); });
@@ -1380,6 +1544,25 @@
             });
 
             return el;
+        }
+
+        /* ── ZWEVEND TOGGLE ── */
+        function toggleZwevend(p, ctx) {
+            if (!isAdmin) return;
+            var cardId = cardIdVanInstantie(p.instanceId);
+            t.get(cardId, 'shared', 'placements', []).then(function(lijst) {
+                var arr = Array.isArray(lijst) ? lijst : [];
+                arr = arr.map(function(pl) {
+                    if (pl.instanceId === p.instanceId) {
+                        pl.zwevend = !pl.zwevend;
+                        p.zwevend  = pl.zwevend;  /* lokale referentie ook bijwerken */
+                    }
+                    return pl;
+                });
+                return t.set(cardId, 'shared', 'placements', arr);
+            }).then(function() {
+                hertekenEnkelPlacement(p, ctx);
+            });
         }
 
         /* ── PLACEMENT RESIZE ── */
@@ -1398,7 +1581,8 @@
                 werkItem:   {
                     instanceId: p.instanceId, ploeg: p.ploeg,
                     datum: placementStart(p), eindDatum: placementEind(p),
-                    infoPlaatsing: p.infoPlaatsing, snapshot: p.snapshot
+                    infoPlaatsing: p.infoPlaatsing,
+                    zwevend: p.zwevend
                 },
                 ctx: ctx
             };
@@ -1448,6 +1632,7 @@
             bouwLegende();
             trelloKaartCache = {};
             placementCtx = {};
+            stackMap = {};   /* stapellogica resetten bij herladen */
 
             var pool       = document.getElementById('sidebar-pool');
             var loadingMsg = document.getElementById('loading-msg');
@@ -1522,9 +1707,12 @@
                     return Promise.all([
                         t.get(cardId, 'shared', 'placements',    null),
                         t.get(cardId, 'shared', 'planning',      null),
-                        t.get(cardId, 'shared', 'infoPlaatsing', '')
+                        t.get(cardId, 'shared', 'infoPlaatsing', ''),
+                        t.get(cardId, 'shared', 'cardSnapshot',  null)
                     ]).then(function(stored) {
-                        var placements = stored[0];
+                        var placements   = stored[0];
+                        var cardSnapshot = stored[3];   /* gedeelde snapshot (1x per kaart) */
+
                         if (!Array.isArray(placements)) {
                             var oud = stored[1];
                             if (oud && oud.ploeg && oud.datum) {
@@ -1537,7 +1725,34 @@
                                 t.set(cardId, 'shared', 'placements', placements);
                             } else { placements = []; }
                         }
-                        return { cardId: cardId, placements: placements };
+
+                        /* ── MIGRATIE: oude ingebedde snapshots → één gedeelde cardSnapshot ──
+                           Vroeger droeg elke placement een eigen .snapshot. Dat blies de
+                           opslag op (limiet ~10x). We trekken die eruit, bewaren er één,
+                           en strippen de placements. */
+                        var migratieNodig = false;
+                        placements.forEach(function(p) {
+                            if (p.snapshot) {
+                                if (!cardSnapshot) {
+                                    /* Eerste gevonden snapshot wordt de gedeelde; normaliseer naar compact formaat */
+                                    var s = p.snapshot;
+                                    if (s.n !== undefined) { cardSnapshot = s; }
+                                    else {
+                                        cardSnapshot = {
+                                            n: s.name || '', a: s.address || '', u: s.url || '',
+                                            m: (s.members || []).map(function(m) { return m.username || m; })
+                                        };
+                                    }
+                                }
+                                delete p.snapshot;
+                                migratieNodig = true;
+                            }
+                        });
+
+                        return {
+                            cardId: cardId, placements: placements,
+                            cardSnapshot: cardSnapshot, migratieNodig: migratieNodig
+                        };
                     });
                 });
 
@@ -1545,9 +1760,11 @@
                     var nieuweIndex = [];
 
                     resultatenPerId.forEach(function(r) {
-                        var cardId     = r.cardId;
-                        var placements = r.placements;
-                        var liveCard   = visibleById[cardId];
+                        var cardId       = r.cardId;
+                        var placements   = r.placements;
+                        var cardSnapshot = r.cardSnapshot;
+                        var migratieNodig = r.migratieNodig;
+                        var liveCard     = visibleById[cardId];
                         var isZichtbaar    = !!liveCard;
                         var inArchiefLijst = isZichtbaar && !!archiefLijstIds[liveCard.idList];
                         var verbergUitZijbalk = (!isZichtbaar) || inArchiefLijst;
@@ -1556,13 +1773,18 @@
 
                         if (isZichtbaar) {
                             trelloKaartCache[cardId] = liveCard;
+                            /* Houd de gedeelde snapshot vers zolang de kaart live is */
                             var verseSnap = maakKaartSnapshot(liveCard);
-                            var verseSnapStr = JSON.stringify(verseSnap);
-                            var gewijzigd = false;
-                            placements.forEach(function(p) {
-                                if (JSON.stringify(p.snapshot) !== verseSnapStr) { p.snapshot = verseSnap; gewijzigd = true; }
-                            });
-                            if (gewijzigd) t.set(cardId, 'shared', 'placements', placements);
+                            if (JSON.stringify(cardSnapshot) !== JSON.stringify(verseSnap)) {
+                                cardSnapshot = verseSnap;
+                                t.set(cardId, 'shared', 'cardSnapshot', cardSnapshot);
+                            }
+                        }
+
+                        /* Migratie-resultaat wegschrijven: geslankte placements + losse snapshot */
+                        if (migratieNodig) {
+                            t.set(cardId, 'shared', 'placements', placements);
+                            if (cardSnapshot) t.set(cardId, 'shared', 'cardSnapshot', cardSnapshot);
                         }
 
                         if (isZichtbaar && !verbergUitZijbalk) {
@@ -1571,8 +1793,9 @@
 
                         placements.forEach(function(p) {
                             if (!p.ploeg || !p.datum) return;
-                            var kaartData = isZichtbaar ? liveCard : snapshotNaarKaart(p.snapshot || {});
-                            var openUrl   = isZichtbaar ? (liveCard.url || '') : ((p.snapshot && p.snapshot.url) || '');
+                            var kaartData = isZichtbaar ? liveCard : snapshotNaarKaart(cardSnapshot || {});
+                            var openUrl   = isZichtbaar ? (liveCard.url || '')
+                                                        : ((cardSnapshot && (cardSnapshot.u || cardSnapshot.url)) || '');
                             var ctx = {
                                 card: kaartData, kanTonen: isZichtbaar,
                                 url: openUrl, isArchief: verbergUitZijbalk, ploeg: p.ploeg
@@ -1883,6 +2106,7 @@
             opts = opts || {};
             var el = document.createElement('div');
             el.className = 'planning-card';
+            if (placement.zwevend) el.classList.add('zwevend');
             el.id        = placement.instanceId;
             el.dataset.instanceId = placement.instanceId;
             el.draggable = isAdmin;
@@ -1897,6 +2121,14 @@
                 tag.className = 'archief-tag';
                 tag.innerText = '📦 Archief';
                 body.appendChild(tag);
+            }
+
+            /* Zwevend-badge */
+            if (placement.zwevend) {
+                var zbadge = document.createElement('span');
+                zbadge.className = 'zwevend-badge';
+                zbadge.innerText = '☁ Onzeker';
+                body.appendChild(zbadge);
             }
 
             var infoEl = document.createElement('div');
@@ -1920,6 +2152,25 @@
             if (opts.metResize && isAdmin && opts.ctx) {
                 var handle = maakResizeHandle(function(e) { startPlacementResize(e, placement, opts.ctx); });
                 el.appendChild(handle);
+            }
+
+            /* Zwevend-toggle knop voor 1-dag kaarten */
+            if (isAdmin && opts.ctx) {
+                var zwBtn = document.createElement('span');
+                zwBtn.className = 'zwevend-toggle-btn' + (placement.zwevend ? ' actief' : '');
+                zwBtn.title = placement.zwevend ? 'Markeer als zeker ingepland' : 'Markeer als onzeker (zwevend)';
+                zwBtn.innerHTML = '☁';
+                (function(p, ctx) {
+                    zwBtn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        toggleZwevend(p, ctx);
+                    });
+                })(placement, opts.ctx);
+
+                var controls = document.createElement('div');
+                controls.className = 'card-controls';
+                controls.appendChild(zwBtn);
+                el.appendChild(controls);
             }
 
             koppelKaartOpenen(el, {
@@ -2174,6 +2425,7 @@
                     document.querySelectorAll('[data-instance-id="' + id + '"]').forEach(function(el) {
                         if (el.parentNode) el.parentNode.removeChild(el);
                     });
+                    stapelVrijgeven(id);   /* gereserveerde stapel-rijen vrijgeven */
                     t.get(cardId, 'shared', 'placements', []).then(function(lijst) {
                         var arr = (Array.isArray(lijst) ? lijst : []).filter(function(p) { return p.instanceId !== id; });
                         return t.set(cardId, 'shared', 'placements', arr).then(function() { return arr.length; });
@@ -2205,13 +2457,26 @@
                     if (!doelP) return;
                     if (ctx) { ctx.ploeg = doelPloeg; }
                     else {
-                        /* Fallback context als die om een of andere reden ontbreekt */
+                        /* Fallback context als die ontbreekt: live kaart of gedeelde snapshot */
                         var liveCard = trelloKaartCache[cardId];
-                        ctx = {
-                            card: liveCard || snapshotNaarKaart(doelP.snapshot || {}),
-                            kanTonen: !!liveCard, url: (liveCard && liveCard.url) || '',
-                            isArchief: !liveCard, ploeg: doelPloeg
-                        };
+                        if (liveCard) {
+                            ctx = {
+                                card: liveCard, kanTonen: true, url: liveCard.url || '',
+                                isArchief: false, ploeg: doelPloeg
+                            };
+                            hertekenEnkelPlacement(doelP, ctx);
+                        } else {
+                            /* Gearchiveerd: haal de gedeelde snapshot op */
+                            t.get(cardId, 'shared', 'cardSnapshot', null).then(function(snap) {
+                                ctx = {
+                                    card: snapshotNaarKaart(snap || {}), kanTonen: false,
+                                    url: (snap && (snap.u || snap.url)) || '',
+                                    isArchief: true, ploeg: doelPloeg
+                                };
+                                hertekenEnkelPlacement(doelP, ctx);
+                            });
+                        }
+                        return;
                     }
                     hertekenEnkelPlacement(doelP, ctx);
                 });
@@ -2227,13 +2492,16 @@
                 var card = trelloKaartCache[id];
                 if (!card) return;
 
+                /* Slanke placement: GEEN ingebedde snapshot (die staat 1x in cardSnapshot) */
                 var nieuwePlacement = {
                     instanceId:    genInstanceId(id),
                     ploeg:         doelPloeg,
                     datum:         doelDatum,
-                    infoPlaatsing: '',
-                    snapshot:      maakKaartSnapshot(card)
+                    infoPlaatsing: ''
                 };
+
+                /* Houd de gedeelde snapshot vers (1x per kaart) */
+                t.set(id, 'shared', 'cardSnapshot', maakKaartSnapshot(card));
 
                 t.get(id, 'shared', 'placements', []).then(function(lijst) {
                     var arr = Array.isArray(lijst) ? lijst : [];
