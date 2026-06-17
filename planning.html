@@ -283,7 +283,7 @@
         .ploeg-naam-editable {
             flex-grow: 1; outline: none; padding: 2px 4px; border-radius: 3px;
             cursor: text; transition: background-color 0.15s, box-shadow 0.15s;
-            word-break: break-word;
+            word-break: break-word; white-space: pre-wrap;
         }
         body:not(.view-only-mode) .ploeg-naam-editable:hover { background-color: rgba(0, 82, 204, 0.07); }
         .ploeg-naam-editable:focus { background-color: #fff; box-shadow: 0 0 0 1px #0052cc; cursor: text; }
@@ -295,27 +295,6 @@
         }
         .row-ploeg:hover .ploeg-delete-btn { opacity: 0.5; }
         .ploeg-delete-btn:hover { opacity: 1 !important; color: #bf2600; background-color: rgba(191, 38, 0, 0.08); }
-
-        /* ── RIJ-HOOGTE RESIZE-HANDVAT ──
-           Een dun streepje onderaan elke rij-labelcel dat de rijen verticaal uitrekt.
-           Ploeg-rijen delen allemaal dezelfde hoogte (één handvat past ze allemaal aan).
-           Verlof-rij heeft een eigen apart handvat. */
-        .row-resize-handle {
-            position: absolute; left: 0; right: 0; bottom: 0;
-            height: 6px; cursor: ns-resize; z-index: 15;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .row-resize-handle::after {
-            content: ''; display: block;
-            width: 28px; height: 3px; border-radius: 2px;
-            background-color: rgba(0, 82, 204, 0); /* onzichtbaar tot hover */
-            transition: background-color 0.15s;
-        }
-        .row-ploeg:hover .row-resize-handle::after,
-        .row-verlof-label:hover .row-resize-handle::after { background-color: rgba(0, 82, 204, 0.35); }
-        body.row-resizing { cursor: ns-resize !important; user-select: none !important; }
-        body.row-resizing * { cursor: ns-resize !important; }
-        body.view-only-mode .row-resize-handle { display: none !important; }
 
         /* ── STAP 3.1: + PLOEG TOEVOEGEN RIJ ── */
         .add-ploeg-row td { background-color: #fafbfc; padding: 0; border-top: 2px dashed #dfe1e6; }
@@ -345,7 +324,7 @@
             border-left: 4px solid #ffab00 !important;
         }
         .verlof-zone {
-            background-color: #fffdf5; min-height: 60px;
+            background-color: #fffdf5;
             padding-bottom: 26px !important; position: relative;
         }
         .verlof-zone.dragover { background-color: #fff4cc; outline: 2px dashed #ffab00; }
@@ -600,15 +579,6 @@
         /* ── STAP 3.2: VERLOF ── */
         var VERLOF_ROW_KEY = '__verlof__';
 
-        /* ── RIJ-HOOGTE (persistente instelling) ──
-           ploegRijHoogte: gedeelde hoogte voor ALLE ploeg-rijen (px, min 80).
-           verlofRijHoogte: eigen hoogte voor de verlof-rij (px, min 50).
-           Worden opgeslagen op board-niveau zodat alle gebruikers dezelfde weergave zien. */
-        var DEFAULT_PLOEG_RIJ_HOOGTE   = 140;
-        var DEFAULT_VERLOF_RIJ_HOOGTE  = 80;
-        var ploegRijHoogte   = DEFAULT_PLOEG_RIJ_HOOGTE;
-        var verlofRijHoogte  = DEFAULT_VERLOF_RIJ_HOOGTE;
-
         var WEEKDAGEN = ['Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag'];
         var datumsVanDeWeek = [];
 
@@ -847,16 +817,6 @@
             var tdLabel = document.createElement('td');
             tdLabel.className = 'row-verlof-label col-ploeg';
             tdLabel.innerText = '🌴 Verlof';
-
-            /* Resize-handvat voor de verlof-rij hoogte */
-            if (isAdmin) {
-                var verlofHandle = document.createElement('div');
-                verlofHandle.className = 'row-resize-handle';
-                verlofHandle.title = 'Sleep om verlof-rij hoogte aan te passen';
-                verlofHandle.addEventListener('mousedown', function(e) { startRijResize(e, 'verlof'); });
-                tdLabel.appendChild(verlofHandle);
-            }
-
             trV.appendChild(tdLabel);
 
             for (var i = 0; i < 5; i++) {
@@ -933,8 +893,9 @@
                         hernoemPloeg(oudeNaam, nieuwe);
                     });
                     naamElement.addEventListener('keydown', function(e) {
-                        if (e.key === 'Enter') { e.preventDefault(); naamElement.blur(); }
+                        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); naamElement.blur(); }
                         else if (e.key === 'Escape') { naamElement.innerText = oudeNaam; naamElement.blur(); }
+                        /* Shift+Enter → gewone alinea-omzetting (browser-default) */
                     });
                 })(ploeg, naamEl, tr);
 
@@ -952,15 +913,6 @@
                     });
                 })(ploeg, tr);
                 wrap.appendChild(delPloegBtn);
-
-                /* Resize-handvat voor de (gedeelde) ploeg-rij hoogte */
-                if (isAdmin) {
-                    var ploegHandle = document.createElement('div');
-                    ploegHandle.className = 'row-resize-handle';
-                    ploegHandle.title = 'Sleep om alle ploeg-rijen hoger/lager te maken';
-                    ploegHandle.addEventListener('mousedown', function(e) { startRijResize(e, 'ploeg'); });
-                    tdPloeg.appendChild(ploegHandle);
-                }
 
                 tdPloeg.appendChild(wrap);
                 tr.appendChild(tdPloeg);
@@ -1451,10 +1403,10 @@
                 if (ri > maxRij) maxRij = ri;
             });
             if (maxRij < 0) {
-                zone.style.minHeight = ploegRijHoogte + 'px';
+                zone.style.minHeight = '';   /* vrij om te groeien met inhoud van label-kolom */
             } else {
                 var nodig = rijNaarTop(maxRij) + BAND_HOOGTE + 30 /* ruimte add-knop */;
-                zone.style.minHeight = Math.max(ploegRijHoogte, nodig) + 'px';
+                zone.style.minHeight = Math.max(80, nodig) + 'px';
             }
         }
 
@@ -1513,7 +1465,7 @@
                 });
 
                 cellen.forEach(function(z) {
-                    z.style.minHeight = Math.max(ploegRijHoogte, totaal) + 'px';
+                    z.style.minHeight = Math.max(80, totaal) + 'px';
                 });
             });
         }
@@ -1752,66 +1704,6 @@
             });
         }
 
-        /* ── RIJ-HOOGTE RESIZE ENGINE ──
-           startRijResize → mousemove/mouseup afhandelen → opslaan.
-           type = 'ploeg'  → past ALLE dropzones[data-row-type=ploeg] aan
-           type = 'verlof' → past ALLE dropzones[data-row-type=verlof] aan */
-        var rijResizeState = null;
-
-        function pasRijHoogtesToe() {
-            /* Zet min-height op alle ploeg-dropzones */
-            document.querySelectorAll('.dropzone[data-row-type="ploeg"]').forEach(function(z) {
-                z.style.minHeight = ploegRijHoogte + 'px';
-            });
-            /* Zet min-height op verlof-dropzones */
-            document.querySelectorAll('.dropzone[data-row-type="verlof"]').forEach(function(z) {
-                z.style.minHeight = verlofRijHoogte + 'px';
-            });
-        }
-
-        function slaanRijHoogtesOp() {
-            t.set('board', 'shared', 'rijHoogtes', {
-                ploeg:  ploegRijHoogte,
-                verlof: verlofRijHoogte
-            });
-        }
-
-        function startRijResize(e, type) {
-            if (!isAdmin) return;
-            e.preventDefault();
-            e.stopPropagation();
-            var startY    = e.clientY;
-            var startH    = (type === 'verlof') ? verlofRijHoogte : ploegRijHoogte;
-            rijResizeState = { type: type, startY: startY, startH: startH };
-            document.body.classList.add('row-resizing');
-            document.addEventListener('mousemove', onRijResizeMove);
-            document.addEventListener('mouseup',   onRijResizeEnd);
-        }
-
-        function onRijResizeMove(e) {
-            if (!rijResizeState) return;
-            var delta   = e.clientY - rijResizeState.startY;
-            var minH    = (rijResizeState.type === 'verlof') ? 50 : 80;
-            var nieuweH = Math.max(minH, rijResizeState.startH + delta);
-
-            if (rijResizeState.type === 'verlof') {
-                verlofRijHoogte = nieuweH;
-            } else {
-                ploegRijHoogte = nieuweH;
-            }
-            pasRijHoogtesToe();
-            herlayoutPloegRijen();   /* banen herberekenen zodat alles past */
-        }
-
-        function onRijResizeEnd() {
-            if (!rijResizeState) return;
-            document.body.classList.remove('row-resizing');
-            document.removeEventListener('mousemove', onRijResizeMove);
-            document.removeEventListener('mouseup',   onRijResizeEnd);
-            slaanRijHoogtesOp();
-            rijResizeState = null;
-        }
-
         /* ── HOOFDLAADFUNCTIE ── */
         function laadEnRenderAlles() {
             berekenWeekDatums();
@@ -1845,8 +1737,7 @@
                 t.get('board', 'shared', 'interventions', []),
                 t.get('board', 'shared', 'plannedCardIds', []),
                 t.get('board', 'shared', 'ploegen',       null),
-                t.get('board', 'shared', 'verlofItems',   []),
-                t.get('board', 'shared', 'rijHoogtes',    null)
+                t.get('board', 'shared', 'verlofItems',   [])
             ])
             .then(function(resultaten) {
                 var cards             = resultaten[0];
@@ -1855,7 +1746,6 @@
                 var indexIds          = Array.isArray(resultaten[3]) ? resultaten[3] : [];
                 var opgeslagenPloegen = resultaten[4];
                 var verlofItems       = Array.isArray(resultaten[5]) ? resultaten[5] : [];
-                var rijHoogtes        = resultaten[6] || {};
 
                 if (Array.isArray(opgeslagenPloegen) && opgeslagenPloegen.length > 0) {
                     ploegen = opgeslagenPloegen.slice();
@@ -1863,10 +1753,6 @@
                     ploegen = DEFAULT_PLOEGEN.slice();
                     t.set('board', 'shared', 'ploegen', ploegen);
                 }
-
-                /* Herstel opgeslagen rijhoogtes */
-                if (rijHoogtes && rijHoogtes.ploeg)  ploegRijHoogte  = Math.max(80,  rijHoogtes.ploeg);
-                if (rijHoogtes && rijHoogtes.verlof) verlofRijHoogte = Math.max(50,  rijHoogtes.verlof);
 
                 /* Migratie verlof: oude {datum} → {startDatum, eindDatum} */
                 var verlofMigratieNodig = false;
@@ -1882,7 +1768,6 @@
                 if (verlofMigratieNodig) t.set('board', 'shared', 'verlofItems', verlofItems);
 
                 bouwTabel();
-                pasRijHoogtesToe();   /* dropzones op correcte hoogte zetten */
                 if (loadingMsg) loadingMsg.style.display = 'none';
 
                 var archiefLijstIds = {};
