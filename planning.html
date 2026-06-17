@@ -32,7 +32,7 @@
             letter-spacing: 0.05em; color: #5e6c84; margin: 0 0 12px 0;
         }
 
-        /* ── ZOEKBALK (Stap 1.3) ── */
+        /* ── ZOEKBALK ── */
         .sidebar-search {
             width: 100%; padding: 8px 10px; margin-bottom: 10px;
             border: 1px solid #dfe1e6; border-radius: 6px;
@@ -66,7 +66,7 @@
             display: flex; justify-content: space-between; align-items: flex-start;
             transition: box-shadow 0.15s, transform 0.1s;
             position: relative;
-            z-index: 2;   /* boven een eventuele doorlopende band */
+            z-index: 2;
         }
         .planning-card:hover {
             box-shadow: 0 4px 10px rgba(0,0,0,0.22);
@@ -82,7 +82,7 @@
             line-height: 1.2; outline: none; word-break: break-word;
         }
 
-        /* ── GEPLAND-BADGE (Stap 1.2) ── */
+        /* ── GEPLAND-BADGE ── */
         .plan-badge {
             display: none; align-self: flex-start; margin-top: 5px;
             font-size: 10px; font-weight: 700; line-height: 1.4;
@@ -91,7 +91,7 @@
             box-shadow: 0 1px 2px rgba(0,0,0,0.12);
         }
 
-        /* ── ARCHIEF-TAG (Stap 1.4) ── */
+        /* ── ARCHIEF-TAG ── */
         .archief-tag {
             display: inline-block; align-self: flex-start; margin-top: 5px;
             font-size: 10px; font-weight: 700; line-height: 1.4;
@@ -99,7 +99,7 @@
             padding: 1px 7px; border-radius: 10px; letter-spacing: 0.02em;
         }
 
-        /* ── KAART-INFO POPUP (Stap 2.1) ── */
+        /* ── KAART-INFO POPUP ── */
         .card-popup-overlay {
             position: fixed; inset: 0;
             background: rgba(9, 30, 66, 0.45);
@@ -218,7 +218,7 @@
         }
         .main-content h2 { font-size: 16px; font-weight: 700; margin: 0; }
 
-        /* ── STAP 4.1: VIEW-SCHAKELAAR ── */
+        /* ── VIEW-SCHAKELAAR ── */
         .view-switcher {
             display: inline-flex; align-items: center;
             background-color: #ebecf0; border-radius: 8px; padding: 3px; gap: 2px;
@@ -235,12 +235,12 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.12);
         }
 
-        /* ── STAP 4.1: SCROLL-WRAPPER VOOR BREDE VIEWS ── */
+        /* ── SCROLL-WRAPPER ── */
         .table-scroll-wrap {
             flex-grow: 1; overflow-x: auto; overflow-y: visible;
         }
 
-        /* ── STAP 2.2: LEGENDE ── */
+        /* ── LEGENDE ── */
         .legenda {
             background-color: #fff; border: 1px solid #dfe1e6; border-radius: 6px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.08); font-size: 12px; overflow: hidden;
@@ -261,7 +261,7 @@
             border: 1px solid rgba(0,0,0,0.1); flex-shrink: 0;
         }
 
-        /* ── STAP 2.3: VIEW-ONLY INDICATOR ── */
+        /* ── VIEW-ONLY INDICATOR ── */
         .mode-indicator {
             font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 12px;
             white-space: nowrap; letter-spacing: 0.02em;
@@ -293,14 +293,11 @@
         }
         .col-ploeg { width: 130px; }
 
-        /* ── STAP 4.1: DAGKOLOM-BREEDTES PER VIEW ──
-           Bij bredere views worden de dagkolommen smaller zodat er meer past;
-           de scroll-wrapper vangt overflow op. */
         body[data-view="week"]  .col-dag { width: auto; min-width: 150px; }
         body[data-view="multi"] .col-dag { width: 150px; min-width: 150px; }
         body[data-view="month"] .col-dag { width: 140px; min-width: 140px; }
 
-        /* ── STAP 4.1: WEEKEND-KOLOMMEN (smal + grijs) ── */
+        /* ── WEEKEND-KOLOMMEN ── */
         .planning-table th.is-weekend {
             background-color: #dcdfe4; color: #6b778c;
             font-size: 11px;
@@ -310,7 +307,6 @@
         body[data-view="month"] .col-dag.is-weekend { min-width: 48px; width: 48px; }
         .planning-table td.is-weekend { background-color: #f1f2f4; }
         .planning-table td.dropzone.is-weekend.verlof-zone { background-color: #f5f3ea; }
-        /* Weekend-cellen tonen compactere inhoud */
         .is-weekend .placement-band .card-title,
         .is-weekend .planning-card .card-title { font-size: 11px; }
 
@@ -319,7 +315,7 @@
             vertical-align: middle !important; position: relative;
         }
 
-        /* ── STAP 3.1: PLOEGNAAM INLINE BEWERKEN ── */
+        /* ── PLOEGNAAM INLINE BEWERKEN ── */
         .ploeg-naam-wrap {
             display: flex; align-items: center; justify-content: space-between;
             gap: 6px; min-height: 24px;
@@ -340,7 +336,7 @@
         .row-ploeg:hover .ploeg-delete-btn { opacity: 0.5; }
         .ploeg-delete-btn:hover { opacity: 1 !important; color: #bf2600; background-color: rgba(191, 38, 0, 0.08); }
 
-        /* ── STAP 3.1: + PLOEG TOEVOEGEN RIJ ── */
+        /* ── + PLOEG TOEVOEGEN RIJ ── */
         .add-ploeg-row td { background-color: #fafbfc; padding: 0; border-top: 2px dashed #dfe1e6; }
         .add-ploeg-btn {
             display: block; width: 100%; background: none; border: none;
@@ -350,7 +346,7 @@
         }
         .add-ploeg-btn:hover { background-color: #ebecf0; color: #0052cc; }
 
-        /* ── STAP 3.1: INLINE WAARSCHUWING ── */
+        /* ── INLINE WAARSCHUWING ── */
         .ploeg-warning {
             position: absolute; top: 100%; left: 10px; right: 10px; margin-top: 4px;
             background-color: #fff4e5; border: 1px solid #ffab00; color: #6f4e00;
@@ -361,7 +357,7 @@
         }
         .ploeg-warning.show { opacity: 1; transform: translateY(0); }
 
-        /* ── STAP 3.2: VERLOF-RIJ ── */
+        /* ── VERLOF-RIJ ── */
         .row-verlof-label {
             font-weight: 700; font-size: 13px; background-color: #fff8e1;
             vertical-align: middle !important; color: #6f4e00;
@@ -373,21 +369,18 @@
         }
         .verlof-zone.dragover { background-color: #fff4cc; outline: 2px dashed #ffab00; }
 
-        /* ── STAP 3.2: VERLOF-SEGMENTEN ──
-           UNIFIED kleur: één gele vulling voor 1-dag én meerdere dagen.
-           Geen gradient, geen aparte is-range achtergrond meer. */
+        /* ── VERLOF-SEGMENTEN ── */
         .verlof-segment {
             display: block;
-            background-color: #ffe9a8;          /* unified geel */
+            background-color: #ffe9a8;
             border: 1px solid #f1c40f;
-            border-radius: 12px;                 /* 1-dag: beide uiteinden afgerond */
+            border-radius: 12px;
             padding: 3px 8px; margin-bottom: 4px;
             min-height: 22px; font-size: 11px; font-weight: 600; color: #5f4b00;
             cursor: grab; user-select: none; position: relative;
             transition: filter 0.12s;
         }
         .verlof-segment:hover { filter: brightness(0.97); }
-        /* Naadloze doorloop: niet-eerste segment bloedt links over de cel-grens */
         .verlof-segment.not-first {
             border-top-left-radius: 0; border-bottom-left-radius: 0;
             border-left: 0; margin-left: -9px; padding-left: 10px;
@@ -419,7 +412,7 @@
         .verlof-zone:hover .verlof-add-btn { opacity: 0.6; }
         .verlof-add-btn:hover { opacity: 1 !important; background-color: #ff8f00; }
 
-        /* ── GENERIEK RESIZE-HANDVAT (verlof + kaarten) ── */
+        /* ── RESIZE-HANDVAT ── */
         .span-resize-handle {
             position: absolute; right: -2px; top: 0; bottom: 0;
             width: 12px; cursor: ew-resize; z-index: 6;
@@ -436,17 +429,12 @@
         body.span-resizing { cursor: ew-resize !important; user-select: none; }
         body.span-resizing * { cursor: ew-resize !important; }
 
-        /* Drop-cursor feedback bij type-mismatch */
         body[data-drag-type="verlof"] .dropzone:not(.verlof-zone) { cursor: not-allowed; }
         body[data-drag-type="bron"] .verlof-zone,
         body[data-drag-type="instantie"] .verlof-zone,
         body[data-drag-type="interventie"] .verlof-zone { cursor: not-allowed; }
 
-        /* ── STAP 4.3+: ZWEVENDE KAARTEN ──
-           Een zwevende kaart = nog niet zeker ingepland.
-           Visueel: licht transparant, diagonale arcering, ☁ icoon.
-           AANPASSING: de arcering geldt nu voor ZOWEL 1-daagse kaarten als
-           meerdaagse banden, zodat de zwevend-layout overal identiek is. */
+        /* ── ZWEVENDE KAARTEN ── */
         .planning-card.zwevend,
         .placement-band.zwevend {
             opacity: 0.72;
@@ -473,8 +461,6 @@
         .zwevend-toggle-btn:hover { opacity: 1; }
         .zwevend-toggle-btn.actief { opacity: 0.9; }
 
-        /* Zwevende kaart "springt" enkele px uit de kolom → visueel duidelijk los/onzeker.
-           Geldt voor Trello-instanties, doorlopende banden én snelle interventies. */
         .dropzone > .planning-card.zwevend,
         .placement-band.zwevend {
             transform: translateX(7px);
@@ -484,13 +470,10 @@
         .dropzone > .planning-card.zwevend:hover,
         .placement-band.zwevend:hover { z-index: 5 !important; }
 
-        /* ── STAP 4.3+: STAPELLOGICA voor overlappende banden ──
-           Wanneer meerdere placements in dezelfde cel/ploeg overlappen,
-           worden ze verticaal gestapeld met een kleine offset. */
+        /* ── STAPELLOGICA ── */
         .dropzone { position: relative; padding-bottom: 26px !important; }
         .dropzone.dragover { background-color: #dce9fc; outline: 2px dashed #0052cc; }
 
-        /* Band-segmenten in stapelvorm: absolute top/bottom met vaste hoogte per rij */
         .placement-band {
             position: absolute;
             left: 0; right: 0;
@@ -521,15 +504,12 @@
             font-size: 10px; font-style: italic; opacity: 0.9;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-        /* In de band tonen we enkel titel + adres compact; info-veld blijft bewerkbaar maar kort */
         .placement-band .card-info-placement { font-size: 10px; }
-        /* Controls (☁-knop) in de band: rechtsboven, los van de tekstflow */
         .placement-band .band-controls {
             position: absolute; top: 4px; right: 16px;
             margin-left: 0; z-index: 5;
         }
 
-        /* Ééndag kaart in cel: ook stapelbaar (zelfde absolute baan-systeem als banden) */
         .dropzone > .planning-card {
             position: absolute;
             left: 0; right: 0;
@@ -550,10 +530,7 @@
         #loading-msg { font-size: 13px; color: #5e6c84; padding: 8px; font-style: italic; }
         #error-msg { font-size: 13px; color: #bf2600; padding: 8px; display: none; }
 
-        /* ── STAP 4.2: TIJDLIJN-NAVIGATIE ──
-           Pijlen (‹ ›), 'Vandaag'-knop, datumpicker en een periode-label
-           zodat Lauren ziet welke week/maand getoond wordt en vrij door de
-           tijd kan scrollen (tot 2+ jaar vooruit). */
+        /* ── TIJDLIJN-NAVIGATIE ── */
         .tijdlijn-nav {
             display: inline-flex; align-items: center; gap: 4px;
             background-color: #ebecf0; border-radius: 8px; padding: 3px;
@@ -582,17 +559,12 @@
         }
         .nav-datepicker:focus { border-color: #0052cc; box-shadow: 0 0 0 2px rgba(0,82,204,0.18); }
 
-        /* Periode-label naast de titel: toont bv. "Week 25 · 15 — 21 jun 2026" */
         .periode-label {
             font-size: 13px; font-weight: 600; color: #5e6c84;
             white-space: nowrap;
         }
 
-        /* ── STAP 4.2: VERLEDEN- & VANDAAG-MARKERING ──
-           Doel: bij een halverwege geprinte/bekeken planning meteen zien wat
-           voorbij is en wat nog komt.
-           - Verleden dagen: lichte grijs-gele waas + fijne diagonale arcering.
-           - Vandaag: duidelijke gekleurde (blauwe) rand + accent in de header. */
+        /* ── VERLEDEN & VANDAAG MARKERING ── */
         .planning-table td.is-verleden {
             background-image:
                 linear-gradient(rgba(255, 214, 0, 0.10), rgba(255, 214, 0, 0.10)),
@@ -613,7 +585,6 @@
         }
         .planning-table th.is-verleden { opacity: 0.6; }
 
-        /* Vandaag: kolom krijgt een blauw accent zodat 'heden' eruit springt. */
         .planning-table th.is-vandaag {
             background-color: #0052cc !important; color: #fff !important;
         }
@@ -623,41 +594,155 @@
         }
         .planning-table td.is-vandaag.verlof-zone { background-color: #fdf8ec; }
 
-        /* ── PRINT OPTIMALISATIE ── */
+        /* ════════════════════════════════════════════════════════════
+           ── STAP 4.4: PRINT-KNOPPEN ──
+           Twee knoppen: 🖨️ Week (A3 staand) en 🖨️ Maand (A3 liggend).
+           Stijl: subtiel maar duidelijk, gegroepeerd naast de andere UI-knoppen.
+           ════════════════════════════════════════════════════════════ */
+        .print-btn-group {
+            display: inline-flex; align-items: center; gap: 4px;
+            background-color: #ebecf0; border-radius: 8px; padding: 3px;
+        }
+        .print-btn {
+            border: none; background: none; font-family: inherit;
+            font-size: 12px; font-weight: 700; color: #5e6c84;
+            padding: 6px 10px; border-radius: 6px; cursor: pointer;
+            white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;
+            transition: background-color 0.15s, color 0.15s, box-shadow 0.15s;
+        }
+        .print-btn:hover {
+            background-color: #fff; color: #0052cc;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+        }
+        .print-btn svg {
+            width: 13px; height: 13px; flex-shrink: 0;
+            fill: currentColor;
+        }
+        /* Scheidingslijn tussen de twee printknopen */
+        .print-btn-sep {
+            width: 1px; height: 18px; background-color: #c1c7d0;
+            flex-shrink: 0;
+        }
+
+        /* ════════════════════════════════════════════════════════════
+           ── STAP 4.4: PRINT STYLESHEET ──
+           Wordt injecteerd als <style id="print-override"> vlak voor window.print().
+           Bevat @page met A3-formaat en oriëntatie, plus alle verberg-regels.
+           ════════════════════════════════════════════════════════════ */
+
+        /* Basis print-stijl (altijd actief bij afdrukken, ongeacht modus) */
         @media print {
+            /* ── Verberg ALLES behalve de planningstabel ── */
             body { background-color: #fff !important; overflow: visible !important; height: auto !important; }
             .sidebar { display: none !important; }
-            .main-content { padding: 0 !important; margin: 0 !important; width: 100% !important; }
+            .main-content { padding: 4mm !important; margin: 0 !important; width: 100% !important; overflow: visible !important; }
             .table-scroll-wrap { overflow: visible !important; }
-            .view-switcher { display: none !important; }
-            .tijdlijn-nav { display: none !important; }
-            .card-controls, .cell-add-btn, .color-picker-menu, .card-popup-overlay,
-            .mode-indicator, .legenda, .ploeg-delete-btn, .add-ploeg-row,
-            .verlof-add-btn, .span-resize-handle,
-            .verlof-segment .delete-btn { display: none !important; }
+
+            /* ── UI-knoppen en interactieve elementen verbergen ── */
+            .view-switcher,
+            .tijdlijn-nav,
+            .print-btn-group,
+            .mode-indicator,
+            .card-controls,
+            .band-controls,
+            .cell-add-btn,
+            .color-picker-menu,
+            .card-popup-overlay,
+            .ploeg-delete-btn,
+            .add-ploeg-row,
+            .verlof-add-btn,
+            .span-resize-handle,
+            .verlof-segment .delete-btn,
+            .zwevend-toggle-btn { display: none !important; }
+
+            /* ── Lege velden verbergen ── */
             .card-info-placement:empty { display: none !important; }
+            .card-address-editable:empty { display: none !important; }
+
+            /* ── Info-veld stijl voor print ── */
             .card-info-placement {
                 background-color: transparent !important;
-                border-left: 2px solid #5e6484 !important;
+                border-left: 2px solid rgba(0,0,0,0.25) !important;
                 padding: 2px 0 0 4px !important; margin-top: 4px !important;
+                font-size: 10px !important;
             }
+
+            /* ── Kaart en band stijlen ── */
             .planning-card, .verlof-segment, .placement-band {
-                box-shadow: none !important; border: 1px solid #ccc !important;
+                box-shadow: none !important; border: 1px solid rgba(0,0,0,0.15) !important;
                 -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
+                break-inside: avoid !important;
             }
-            .planning-table { box-shadow: none !important; }
+            .planning-table { box-shadow: none !important; border-radius: 0 !important; }
+            .planning-table th,
+            .planning-table td { padding: 4px 5px !important; }
+
+            /* ── Kleurbehoud bij print (essentieel voor projectleiders) ── */
             .planning-table th.is-weekend,
             .planning-table td.is-weekend,
             .planning-table td.is-verleden,
             .planning-table th.is-vandaag,
-            .planning-table td.is-vandaag {
-                -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
-            }
-            /* Vandaag-kolom houdt zijn blauwe rand bij print; verleden houdt arcering. */
+            .planning-table td.is-vandaag,
+            .planning-card,
+            .placement-band,
+            .verlof-segment,
+            .row-verlof-label { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
+            /* Vandaag-kolom houdt blauwe rand bij print */
             .planning-table td.is-vandaag {
                 box-shadow: inset 3px 0 0 #0052cc, inset -3px 0 0 #0052cc !important;
             }
-            .periode-label { display: block !important; font-size: 14px; margin-top: 4px; }
+
+            /* ── Legende altijd tonen bij print (ook als ingeklapt) ── */
+            .legenda { border: none !important; box-shadow: none !important; background: transparent !important; }
+            .legenda-items { display: flex !important; flex-wrap: wrap !important; padding: 0 0 6px 0 !important; }
+            .legenda-toggle .chev { display: none !important; }
+
+            /* ── Header layout compact ── */
+            .main-content-header {
+                margin-bottom: 6px !important;
+                flex-wrap: nowrap !important;
+            }
+            .main-content h2 { font-size: 14px !important; }
+            .periode-label { font-size: 12px !important; display: inline !important; }
+
+            /* ── Zwevend: behoud stijl maar geen transform ── */
+            .planning-card.zwevend,
+            .placement-band.zwevend {
+                transform: none !important;
+            }
+            .zwevend-badge { display: inline-block !important; }
+        }
+
+        /* ── Week-print modus: A3 staand (297 × 420 mm) ── */
+        body.print-mode-week {
+            /* tijdelijk overflow zichtbaar voor print */
+        }
+        @media print {
+            body.print-mode-week {
+                size: A3 portrait; /* via JS @page injection */
+            }
+            body.print-mode-week .planning-table { font-size: 11px !important; }
+            body.print-mode-week .card-title { font-size: 11px !important; }
+            body.print-mode-week .card-address { font-size: 9px !important; }
+        }
+
+        /* ── Maand-print modus: A3 liggend (420 × 297 mm) ── */
+        @media print {
+            body.print-mode-month {
+                size: A3 landscape;
+            }
+            body.print-mode-month .planning-table { font-size: 9px !important; }
+            body.print-mode-month .col-ploeg { width: 90px !important; }
+            body.print-mode-month .card-title { font-size: 9px !important; }
+            body.print-mode-month .card-address { font-size: 8px !important; }
+            body.print-mode-month .card-info-placement { font-size: 8px !important; }
+            body.print-mode-month .planning-table th,
+            body.print-mode-month .planning-table td { padding: 2px 3px !important; font-size: 9px !important; }
+            body.print-mode-month .planning-table th { font-size: 8px !important; }
+            body.print-mode-month .verlof-segment { font-size: 8px !important; padding: 2px 4px !important; }
+            body.print-mode-month .placement-band { padding: 3px 5px !important; }
+            body.print-mode-month .zwevend-badge { font-size: 8px !important; padding: 0px 4px !important; }
         }
     </style>
 </head>
@@ -677,23 +762,42 @@
         <div class="main-content-header">
             <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
                 <h2>📅 Ploegen Planning</h2>
-                <!-- STAP 4.2: PERIODE-LABEL -->
                 <span class="periode-label" id="periode-label"></span>
             </div>
             <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-                <!-- STAP 4.2: TIJDLIJN-NAVIGATIE -->
+                <!-- TIJDLIJN-NAVIGATIE -->
                 <div class="tijdlijn-nav" id="tijdlijn-nav">
                     <button type="button" class="nav-btn" id="nav-prev" title="Vorige periode">‹</button>
                     <button type="button" class="nav-today-btn" id="nav-today" title="Spring naar vandaag">Vandaag</button>
                     <button type="button" class="nav-btn" id="nav-next" title="Volgende periode">›</button>
                     <input type="date" class="nav-datepicker" id="nav-datepicker" title="Spring naar een datum">
                 </div>
-                <!-- STAP 4.1: VIEW-SCHAKELAAR -->
+                <!-- VIEW-SCHAKELAAR -->
                 <div class="view-switcher" id="view-switcher">
                     <button type="button" class="view-switch-btn" data-view-mode="week">Week</button>
                     <button type="button" class="view-switch-btn" data-view-mode="multi">2-3 weken</button>
                     <button type="button" class="view-switch-btn" data-view-mode="month">Maand</button>
                 </div>
+
+                <!-- ── STAP 4.4: PRINT-KNOPPEN ── -->
+                <div class="print-btn-group" id="print-btn-group" title="Afdrukken">
+                    <button type="button" class="print-btn" id="print-week-btn"
+                            title="Weekplanning afdrukken — A3 staand">
+                        <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M4 0h8a1 1 0 0 1 1 1v4H3V1a1 1 0 0 1 1-1zm-2 6h12a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1h-1v2a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-2H2a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1zm9 6H5v2h6v-2zm1-4a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5z"/>
+                        </svg>
+                        Week A3
+                    </button>
+                    <div class="print-btn-sep"></div>
+                    <button type="button" class="print-btn" id="print-month-btn"
+                            title="Maandplanning afdrukken — A3 liggend">
+                        <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M4 0h8a1 1 0 0 1 1 1v4H3V1a1 1 0 0 1 1-1zm-2 6h12a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1h-1v2a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-2H2a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1zm9 6H5v2h6v-2zm1-4a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5z"/>
+                        </svg>
+                        Maand A3
+                    </button>
+                </div>
+
                 <div class="legenda" id="legenda">
                     <button type="button" class="legenda-toggle" id="legenda-toggle">
                         <span class="chev">▶</span> Legende projectleiders
@@ -718,27 +822,24 @@
     <script>
         var t = TrelloPowerUp.iframe();
 
-        /* ── STAP 3.1: DYNAMISCHE PLOEGEN ── */
+        /* ── DYNAMISCHE PLOEGEN ── */
         var DEFAULT_PLOEGEN = ["Ploeg 1", "Ploeg 2", "Ploeg 5", "Ploeg 7 / Extra"];
         var ploegen = DEFAULT_PLOEGEN.slice();
 
-        /* ── STAP 3.2: VERLOF ── */
+        /* ── VERLOF ── */
         var VERLOF_ROW_KEY = '__verlof__';
 
-        /* ── STAP 4.1: VIEW-MODUS ── */
+        /* ── VIEW-MODUS ── */
         var VIEW_MODUS = 'week';
         var WEEK_DAGNAMEN_KORT = ['Zo', 'Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za'];
         var WEEK_DAGNAMEN_LANG = ['Zondag', 'Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag'];
         var MAAND_NAMEN_KORT = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
         var MAAND_NAMEN_LANG = ['januari','februari','maart','april','mei','juni','juli','augustus','september','oktober','november','december'];
 
-        /* ── STAP 4.2: ANKER-DATUM ──
-           Ankerpunt van de getoonde periode. Standaard = vandaag, verschuift met
-           de pijlen en datumpicker. Opgeslagen als ISO 'jjjj-mm-dd' (cross-jaar). */
+        /* ── ANKER-DATUM ── */
         var ankerDatum = new Date();
         ankerDatum.setHours(0, 0, 0, 0);
 
-        /* datumsVanDeWeek: zichtbare dagen van de actieve view, als ISO-strings. */
         var datumsVanDeWeek = [];
         var weekendVlaggen = [];
 
@@ -756,7 +857,7 @@
             { bg: '#00c2e0', text: '#172b4d' }
         ];
 
-        /* ── STAP 2.2: PROJECTLEIDERS ── */
+        /* ── PROJECTLEIDERS ── */
         var PROJECTLEIDERS = [
             { username: 'jenstriest',      naam: 'Jens',            bg: '#ff9f1a', text: '#172b4d' },
             { username: 'evageeroms',      naam: 'Eva',             bg: '#61bd4f', text: '#ffffff' },
@@ -766,7 +867,7 @@
         ];
         var STANDAARD_KAART_STIJL = { bg: '#eaecf0', text: '#172b4d' };
 
-        /* ── STAP 2.3: VIEW-ONLY MODUS ── */
+        /* ── VIEW-ONLY MODUS ── */
         var DEV_MODE = false;
         var ADMIN_USERNAMES = ['laurenabsillis1', 'davythibau01'];
         var isAdmin = false;
@@ -792,6 +893,62 @@
             var openMenus = document.querySelectorAll('.color-picker-menu');
             openMenus.forEach(function(m) { m.remove(); });
         });
+
+        /* ════════════════════════════════════════════════════════════
+           ── STAP 4.4: PRINT LOGICA ──
+           printPlanning(modus):
+             'week'  → A3 staand  (297 × 420 mm), 7 kolommen
+             'month' → A3 liggend (420 × 297 mm), alle dagen van de maand
+
+           Werkwijze:
+           1. Injecteer een tijdelijke <style> met de juiste @page-regel.
+           2. Voeg een body-class toe zodat de CSS-selectoren de juiste
+              font/kolom-groottes toepassen.
+           3. Roep window.print() aan — de browser stuurt direct naar het
+              printerdialooglot (en biedt daar ook PDF-opslaan aan).
+           4. Ruim de tijdelijke class en style na 1 s op (na de print-dialog).
+           ════════════════════════════════════════════════════════════ */
+        function printPlanning(modus) {
+            /* Verwijder eventueel nog aanwezige oude print-styles */
+            var oudeStyle = document.getElementById('print-page-override');
+            if (oudeStyle) oudeStyle.remove();
+            document.body.classList.remove('print-mode-week', 'print-mode-month');
+
+            /* Injecteer @page-regel met juist formaat en oriëntatie */
+            var pageCSS;
+            if (modus === 'week') {
+                pageCSS = '@page { size: A3 portrait; margin: 10mm 8mm 10mm 8mm; }';
+            } else {
+                /* maand */
+                pageCSS = '@page { size: A3 landscape; margin: 8mm 6mm 8mm 6mm; }';
+            }
+            var stijlEl = document.createElement('style');
+            stijlEl.id = 'print-page-override';
+            stijlEl.textContent = pageCSS;
+            document.head.appendChild(stijlEl);
+
+            /* Voeg body-class toe (CSS pikt deze op voor font-groottes e.d.) */
+            document.body.classList.add('print-mode-' + modus);
+
+            /* Korte timeout zodat de DOM kan repainen voor het print-dialoog */
+            setTimeout(function() {
+                window.print();
+                /* Ruim op na het sluiten van het print-dialoog */
+                setTimeout(function() {
+                    document.body.classList.remove('print-mode-week', 'print-mode-month');
+                    var s = document.getElementById('print-page-override');
+                    if (s) s.remove();
+                }, 1000);
+            }, 60);
+        }
+
+        /* Koppel de printknopen */
+        (function koppelPrintKnoppen() {
+            var weekBtn  = document.getElementById('print-week-btn');
+            var maandBtn = document.getElementById('print-month-btn');
+            if (weekBtn)  weekBtn.addEventListener('click',  function() { printPlanning('week'); });
+            if (maandBtn) maandBtn.addEventListener('click', function() { printPlanning('month'); });
+        })();
 
         /* ── LEGENDE ── */
         function bouwLegende() {
@@ -829,7 +986,7 @@
             });
         }
 
-        /* ── STAP 4.1: VIEW-SCHAKELAAR LOGICA ── */
+        /* ── VIEW-SCHAKELAAR LOGICA ── */
         function markeerActieveViewKnop() {
             var knoppen = document.querySelectorAll('.view-switch-btn');
             knoppen.forEach(function(btn) {
@@ -844,8 +1001,6 @@
             VIEW_MODUS = nieuweModus;
             document.body.dataset.view = VIEW_MODUS;
             markeerActieveViewKnop();
-            /* STAP 4.2 (Optie A): anker blijft staan, we snappen enkel naar
-               begin van de periode zodat de kolommen kloppen. */
             snapAnkerNaarPeriode();
             t.set('board', 'shared', 'viewMode', VIEW_MODUS);
             bewaarAnker();
@@ -862,7 +1017,7 @@
             });
         })();
 
-        /* ── STAP 4.2: ANKER-HELPERS ── */
+        /* ── ANKER-HELPERS ── */
         function startVanHuidigePeriode(d) {
             var basis = new Date(d.getFullYear(), d.getMonth(), d.getDate());
             basis.setHours(0, 0, 0, 0);
@@ -923,7 +1078,6 @@
             if (next)  next.addEventListener('click', function() { verschuifAnker(1); });
             if (today) today.addEventListener('click', springNaarVandaag);
             if (picker) {
-                /* Datumpicker tot 2+ jaar vooruit. */
                 var nu = new Date();
                 var min = new Date(nu.getFullYear() - 1, 0, 1);
                 var max = new Date(nu.getFullYear() + 2, 11, 31);
@@ -933,10 +1087,7 @@
             }
         })();
 
-        /* ── OMSCHRIJVING PARSER (read-only) ──
-           AANPASSING: 'Facturatieadres' is bewust verwijderd uit de mapping,
-           zodat facturatiegegevens niet meer op de kaarten/popup verschijnen
-           (plaatsbesparing). De volledige Trello-kaart toont uiteraard alles. */
+        /* ── OMSCHRIJVING PARSER ── */
         function parseDescriptionFields(desc) {
             if (!desc) return {};
             var lines = desc.split('\n');
@@ -975,9 +1126,7 @@
             return extracted;
         }
 
-        /* ── DATUM HELPERS ──
-           STAP 4.2: datums zijn nu ISO 'jjjj-mm-dd'. Oud 'dd-mm' wordt nog
-           geaccepteerd (jaar van anker aangenomen) voor backward compat. */
+        /* ── DATUM HELPERS ── */
         function isoVanDate(d) {
             return d.getFullYear() + '-' +
                    String(d.getMonth() + 1).padStart(2, '0') + '-' +
@@ -1039,7 +1188,7 @@
             return binnen;
         }
 
-        /* ── STAP 4.2: PERIODE-LABEL ── */
+        /* ── PERIODE-LABEL ── */
         function isoWeekNummer(d) {
             var dt = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
             var dag = dt.getUTCDay() || 7;
@@ -1078,7 +1227,7 @@
             if (picker) picker.value = isoVanDate(ankerDatum);
         }
 
-        /* ── STAP 4.1 + 4.2: ZICHTBARE DAGEN BEREKENEN ── */
+        /* ── ZICHTBARE DAGEN BEREKENEN ── */
         function berekenWeekDatums() {
             datumsVanDeWeek = [];
             weekendVlaggen = [];
@@ -1102,7 +1251,7 @@
             updatePeriodeLabel();
         }
 
-        /* ── STAP 4.1 + 4.2: DYNAMISCHE TABEL-HEADER ── */
+        /* ── DYNAMISCHE TABEL-HEADER ── */
         function bouwTabelHeader() {
             var headRow = document.getElementById('table-head-row');
             if (!headRow) return;
@@ -1388,7 +1537,7 @@
             }
         }
 
-        /* ── STAP 3.1: PLOEG-MUTATIES ── */
+        /* ── PLOEG-MUTATIES ── */
         function voegPloegToe() {
             var i = 1, nieuwe;
             while (true) {
@@ -1465,7 +1614,7 @@
             });
         }
 
-        /* ── STAP 3.2: VERLOF-MUTATIES ── */
+        /* ── VERLOF-MUTATIES ── */
         function voegVerlofToe(datum) {
             if (!isAdmin) return;
             var nieuw = {
@@ -1609,7 +1758,7 @@
             return el;
         }
 
-        /* ── GENERIEK RESIZE-HANDVAT ── */
+        /* ── RESIZE-HANDVAT ── */
         function maakResizeHandle(onStart) {
             var h = document.createElement('div');
             h.className = 'span-resize-handle';
@@ -1672,7 +1821,7 @@
             });
         }
 
-        /* ── STAP 4.3+: STAPELLOGICA ── */
+        /* ── STAPELLOGICA ── */
         var stackMap = {};
         var BAND_HOOGTE = 56;
         var BAND_GAP    = 4;
@@ -1889,7 +2038,7 @@
             return el;
         }
 
-        /* ── ZWEVEND TOGGLE (Trello-placement) ── */
+        /* ── ZWEVEND TOGGLE ── */
         function toggleZwevend(p, ctx) {
             if (!isAdmin) return;
             var cardId = cardIdVanInstantie(p.instanceId);
@@ -1969,23 +2118,14 @@
             });
         }
 
-        /* ════════════════════════════════════════════════════════════
-           ── INTERVENTIES (herwerkt: nu rekbaar over meerdere dagen) ──
-           Interventies krijgen een optioneel eindDatum-veld. Bij 1 dag →
-           gewone planning-card; bij meerdere dagen → doorlopende band, net
-           als Trello-placements. Beide met resize-handvat + zwevend-toggle.
-           ════════════════════════════════════════════════════════════ */
-
+        /* ── INTERVENTIES ── */
         function intStart(i) { return i.datum; }
         function intEind(i)  { return i.eindDatum || i.datum; }
 
-        /* Herteken één interventie volledig (verwijder bestaande segmenten,
-           geef stapel vrij, teken opnieuw). */
         function hertekenEnkeleInterventie(int) {
             document.querySelectorAll('[data-int-id="' + int.id + '"]').forEach(function(el) {
                 if (el.parentNode) el.parentNode.removeChild(el);
             });
-            /* Oud (niet-band) element met id == int.id ook opruimen */
             var oudLos = document.getElementById(int.id);
             if (oudLos && oudLos.parentNode) oudLos.parentNode.removeChild(oudLos);
             stapelVrijgeven(int.id);
@@ -1993,10 +2133,8 @@
             herlayoutPloegRijen();
         }
 
-        /* Centrale tekenfunctie voor interventies (los of band). */
         function tekenInterventie(int) {
             if (!int.ploeg || !int.datum) {
-                /* Niet ingepland → naar zijbalk */
                 var pool = document.getElementById('sidebar-pool');
                 if (pool) pool.appendChild(maakInterventieKaart(int));
                 return;
@@ -2039,7 +2177,6 @@
             }
         }
 
-        /* Bandsegment voor een meerdaagse interventie (analoog aan Trello-band). */
         function maakInterventieBandSegment(int, opts) {
             var el = document.createElement('div');
             el.className = 'placement-band';
@@ -2132,7 +2269,7 @@
             return el;
         }
 
-        /* ── INTERVENTIE RESIZE (rekken over meerdere dagen) ── */
+        /* ── INTERVENTIE RESIZE ── */
         var interventieResizeState = null;
         function startInterventieResize(e, int) {
             if (!isAdmin) return;
@@ -2340,7 +2477,6 @@
                     if (JSON.stringify(nieuweIndex.slice().sort()) !== JSON.stringify(indexIds.slice().sort())) {
                         t.set('board', 'shared', 'plannedCardIds', nieuweIndex);
                     }
-                    /* Interventies via centrale tekenInterventie (ondersteunt nu banden). */
                     interventions.forEach(function(int) { tekenInterventie(int); });
                     verlofItems.forEach(function(v) { tekenVerlofItem(v); });
                     herlayoutPloegRijen();
@@ -2355,7 +2491,7 @@
             });
         }
 
-        /* ── STAP 4.1 + 4.2: VIEW + ANKER LADEN BIJ OPSTART ── */
+        /* ── VIEW + ANKER LADEN BIJ OPSTART ── */
         t.render(function() {
             return Promise.all([
                 t.get('board', 'shared', 'viewMode', 'week'),
@@ -2625,7 +2761,7 @@
             zetBronBadge(document.getElementById(cardId), count);
         }
 
-        /* ── INSTANTIE-KAART (1 dag, Trello) ── */
+        /* ── INSTANTIE-KAART ── */
         function maakTrelloInstantieKaart(card, placement, opts) {
             opts = opts || {};
             var el = document.createElement('div');
@@ -2690,9 +2826,7 @@
             return el;
         }
 
-        /* ── INTERVENTIE-KAART (1 dag of in zijbalk) ──
-           AANPASSING: krijgt nu (net als Trello-kaarten) een resize-handvat
-           wanneer ingepland, zodat interventies rekbaar worden. */
+        /* ── INTERVENTIE-KAART ── */
         function maakInterventieKaart(int, opts) {
             opts = opts || {};
             var id = int.id;
@@ -2773,7 +2907,6 @@
             }
             el.addEventListener('dragstart', drag);
             el.addEventListener('dragend',   dragEnd);
-            /* Resize-handvat → uitrekken naar meerdere dagen (alleen indien ingepland). */
             if (opts.metResize && isAdmin) {
                 var handle = maakResizeHandle(function(e) { startInterventieResize(e, int); });
                 el.appendChild(handle);
@@ -2822,7 +2955,6 @@
                         kaartEl.style.backgroundColor = gekozenKleurObj.bg;
                         kaartEl.style.color           = gekozenKleurObj.text;
                     } else {
-                        /* Band-segmenten: alle segmenten van deze interventie bijwerken */
                         document.querySelectorAll('[data-int-id="' + id + '"]').forEach(function(seg) {
                             seg.style.backgroundColor = gekozenKleurObj.bg;
                             seg.style.color           = gekozenKleurObj.text;
@@ -2832,7 +2964,7 @@
             });
         }
 
-        /* ── ZWEVEND TOGGLE voor interventies (los of band) ── */
+        /* ── ZWEVEND TOGGLE voor interventies ── */
         function toggleZwevendInterventie(id) {
             if (!isAdmin) return;
             t.get('board', 'shared', 'interventions', []).then(function(lijst) {
@@ -3057,10 +3189,9 @@
                 return;
             }
 
-            /* ── INTERVENTIE (kan nu meerdaags zijn → range mee verplaatsen) ── */
+            /* ── INTERVENTIE ── */
             if (soort === 'interventie') {
                 if (naarZijbalk) {
-                    /* Naar zijbalk: segmenten/los element weg, ploeg+datum wissen */
                     document.querySelectorAll('[data-int-id="' + id + '"]').forEach(function(el) {
                         if (el.parentNode) el.parentNode.removeChild(el);
                     });
@@ -3083,7 +3214,6 @@
                     });
                     return;
                 }
-                /* Naar een ploeg-cel: hele range mee verplaatsen (zoals Trello-placement) */
                 t.get('board', 'shared', 'interventions', []).then(function(lijst) {
                     var arr = Array.isArray(lijst) ? lijst : [];
                     var doelInt = null;
