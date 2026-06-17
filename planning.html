@@ -429,6 +429,17 @@
         .zwevend-toggle-btn:hover { opacity: 1; }
         .zwevend-toggle-btn.actief { opacity: 0.9; }
 
+        /* Zwevende kaart "springt" enkele px uit de kolom → visueel duidelijk los/onzeker.
+           Geldt voor Trello-instanties, doorlopende banden én snelle interventies. */
+        .dropzone > .planning-card.zwevend,
+        .placement-band.zwevend {
+            transform: translateX(7px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.20);
+            z-index: 3;
+        }
+        .dropzone > .planning-card.zwevend:hover,
+        .placement-band.zwevend:hover { z-index: 5 !important; }
+
         /* ── STAP 4.3+: STAPELLOGICA voor overlappende banden ──
            Wanneer meerdere placements in dezelfde cel/ploeg overlappen,
            worden ze verticaal gestapeld met een kleine offset. */
@@ -474,9 +485,10 @@
             margin-left: 0; z-index: 5;
         }
 
-        /* Ééndag kaart in cel: ook stapelbaar */
+        /* Ééndag kaart in cel: ook stapelbaar (zelfde absolute baan-systeem als banden) */
         .dropzone > .planning-card {
-            position: relative;
+            position: absolute;
+            left: 0; right: 0;
             z-index: 2;
         }
 
@@ -1397,7 +1409,65 @@
             }
         }
 
-        /* ── STAP 4.3+: PLACEMENT TEKENEN (1 dag = kaart, meerdere = gestapelde band) ── */
+        /* ── STAP 4.3 FIX: GEDEELDE BAAN-LAYOUT (geen overlap meer) ──
+           Alle items in een ploeg-rij (1-dag kaarten, doorlopende banden én
+           snelle interventies) krijgen een baan-index via stapelReserveer.
+           Deze functie meet de echte inhoudshoogte per baan, neemt per baan de
+           grootste hoogte over de hele rij (zodat doorlopende banden netjes over
+           kolommen uitlijnen) en plaatst elk item op de juiste top/hoogte.
+           Resultaat: niets overlapt, niets wordt afgekapt. */
+        function herlayoutPloegRijen() {
+            var zones = document.querySelectorAll('.dropzone[data-row-type="ploeg"]');
+            var perPloeg = {};
+            zones.forEach(function(z) {
+                var pl = z.dataset.ploeg;
+                if (pl === undefined) return;
+                if (!perPloeg[pl]) perPloeg[pl] = [];
+                perPloeg[pl].push(z);
+            });
+
+            Object.keys(perPloeg).forEach(function(pl) {
+                var cellen = perPloeg[pl];
+                var baanHoogtes = {};
+                var items = [];
+
+                /* Pass 1: meet natuurlijke hoogte per item, bepaal max per baan */
+                cellen.forEach(function(z) {
+                    z.querySelectorAll('.planning-card, .placement-band').forEach(function(el) {
+                        if (el.dataset.lane === undefined || el.dataset.lane === '') return;
+                        var baan = parseInt(el.dataset.lane, 10);
+                        if (isNaN(baan)) return;
+                        el.style.height = 'auto';   /* meet inhoudshoogte */
+                        var h = el.offsetHeight;
+                        if (!baanHoogtes[baan] || h > baanHoogtes[baan]) baanHoogtes[baan] = h;
+                        items.push({ el: el, baan: baan });
+                    });
+                });
+
+                /* Banen op volgorde + cumulatieve tops berekenen */
+                var banen = Object.keys(baanHoogtes)
+                    .map(function(k) { return parseInt(k, 10); })
+                    .sort(function(a, b) { return a - b; });
+                var tops = {};
+                var cursor = BAND_TOP;
+                banen.forEach(function(b) {
+                    tops[b] = cursor;
+                    cursor += baanHoogtes[b] + BAND_GAP;
+                });
+                var totaal = (banen.length ? (cursor - BAND_GAP) : BAND_TOP) + 30 /* ruimte add-knop */;
+
+                /* Pass 2: definitieve top + hoogte toepassen */
+                items.forEach(function(it) {
+                    it.el.style.top    = tops[it.baan] + 'px';
+                    it.el.style.height = baanHoogtes[it.baan] + 'px';
+                    it.el.style.bottom = 'auto';
+                });
+
+                cellen.forEach(function(z) {
+                    z.style.minHeight = Math.max(110, totaal) + 'px';
+                });
+            });
+        }
         function placementStart(p) { return p.datum; }
         function placementEind(p)  { return p.eindDatum || p.datum; }
 
@@ -1409,6 +1479,7 @@
             /* Geef de stapel-rijen vrij die deze instantie bezette */
             stapelVrijgeven(p.instanceId);
             tekenPlacement(p, ctx);
+            herlayoutPloegRijen();
         }
 
         function tekenPlacement(p, ctx) {
@@ -1425,13 +1496,17 @@
                 (aantalDagenTussen(start, eind) > 0));
 
             if (!meerdaags) {
-                /* 1 dag → volledige kaart (met resize-handvat) */
-                var zone = document.getElementById(maakZoneId(p.ploeg, start));
+                /* 1 dag → volledige kaart (met resize-handvat), nu óók in baan-systeem */
+                var zoneId = maakZoneId(p.ploeg, start);
+                var zone = document.getElementById(zoneId);
                 if (!zone) return;
+                var pos1 = stapelReserveer([zoneId], p.instanceId);
                 var kaart = maakTrelloInstantieKaart(ctx.card, p, {
                     isArchief: ctx.isArchief, kanTonen: ctx.kanTonen, url: ctx.url,
                     metResize: true, ctx: ctx
                 });
+                kaart.dataset.lane     = pos1.rij;
+                kaart.dataset.ploegRow = p.ploeg;
                 zone.appendChild(kaart);
             } else {
                 /* Meerdere dagen → doorlopende band, per dag een segment, gestapeld.
@@ -1450,6 +1525,8 @@
                         top:    pos.top,
                         height: BAND_HOOGTE
                     });
+                    seg.dataset.lane     = pos.rij;
+                    seg.dataset.ploegRow = p.ploeg;
                     zone.appendChild(seg);
                 });
             }
@@ -1811,12 +1888,20 @@
                     interventions.forEach(function(int) {
                         var el = maakInterventieKaart(int);
                         if (int.ploeg && int.datum) {
-                            var zone = document.getElementById(maakZoneId(int.ploeg, int.datum));
-                            (zone || pool).appendChild(el);
+                            var izoneId = maakZoneId(int.ploeg, int.datum);
+                            var zone = document.getElementById(izoneId);
+                            if (zone) {
+                                var iposR = stapelReserveer([izoneId], int.id);
+                                el.dataset.lane     = iposR.rij;
+                                el.dataset.ploegRow = int.ploeg;
+                                zone.appendChild(el);
+                            } else { pool.appendChild(el); }
                         } else { pool.appendChild(el); }
                     });
 
                     verlofItems.forEach(function(v) { tekenVerlofItem(v); });
+
+                    herlayoutPloegRijen();   /* definitieve baan-layout (geen overlap) */
 
                     var zoekVeld = document.getElementById('sidebar-search');
                     if (zoekVeld) filterZijbalk(zoekVeld.value);
@@ -2186,6 +2271,7 @@
             var id = int.id;
             var el = document.createElement('div');
             el.className = 'planning-card';
+            if (int.zwevend) el.classList.add('zwevend');
             el.id        = id;
             el.draggable = isAdmin;
             el.dataset.rol = 'interventie';
@@ -2211,6 +2297,13 @@
             maakBewerkbaarVeld(infoEl, function(txt) { updateInterventionInfo(id, txt); });
             body.appendChild(infoEl);
 
+            if (int.zwevend) {
+                var izbadge = document.createElement('span');
+                izbadge.className = 'zwevend-badge';
+                izbadge.innerText = '☁ Onzeker';
+                body.appendChild(izbadge);
+            }
+
             el.appendChild(body);
 
             var stijl = int.colorObj || CUSTOM_COLORS[0];
@@ -2220,6 +2313,16 @@
             if (isAdmin) {
                 var controls = document.createElement('div');
                 controls.className = 'card-controls';
+
+                var izwBtn = document.createElement('span');
+                izwBtn.className = 'zwevend-toggle-btn' + (int.zwevend ? ' actief' : '');
+                izwBtn.title = int.zwevend ? 'Markeer als zeker ingepland' : 'Markeer als onzeker (zwevend)';
+                izwBtn.innerHTML = '☁';
+                izwBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    toggleZwevendInterventie(id);
+                });
+                controls.appendChild(izwBtn);
 
                 var colorBtn = document.createElement('span');
                 colorBtn.className = 'color-btn';
@@ -2302,6 +2405,32 @@
             });
         }
 
+        /* ── ZWEVEND TOGGLE voor snelle interventies ── */
+        function toggleZwevendInterventie(id) {
+            if (!isAdmin) return;
+            t.get('board', 'shared', 'interventions', []).then(function(lijst) {
+                var arr = Array.isArray(lijst) ? lijst : [];
+                var gewijzigd = null;
+                arr = arr.map(function(i) {
+                    if (i.id === id) { i.zwevend = !i.zwevend; gewijzigd = i; }
+                    return i;
+                });
+                return t.set('board', 'shared', 'interventions', arr).then(function() { return gewijzigd; });
+            }).then(function(int) {
+                if (!int) return;
+                var oud      = document.getElementById(id);
+                var lane     = oud ? oud.dataset.lane : undefined;
+                var ploegRow = oud ? oud.dataset.ploegRow : undefined;
+                var parent   = oud ? oud.parentNode : null;
+                var nieuw    = maakInterventieKaart(int);
+                if (lane !== undefined)     nieuw.dataset.lane     = lane;
+                if (ploegRow !== undefined) nieuw.dataset.ploegRow = ploegRow;
+                if (parent) { parent.replaceChild(nieuw, oud); }
+                else if (oud && oud.parentNode) { oud.parentNode.removeChild(oud); }
+                herlayoutPloegRijen();
+            });
+        }
+
         function voegDirecteInterventieToe(ploeg, datum) {
             if (!isAdmin) return;
             var nieuw = {
@@ -2318,7 +2447,15 @@
             .then(function() {
                 var cardEl = maakInterventieKaart(nieuw);
                 var zone = document.getElementById(maakZoneId(ploeg, datum));
-                (zone || document.getElementById('sidebar-pool')).appendChild(cardEl);
+                if (zone) {
+                    var iposNew = stapelReserveer([maakZoneId(ploeg, datum)], nieuw.id);
+                    cardEl.dataset.lane     = iposNew.rij;
+                    cardEl.dataset.ploegRow = ploeg;
+                    zone.appendChild(cardEl);
+                    herlayoutPloegRijen();
+                } else {
+                    document.getElementById('sidebar-pool').appendChild(cardEl);
+                }
                 var titleEl = cardEl.querySelector('.card-title');
                 if (titleEl) {
                     titleEl.contentEditable = true;
@@ -2340,6 +2477,8 @@
             }).then(function() {
                 var el = document.getElementById(id);
                 if (el && el.parentNode) el.parentNode.removeChild(el);
+                stapelVrijgeven(id);
+                herlayoutPloegRijen();
             });
         }
 
@@ -2510,6 +2649,7 @@
                 }).then(function(aantal) {
                     var ctx = { card: card, kanTonen: true, url: card.url || '', isArchief: false, ploeg: doelPloeg };
                     tekenPlacement(nieuwePlacement, ctx);
+                    herlayoutPloegRijen();
                     updateBronBadgeById(id, aantal);
                     voegCardToeAanIndex(id);
                 });
@@ -2520,6 +2660,12 @@
 
             /* ── INTERVENTIE ── */
             if (naarZijbalk) {
+                stapelVrijgeven(id);
+                cardEl.style.top = '';
+                cardEl.style.height = '';
+                cardEl.style.bottom = '';
+                delete cardEl.dataset.lane;
+                delete cardEl.dataset.ploegRow;
                 document.getElementById('sidebar-pool').appendChild(cardEl);
                 t.get('board', 'shared', 'interventions', []).then(function(lijst) {
                     return t.set('board', 'shared', 'interventions', lijst.map(function(item) {
@@ -2527,9 +2673,14 @@
                         return item;
                     }));
                 });
+                herlayoutPloegRijen();
                 var zoekVeldA = document.getElementById('sidebar-search');
                 if (zoekVeldA) filterZijbalk(zoekVeldA.value);
             } else {
+                stapelVrijgeven(id);
+                var iposMove = stapelReserveer([maakZoneId(doelPloeg, doelDatum)], id);
+                cardEl.dataset.lane     = iposMove.rij;
+                cardEl.dataset.ploegRow = doelPloeg;
                 doelZone.appendChild(cardEl);
                 t.get('board', 'shared', 'interventions', []).then(function(lijst) {
                     return t.set('board', 'shared', 'interventions', lijst.map(function(item) {
@@ -2537,6 +2688,7 @@
                         return item;
                     }));
                 });
+                herlayoutPloegRijen();
             }
         }
 
@@ -2564,6 +2716,15 @@
         if (searchInput) {
             searchInput.addEventListener('input', function() { filterZijbalk(this.value); });
         }
+
+        /* Na het bewerken van een tekstveld in een kaart kan de hoogte wijzigen →
+           banen opnieuw uitlijnen zodat er niets gaat overlappen. */
+        document.addEventListener('focusout', function(e) {
+            var t2 = e.target;
+            if (t2 && t2.closest && t2.closest('.dropzone[data-row-type="ploeg"]')) {
+                setTimeout(herlayoutPloegRijen, 0);
+            }
+        });
     </script>
 </body>
 </html>
