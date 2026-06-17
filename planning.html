@@ -214,9 +214,31 @@
         }
         .main-content-header {
             display: flex; align-items: center; justify-content: space-between;
-            gap: 12px; margin-bottom: 14px;
+            gap: 12px; margin-bottom: 14px; flex-wrap: wrap;
         }
         .main-content h2 { font-size: 16px; font-weight: 700; margin: 0; }
+
+        /* ── STAP 4.1: VIEW-SCHAKELAAR ── */
+        .view-switcher {
+            display: inline-flex; align-items: center;
+            background-color: #ebecf0; border-radius: 8px; padding: 3px; gap: 2px;
+        }
+        .view-switch-btn {
+            border: none; background: none; font-family: inherit;
+            font-size: 12px; font-weight: 700; color: #5e6c84;
+            padding: 6px 12px; border-radius: 6px; cursor: pointer;
+            white-space: nowrap; transition: background-color 0.15s, color 0.15s, box-shadow 0.15s;
+        }
+        .view-switch-btn:hover { color: #172b4d; }
+        .view-switch-btn.actief {
+            background-color: #fff; color: #0052cc;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+        }
+
+        /* ── STAP 4.1: SCROLL-WRAPPER VOOR BREDE VIEWS ── */
+        .table-scroll-wrap {
+            flex-grow: 1; overflow-x: auto; overflow-y: visible;
+        }
 
         /* ── STAP 2.2: LEGENDE ── */
         .legenda {
@@ -270,6 +292,28 @@
             background-color: #ebecf0; font-weight: 700; font-size: 13px; text-align: left;
         }
         .col-ploeg { width: 130px; }
+
+        /* ── STAP 4.1: DAGKOLOM-BREEDTES PER VIEW ──
+           Bij bredere views worden de dagkolommen smaller zodat er meer past;
+           de scroll-wrapper vangt overflow op. */
+        body[data-view="week"]  .col-dag { width: auto; min-width: 150px; }
+        body[data-view="multi"] .col-dag { width: 150px; min-width: 150px; }
+        body[data-view="month"] .col-dag { width: 140px; min-width: 140px; }
+
+        /* ── STAP 4.1: WEEKEND-KOLOMMEN (smal + grijs) ── */
+        .planning-table th.is-weekend {
+            background-color: #dcdfe4; color: #6b778c;
+            font-size: 11px;
+        }
+        body[data-view="week"]  .col-dag.is-weekend { min-width: 70px; width: 70px; }
+        body[data-view="multi"] .col-dag.is-weekend { min-width: 56px; width: 56px; }
+        body[data-view="month"] .col-dag.is-weekend { min-width: 48px; width: 48px; }
+        .planning-table td.is-weekend { background-color: #f1f2f4; }
+        .planning-table td.dropzone.is-weekend.verlof-zone { background-color: #f5f3ea; }
+        /* Weekend-cellen tonen compactere inhoud */
+        .is-weekend .placement-band .card-title,
+        .is-weekend .planning-card .card-title { font-size: 11px; }
+
         .row-ploeg {
             font-weight: 700; font-size: 13px; background-color: #fafbfc;
             vertical-align: middle !important; position: relative;
@@ -511,6 +555,8 @@
             body { background-color: #fff !important; overflow: visible !important; height: auto !important; }
             .sidebar { display: none !important; }
             .main-content { padding: 0 !important; margin: 0 !important; width: 100% !important; }
+            .table-scroll-wrap { overflow: visible !important; }
+            .view-switcher { display: none !important; }
             .card-controls, .cell-add-btn, .color-picker-menu, .card-popup-overlay,
             .mode-indicator, .legenda, .ploeg-delete-btn, .add-ploeg-row,
             .verlof-add-btn, .span-resize-handle,
@@ -526,6 +572,10 @@
                 -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
             }
             .planning-table { box-shadow: none !important; }
+            .planning-table th.is-weekend,
+            .planning-table td.is-weekend {
+                -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
+            }
         }
     </style>
 </head>
@@ -543,8 +593,14 @@
 
     <div class="main-content">
         <div class="main-content-header">
-            <h2>📅 Ploegen Planning – deze week</h2>
-            <div style="display:flex; align-items:center; gap:10px;">
+            <h2>📅 Ploegen Planning</h2>
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                <!-- STAP 4.1: VIEW-SCHAKELAAR -->
+                <div class="view-switcher" id="view-switcher">
+                    <button type="button" class="view-switch-btn" data-view-mode="week">Week</button>
+                    <button type="button" class="view-switch-btn" data-view-mode="multi">2-3 weken</button>
+                    <button type="button" class="view-switch-btn" data-view-mode="month">Maand</button>
+                </div>
                 <div class="legenda" id="legenda">
                     <button type="button" class="legenda-toggle" id="legenda-toggle">
                         <span class="chev">▶</span> Legende projectleiders
@@ -554,19 +610,17 @@
                 <span class="mode-indicator" id="mode-indicator"></span>
             </div>
         </div>
-        <table class="planning-table">
-            <thead>
-                <tr>
-                    <th class="col-ploeg">Ploeg</th>
-                    <th id="day-1"></th>
-                    <th id="day-2"></th>
-                    <th id="day-3"></th>
-                    <th id="day-4"></th>
-                    <th id="day-5"></th>
-                </tr>
-            </thead>
-            <tbody id="table-body"></tbody>
-        </table>
+        <div class="table-scroll-wrap">
+            <table class="planning-table">
+                <thead>
+                    <tr id="table-head-row">
+                        <th class="col-ploeg">Ploeg</th>
+                        <!-- STAP 4.1: dagkolommen worden dynamisch ingevuld door JS -->
+                    </tr>
+                </thead>
+                <tbody id="table-body"></tbody>
+            </table>
+        </div>
     </div>
 
     <script>
@@ -579,8 +633,20 @@
         /* ── STAP 3.2: VERLOF ── */
         var VERLOF_ROW_KEY = '__verlof__';
 
-        var WEEKDAGEN = ['Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag'];
+        /* ── STAP 4.1: VIEW-MODUS ──
+           'week'  = 5 werkdagen + weekend (7 dagen, ma → zo) van de huidige week
+           'multi' = ~2-3 weken (we tonen 3 volledige weken = 21 dagen)
+           'month' = volledige kalendermaand (alle dagen van de 1e t/m de laatste)
+           Weekenddagen (za/zo) krijgen smalle grijze kolommen. */
+        var VIEW_MODUS = 'week';
+        var WEEK_DAGNAMEN_KORT = ['Zo', 'Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za'];  // getDay()-index
+        var WEEK_DAGNAMEN_LANG = ['Zondag', 'Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag'];
+
+        /* datumsVanDeWeek behoudt zijn naam (backward compat met alle bestaande logica),
+           maar bevat nu de zichtbare dagen van de ACTIEVE view (kan 7, 21 of ~30 zijn). */
         var datumsVanDeWeek = [];
+        /* Parallel aan datumsVanDeWeek: per dag of het een weekenddag is. */
+        var weekendVlaggen = [];
 
         var trelloKaartCache = {};
 
@@ -675,6 +741,36 @@
             });
         }
 
+        /* ── STAP 4.1: VIEW-SCHAKELAAR LOGICA ── */
+        function markeerActieveViewKnop() {
+            var knoppen = document.querySelectorAll('.view-switch-btn');
+            knoppen.forEach(function(btn) {
+                if (btn.dataset.viewMode === VIEW_MODUS) btn.classList.add('actief');
+                else btn.classList.remove('actief');
+            });
+        }
+
+        function wisselView(nieuweModus) {
+            if (nieuweModus === VIEW_MODUS) return;
+            if (['week', 'multi', 'month'].indexOf(nieuweModus) === -1) return;
+            VIEW_MODUS = nieuweModus;
+            document.body.dataset.view = VIEW_MODUS;
+            markeerActieveViewKnop();
+            /* Persistent opslaan op board-niveau (consistent met ploegen/verlof). */
+            t.set('board', 'shared', 'viewMode', VIEW_MODUS);
+            laadEnRenderAlles();
+        }
+
+        (function koppelViewSchakelaar() {
+            var switcher = document.getElementById('view-switcher');
+            if (!switcher) return;
+            switcher.addEventListener('click', function(e) {
+                var btn = e.target.closest('.view-switch-btn');
+                if (!btn) return;
+                wisselView(btn.dataset.viewMode);
+            });
+        })();
+
         /* ── OMSCHRIJVING PARSER (read-only) ── */
         function parseDescriptionFields(desc) {
             if (!desc) return {};
@@ -768,23 +864,82 @@
             return binnen;
         }
 
-        /* ── WEEK DATUMS ── */
+        /* ── STAP 4.1: ZICHTBARE DAGEN BEREKENEN PER VIEW ──
+           Vervangt de oude vaste 5-dagen-logica. Vult datumsVanDeWeek +
+           weekendVlaggen én bouwt de dynamische tabel-header op.
+
+           - week  : maandag van deze week → 7 dagen (ma t/m zo)
+           - multi : maandag van deze week → 21 dagen (3 volledige weken)
+           - month : 1e dag van deze maand → laatste dag van deze maand */
         function berekenWeekDatums() {
             var vandaag = new Date();
-            var dag = vandaag.getDay();
-            var afstand = (dag === 0) ? -6 : 1 - dag;
-            var maandag = new Date(vandaag);
-            maandag.setDate(vandaag.getDate() + afstand);
+            vandaag.setHours(0, 0, 0, 0);
 
             datumsVanDeWeek = [];
-            for (var i = 0; i < 5; i++) {
-                var d = new Date(maandag);
-                d.setDate(maandag.getDate() + i);
+            weekendVlaggen = [];
+
+            var startDatum, aantalDagen;
+
+            if (VIEW_MODUS === 'month') {
+                startDatum = new Date(vandaag.getFullYear(), vandaag.getMonth(), 1);
+                var laatste = new Date(vandaag.getFullYear(), vandaag.getMonth() + 1, 0);
+                aantalDagen = laatste.getDate();
+            } else {
+                /* week & multi starten op de maandag van de huidige week */
+                var dag = vandaag.getDay();
+                var afstand = (dag === 0) ? -6 : 1 - dag;
+                startDatum = new Date(vandaag);
+                startDatum.setDate(vandaag.getDate() + afstand);
+                aantalDagen = (VIEW_MODUS === 'multi') ? 21 : 7;
+            }
+
+            for (var i = 0; i < aantalDagen; i++) {
+                var d = new Date(startDatum);
+                d.setDate(startDatum.getDate() + i);
+                d.setHours(0, 0, 0, 0);
                 datumsVanDeWeek.push(dateNaarDdMM(d));
+                var weekdagIndex = d.getDay();              // 0 = zo, 6 = za
+                weekendVlaggen.push(weekdagIndex === 0 || weekdagIndex === 6);
+            }
+
+            bouwTabelHeader();
+        }
+
+        /* ── STAP 4.1: DYNAMISCHE TABEL-HEADER ──
+           Bouwt de <th>-kolommen op basis van datumsVanDeWeek.
+           Weekenddagen krijgen .is-weekend (smal + grijs) en een korte naam. */
+        function bouwTabelHeader() {
+            var headRow = document.getElementById('table-head-row');
+            if (!headRow) return;
+
+            /* Verwijder alle bestaande dag-headers (behoud de eerste 'Ploeg'-cel). */
+            while (headRow.children.length > 1) {
+                headRow.removeChild(headRow.lastChild);
+            }
+
+            datumsVanDeWeek.forEach(function(ddmm, idx) {
+                var th = document.createElement('th');
+                th.className = 'col-dag';
+                var isWeekend = weekendVlaggen[idx];
+                if (isWeekend) th.classList.add('is-weekend');
+
+                var d = ddMMNaarDate(ddmm);
                 var dd = String(d.getDate()).padStart(2, '0');
                 var mm = String(d.getMonth() + 1).padStart(2, '0');
-                document.getElementById('day-' + (i + 1)).innerText = WEEKDAGEN[i] + ' ' + dd + '/' + mm;
-            }
+                var weekdagIndex = d.getDay();
+
+                if (isWeekend) {
+                    /* Smalle kolom → korte dagnaam + datum onder elkaar */
+                    th.innerHTML = WEEK_DAGNAMEN_KORT[weekdagIndex] + '<br>' + dd + '/' + mm;
+                } else if (VIEW_MODUS === 'month') {
+                    /* Maandview: compacter (korte dagnaam) om ruimte te sparen */
+                    th.innerText = WEEK_DAGNAMEN_KORT[weekdagIndex] + ' ' + dd + '/' + mm;
+                } else {
+                    th.innerText = WEEK_DAGNAMEN_LANG[weekdagIndex] + ' ' + dd + '/' + mm;
+                }
+
+                headRow.appendChild(th);
+            });
         }
 
         function maakZoneId(ploeg, datum) {
@@ -807,10 +962,13 @@
             }, 3200);
         }
 
-        /* ── TABEL OPBOUW ── */
+        /* ── TABEL OPBOUW ──
+           STAP 4.1: loopt nu over datumsVanDeWeek.length i.p.v. hard 5.
+           Weekend-cellen krijgen .is-weekend. */
         function bouwTabel() {
             var tbody = document.getElementById('table-body');
             tbody.innerHTML = '';
+            var aantalDagen = datumsVanDeWeek.length;
 
             /* VERLOF-RIJ */
             var trV = document.createElement('tr');
@@ -819,9 +977,10 @@
             tdLabel.innerText = '🌴 Verlof';
             trV.appendChild(tdLabel);
 
-            for (var i = 0; i < 5; i++) {
+            for (var i = 0; i < aantalDagen; i++) {
                 var tdV = document.createElement('td');
-                tdV.className = 'dropzone verlof-zone';
+                tdV.className = 'dropzone verlof-zone col-dag';
+                if (weekendVlaggen[i]) tdV.classList.add('is-weekend');
                 tdV.id = maakZoneId(VERLOF_ROW_KEY, datumsVanDeWeek[i]);
                 tdV.dataset.ploeg   = VERLOF_ROW_KEY;
                 tdV.dataset.datum   = datumsVanDeWeek[i];
@@ -917,9 +1076,10 @@
                 tdPloeg.appendChild(wrap);
                 tr.appendChild(tdPloeg);
 
-                for (var j = 0; j < 5; j++) {
+                for (var j = 0; j < aantalDagen; j++) {
                     var td = document.createElement('td');
-                    td.className = 'dropzone';
+                    td.className = 'dropzone col-dag';
+                    if (weekendVlaggen[j]) td.classList.add('is-weekend');
                     td.id = maakZoneId(ploeg, datumsVanDeWeek[j]);
                     td.dataset.ploeg   = ploeg;
                     td.dataset.datum   = datumsVanDeWeek[j];
@@ -951,7 +1111,7 @@
             var trAdd = document.createElement('tr');
             trAdd.className = 'add-ploeg-row';
             var tdAdd = document.createElement('td');
-            tdAdd.colSpan = 6;
+            tdAdd.colSpan = aantalDagen + 1;   /* STAP 4.1: span = dagen + ploegkolom */
             var addPloegBtn = document.createElement('button');
             addPloegBtn.className = 'add-ploeg-btn';
             addPloegBtn.type = 'button';
@@ -1708,6 +1868,7 @@
         function laadEnRenderAlles() {
             berekenWeekDatums();
             bouwLegende();
+            markeerActieveViewKnop();
             trelloKaartCache = {};
             placementCtx = {};
             stackMap = {};   /* stapellogica resetten bij herladen */
@@ -1915,7 +2076,18 @@
             });
         }
 
-        t.render(laadEnRenderAlles);
+        /* ── STAP 4.1: VIEW-KEUZE LADEN BIJ OPSTART ──
+           We lezen eerst de opgeslagen viewMode in en renderen daarna pas.
+           Zo opent de plugin meteen in de laatst gekozen view. */
+        t.render(function() {
+            return t.get('board', 'shared', 'viewMode', 'week').then(function(opgeslagenView) {
+                if (['week', 'multi', 'month'].indexOf(opgeslagenView) !== -1) {
+                    VIEW_MODUS = opgeslagenView;
+                }
+                document.body.dataset.view = VIEW_MODUS;
+                return laadEnRenderAlles();
+            });
+        });
 
         /* ── HULPFUNCTIE: VELD BEWERKBAAR MAKEN ── */
         function maakBewerkbaarVeld(veldEl, opslaanCallback) {
