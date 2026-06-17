@@ -332,8 +332,9 @@
         .ploeg-delete-btn {
             cursor: pointer; font-size: 16px; line-height: 1; color: #5e6c84; opacity: 0;
             transition: opacity 0.15s, color 0.15s; padding: 2px 6px; border-radius: 3px; user-select: none;
+            pointer-events: auto; position: relative; z-index: 10;
         }
-        .row-ploeg:hover .ploeg-delete-btn { opacity: 0.5; }
+        .row-ploeg:hover .ploeg-delete-btn { opacity: 0.5; pointer-events: auto; }
         .ploeg-delete-btn:hover { opacity: 1 !important; color: #bf2600; background-color: rgba(191, 38, 0, 0.08); }
 
         /* ── + PLOEG TOEVOEGEN RIJ ── */
@@ -715,34 +716,40 @@
         }
 
         /* ── Week-print modus: A3 staand (297 × 420 mm) ── */
-        body.print-mode-week {
-            /* tijdelijk overflow zichtbaar voor print */
-        }
         @media print {
-            body.print-mode-week {
-                size: A3 portrait; /* via JS @page injection */
+            /* Schaalt de volledige main-content zodat hij ZEKER op 1 pagina past.
+               transform-origin top-left + scale past de breedte aan de pagina aan.
+               De browser honoreert dit binnen de @page marges. */
+            body.print-mode-week .main-content {
+                transform-origin: top left;
+                /* scale wordt via JS ingesteld op basis van de werkelijke breedte */
             }
-            body.print-mode-week .planning-table { font-size: 11px !important; }
+            body.print-mode-week .planning-table { font-size: 11px !important; table-layout: auto !important; }
+            body.print-mode-week .col-ploeg { width: 100px !important; }
+            body.print-mode-week .col-dag { min-width: 0 !important; }
             body.print-mode-week .card-title { font-size: 11px !important; }
             body.print-mode-week .card-address { font-size: 9px !important; }
+            body.print-mode-week .planning-table th,
+            body.print-mode-week .planning-table td { padding: 3px 4px !important; }
+            body.print-mode-week .table-scroll-wrap { overflow: visible !important; width: 100% !important; }
         }
 
         /* ── Maand-print modus: A3 liggend (420 × 297 mm) ── */
         @media print {
-            body.print-mode-month {
-                size: A3 landscape;
-            }
-            body.print-mode-month .planning-table { font-size: 9px !important; }
-            body.print-mode-month .col-ploeg { width: 90px !important; }
-            body.print-mode-month .card-title { font-size: 9px !important; }
-            body.print-mode-month .card-address { font-size: 8px !important; }
-            body.print-mode-month .card-info-placement { font-size: 8px !important; }
+            body.print-mode-month .planning-table { font-size: 8px !important; table-layout: auto !important; }
+            body.print-mode-month .col-ploeg { width: 70px !important; }
+            body.print-mode-month .col-dag { min-width: 0 !important; }
+            body.print-mode-month .card-title { font-size: 8px !important; }
+            body.print-mode-month .card-address { font-size: 7px !important; }
+            body.print-mode-month .card-info-placement { font-size: 7px !important; }
             body.print-mode-month .planning-table th,
-            body.print-mode-month .planning-table td { padding: 2px 3px !important; font-size: 9px !important; }
-            body.print-mode-month .planning-table th { font-size: 8px !important; }
-            body.print-mode-month .verlof-segment { font-size: 8px !important; padding: 2px 4px !important; }
-            body.print-mode-month .placement-band { padding: 3px 5px !important; }
-            body.print-mode-month .zwevend-badge { font-size: 8px !important; padding: 0px 4px !important; }
+            body.print-mode-month .planning-table td { padding: 1px 2px !important; font-size: 8px !important; }
+            body.print-mode-month .planning-table th { font-size: 7px !important; }
+            body.print-mode-month .verlof-segment { font-size: 7px !important; padding: 1px 3px !important; min-height: 16px !important; }
+            body.print-mode-month .placement-band { padding: 2px 4px !important; }
+            body.print-mode-month .zwevend-badge { font-size: 7px !important; padding: 0px 3px !important; }
+            body.print-mode-month .table-scroll-wrap { overflow: visible !important; width: 100% !important; }
+            body.print-mode-month .main-content { overflow: visible !important; }
         }
     </style>
 </head>
@@ -914,14 +921,27 @@
             if (oudeStyle) oudeStyle.remove();
             document.body.classList.remove('print-mode-week', 'print-mode-month');
 
-            /* Injecteer @page-regel met juist formaat en oriëntatie */
-            var pageCSS;
+            /* ── A3-paginaformaten in mm ──
+               Netto afdrukgebied = pagina minus marges.
+               Week staand  : 297 × 420 mm → netto ± 281 × 400 mm
+               Maand liggend: 420 × 297 mm → netto ± 408 × 281 mm
+               1 mm ≈ 3.7795 px bij 96 dpi (CSS-pixels).
+               We berekenen een schaalfactor zodat de tabel ALTIJD binnen
+               dit gebied valt, ongeacht het aantal ploegen of dagen. */
+            var MM_TO_PX = 3.7795;
+            var pageCSS, nettoBreedteMM, nettoHoogteMM;
             if (modus === 'week') {
-                pageCSS = '@page { size: A3 portrait; margin: 10mm 8mm 10mm 8mm; }';
+                pageCSS        = '@page { size: A3 portrait; margin: 10mm 8mm 10mm 8mm; }';
+                nettoBreedteMM = 297 - 8 - 8;   /* 281 mm */
+                nettoHoogteMM  = 420 - 10 - 10; /* 400 mm */
             } else {
-                /* maand */
-                pageCSS = '@page { size: A3 landscape; margin: 8mm 6mm 8mm 6mm; }';
+                pageCSS        = '@page { size: A3 landscape; margin: 8mm 6mm 8mm 6mm; }';
+                nettoBreedteMM = 420 - 6 - 6;   /* 408 mm */
+                nettoHoogteMM  = 297 - 8 - 8;   /* 281 mm */
             }
+            var nettoBreedtePx = nettoBreedteMM * MM_TO_PX;
+            var nettoHoogtePx  = nettoHoogteMM  * MM_TO_PX;
+
             var stijlEl = document.createElement('style');
             stijlEl.id = 'print-page-override';
             stijlEl.textContent = pageCSS;
@@ -930,16 +950,53 @@
             /* Voeg body-class toe (CSS pikt deze op voor font-groottes e.d.) */
             document.body.classList.add('print-mode-' + modus);
 
-            /* Korte timeout zodat de DOM kan repainen voor het print-dialoog */
+            /* ── Schaalfactor berekenen ──
+               Meting: werkelijke breedte en hoogte van de tabel + header NADAT
+               de print-klasse (kleinere fonts) is toegepast. */
             setTimeout(function() {
+                var mainContent = document.querySelector('.main-content');
+                var tabelWrap   = document.querySelector('.table-scroll-wrap');
+                if (mainContent && tabelWrap) {
+                    /* Reset eventuele vorige schaal */
+                    mainContent.style.transform = '';
+                    mainContent.style.transformOrigin = '';
+                    mainContent.style.width = '';
+
+                    var contentBreedte = mainContent.scrollWidth;
+                    var contentHoogte  = mainContent.scrollHeight;
+
+                    var schaalB = nettoBreedtePx / contentBreedte;
+                    var schaalH = nettoHoogtePx  / contentHoogte;
+                    var schaal  = Math.min(schaalB, schaalH, 1); /* nooit opschalen, wel verkleinen */
+
+                    if (schaal < 0.999) {
+                        /* Injecteer schaal als extra print-stijl */
+                        stijlEl.textContent += [
+                            '@media print {',
+                            '  .main-content {',
+                            '    transform: scale(' + schaal.toFixed(4) + ') !important;',
+                            '    transform-origin: top left !important;',
+                            '    width: ' + Math.round(100 / schaal) + '% !important;',
+                            '  }',
+                            '}'
+                        ].join('\n');
+                    }
+                }
+
                 window.print();
+
                 /* Ruim op na het sluiten van het print-dialoog */
                 setTimeout(function() {
                     document.body.classList.remove('print-mode-week', 'print-mode-month');
                     var s = document.getElementById('print-page-override');
                     if (s) s.remove();
-                }, 1000);
-            }, 60);
+                    if (mainContent) {
+                        mainContent.style.transform = '';
+                        mainContent.style.transformOrigin = '';
+                        mainContent.style.width = '';
+                    }
+                }, 1500);
+            }, 120);
         }
 
         /* Koppel de printknopen */
@@ -1582,6 +1639,10 @@
         }
 
         function verwijderPloeg(naam, rijElement) {
+            /* ── STAP 4.4 BUGFIX: bevestiging vóór verwijdering ── */
+            if (!confirm('⚠️ Ploeg "' + naam + '" verwijderen?\n\nDit kan niet ongedaan worden gemaakt. Zorg dat alle projecten en interventies eerst verplaatst of verwijderd zijn.')) {
+                return;
+            }
             Promise.all([
                 t.get('board', 'shared', 'interventions', []),
                 t.get('board', 'shared', 'plannedCardIds', [])
