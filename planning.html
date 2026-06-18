@@ -2407,9 +2407,9 @@
 
         /* Standaardwaarden per view */
         var INST_DEFAULTS = {
-            week:  { weekdag: 150, weekend: 100, ploegKol: 130, headerHoogte: 40 },
-            multi: { weekdag: 120, weekend:  80, ploegKol: 130, headerHoogte: 40 },
-            month: { weekdag: 100, weekend:  67, ploegKol: 130, headerHoogte: 40 }
+            week:  { weekdag: 150, weekend: 100, ploegKol: 130, verlofHoogte: 56 },
+            multi: { weekdag: 120, weekend:  80, ploegKol: 130, verlofHoogte: 56 },
+            month: { weekdag: 100, weekend:  67, ploegKol: 130, verlofHoogte: 56 }
         };
 
         /* Huidige instellingen (gevuld bij laden) */
@@ -2433,7 +2433,8 @@
                 css += 'body[data-view="' + v + '"] .col-dag { min-width:' + s.weekdag + 'px; width:' + s.weekdag + 'px; }\n';
                 css += 'body[data-view="' + v + '"] .col-dag.is-weekend { min-width:' + s.weekend + 'px; width:' + s.weekend + 'px; }\n';
                 css += 'body[data-view="' + v + '"] .col-ploeg { width:' + s.ploegKol + 'px; min-width:' + s.ploegKol + 'px; }\n';
-                css += 'body[data-view="' + v + '"] .planning-table th { height:' + s.headerHoogte + 'px; }\n';
+                css += 'body[data-view="' + v + '"] .verlof-zone { min-height:' + s.verlofHoogte + 'px; }\n';
+                css += 'body[data-view="' + v + '"] .row-verlof-label { min-height:' + s.verlofHoogte + 'px; }\n';
             });
             colStijlEl.textContent = css;
         }
@@ -2443,7 +2444,17 @@
         }
 
         function laadInstellingen() {
-            return t.get('board', 'shared', INSTELLINGEN_KEY, null).then(function(opgeslagen) {
+            return Promise.all([
+                t.get('board', 'shared', INSTELLINGEN_KEY, null),
+                t.get('board', 'shared', 'layoutStandaard', null)
+            ]).then(function(results) {
+                var opgeslagen = results[0];
+                var standaard  = results[1];
+                if (standaard && typeof standaard === 'object') {
+                    ['week','multi','month'].forEach(function(v) {
+                        if (standaard[v]) INST_DEFAULTS[v] = Object.assign({}, INST_DEFAULTS[v], standaard[v]);
+                    });
+                }
                 if (opgeslagen && typeof opgeslagen === 'object') {
                     ['week','multi','month'].forEach(function(v) {
                         if (opgeslagen[v]) instellingen[v] = Object.assign({}, INST_DEFAULTS[v], opgeslagen[v]);
@@ -2488,49 +2499,74 @@
             });
             body.appendChild(tabs);
 
-            /* Sliders voor huidige tab-view */
+            /* Invulvelden voor huidige tab-view */
             var sv = instellingen[settingsPaneelView];
             var vLabels = { week: 'Week', multi: '2-3 weken', month: 'Maand' };
 
-            function maakSlider(labelTekst, sleutel, min, max, stap) {
+            function maakNumInput(labelTekst, sleutel, min, max, stap) {
                 var rij = document.createElement('div'); rij.className = 'settings-row';
                 var lbl = document.createElement('label'); lbl.innerText = labelTekst;
-                var slider = document.createElement('input');
-                slider.type = 'range'; slider.min = min; slider.max = max; slider.step = stap;
-                slider.value = sv[sleutel];
-                var badge = document.createElement('span'); badge.className = 'val-badge'; badge.innerText = sv[sleutel] + 'px';
-                slider.addEventListener('input', function() {
-                    badge.innerText = this.value + 'px';
-                    instellingen[settingsPaneelView][sleutel] = parseInt(this.value, 10);
+                var inp = document.createElement('input');
+                inp.type = 'number'; inp.className = 'settings-num';
+                inp.min = min; inp.max = max; inp.step = stap;
+                inp.value = sv[sleutel] !== undefined ? sv[sleutel] : INST_DEFAULTS[settingsPaneelView][sleutel];
+                var unit = document.createElement('span'); unit.className = 'settings-num-unit'; unit.innerText = 'px';
+                function toepassen() {
+                    var val = parseInt(inp.value, 10);
+                    if (isNaN(val) || val < min) { val = min; inp.value = val; }
+                    if (val > max) { val = max; inp.value = val; }
+                    instellingen[settingsPaneelView][sleutel] = val;
                     pasColStijlToe();
-                });
-                slider.addEventListener('change', function() { slaInstellingenOp(); });
-                rij.appendChild(lbl); rij.appendChild(slider); rij.appendChild(badge);
+                    slaInstellingenOp();
+                }
+                inp.addEventListener('input', toepassen);
+                inp.addEventListener('change', toepassen);
+                rij.appendChild(lbl); rij.appendChild(inp); rij.appendChild(unit);
                 return rij;
             }
 
             var secKol = document.createElement('div'); secKol.className = 'settings-section-label';
             secKol.innerText = 'Kolombreedtes — ' + vLabels[settingsPaneelView];
             body.appendChild(secKol);
-            body.appendChild(maakSlider('Weekdag kolom', 'weekdag', 60, 300, 5));
-            body.appendChild(maakSlider('Weekend kolom', 'weekend', 40, 200, 5));
-            body.appendChild(maakSlider('Ploeg kolom (1e kol)', 'ploegKol', 80, 300, 5));
+            body.appendChild(maakNumInput('Weekdag kolom', 'weekdag', 60, 300, 5));
+            body.appendChild(maakNumInput('Weekend kolom', 'weekend', 40, 200, 5));
+            body.appendChild(maakNumInput('Ploeg kolom (1e kol)', 'ploegKol', 80, 300, 5));
 
             var secRij = document.createElement('div'); secRij.className = 'settings-section-label';
             secRij.innerText = 'Rijhoogte';
             body.appendChild(secRij);
-            body.appendChild(maakSlider('Header rijhoogte', 'headerHoogte', 28, 80, 2));
+            body.appendChild(maakNumInput('Verlof rijhoogte', 'verlofHoogte', 30, 300, 2));
 
-            /* Reset knop */
+            /* Knoppenrij onderaan */
+            var btnRij = document.createElement('div'); btnRij.className = 'settings-btn-rij';
+
             var resetBtn = document.createElement('button');
-            resetBtn.className = 'settings-reset-btn';
-            resetBtn.innerText = '↺ Standaardwaarden herstellen voor ' + vLabels[settingsPaneelView];
+            resetBtn.className = 'settings-action-btn';
+            resetBtn.innerText = '↺ Standaard herstellen';
+            resetBtn.title = 'Herstelt de standaardwaarden voor ' + vLabels[settingsPaneelView];
             resetBtn.addEventListener('click', function() {
                 instellingen[settingsPaneelView] = Object.assign({}, INST_DEFAULTS[settingsPaneelView]);
                 pasColStijlToe(); slaInstellingenOp();
                 sluitSettings(); bouwSettingsPaneel(); toonSettings();
             });
-            body.appendChild(resetBtn);
+
+            var slaStdBtn = document.createElement('button');
+            slaStdBtn.className = 'settings-action-btn primair';
+            slaStdBtn.innerText = '💾 Sla op als standaard';
+            slaStdBtn.title = 'Overschrijft de standaardwaarden met de huidige instellingen (alle views)';
+            slaStdBtn.addEventListener('click', function() {
+                ['week','multi','month'].forEach(function(v) {
+                    INST_DEFAULTS[v] = Object.assign({}, instellingen[v]);
+                });
+                t.set('board', 'shared', 'layoutStandaard', INST_DEFAULTS);
+                var origTekst = slaStdBtn.innerText;
+                slaStdBtn.innerText = '✓ Opgeslagen!';
+                setTimeout(function() { slaStdBtn.innerText = origTekst; }, 2000);
+            });
+
+            btnRij.appendChild(resetBtn);
+            btnRij.appendChild(slaStdBtn);
+            body.appendChild(btnRij);
 
             panel.appendChild(body);
             overlay.appendChild(panel);
