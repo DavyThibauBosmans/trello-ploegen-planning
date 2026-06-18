@@ -219,21 +219,24 @@
         }
         .main-content h2 { font-size: 16px; font-weight: 700; margin: 0; }
 
-        /* ── ZOOM-CONTROLS ── */
-        .zoom-controls { display: inline-flex; align-items: center; gap: 3px; }
-        .zoom-indicator {
+        /* ── ZOOM-TOOLBAR (vaste balk boven het raster, scrollt niet mee) ── */
+        .zoom-toolbar {
+            display: flex; align-items: center; justify-content: flex-end;
+            gap: 2px; padding: 0 0 4px; flex-shrink: 0;
+        }
+        .zoom-bar-btn {
+            border: none; background: none; font-family: inherit;
+            font-size: 15px; font-weight: 700; color: #5e6c84; line-height: 1;
+            width: 26px; height: 26px; border-radius: 5px; cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center;
+            transition: background-color 0.12s, color 0.12s;
+        }
+        .zoom-bar-btn:hover { background: #ebecf0; color: #0052cc; }
+        .zoom-bar-btn.actief { background: #0052cc; color: #fff; }
+        .zoom-bar-pct {
             font-size: 11px; font-weight: 700; color: #5e6c84;
-            min-width: 36px; text-align: center; pointer-events: none;
+            min-width: 34px; text-align: center; pointer-events: none;
         }
-        .zoom-fit-btn {
-            border: none; background: #ebecf0; font-family: inherit;
-            font-size: 13px; font-weight: 700; color: #5e6c84;
-            padding: 5px 7px; border-radius: 6px; cursor: pointer;
-            transition: background-color 0.15s, color 0.15s;
-            line-height: 1;
-        }
-        .zoom-fit-btn:hover { background: #dfe1e6; color: #172b4d; }
-        .zoom-fit-btn.actief { background: #0052cc; color: #fff; }
 
         /* ── VIEW-SCHAKELAAR ── */
         .view-switcher {
@@ -732,7 +735,7 @@
             .card-controls, .band-controls, .cell-add-btn, .color-picker-menu,
             .card-popup-overlay, .ploeg-delete-btn, .add-ploeg-row, .verlof-add-btn,
             .span-resize-handle, .verlof-segment .delete-btn,
-            .zwevend-toggle-btn { display: none !important; }
+            .zwevend-toggle-btn, .zoom-toolbar { display: none !important; }
             .card-info-placement:empty { display: none !important; }
             .card-address-editable:empty { display: none !important; }
             .card-info-placement {
@@ -822,12 +825,6 @@
                     <button type="button" class="view-switch-btn" data-view-mode="multi">2 weken</button>
                     <button type="button" class="view-switch-btn" data-view-mode="month">Maand</button>
                 </div>
-                <div class="zoom-controls" id="zoom-controls">
-                    <button type="button" class="nav-btn" id="zoom-out-btn" title="Uitzoomen (Ctrl+Scroll)">−</button>
-                    <span class="zoom-indicator" id="zoom-indicator">100%</span>
-                    <button type="button" class="nav-btn" id="zoom-in-btn" title="Inzoomen (Ctrl+Scroll)">+</button>
-                    <button type="button" class="zoom-fit-btn actief" id="zoom-fit-btn" title="Alles in beeld passen">↕</button>
-                </div>
                 <div class="print-btn-group" id="print-btn-group" title="Afdrukken">
                     <button type="button" class="print-btn" id="print-week-btn" title="Weekplanning afdrukken — A3 staand">
                         <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
@@ -852,6 +849,12 @@
                 <span class="mode-indicator" id="mode-indicator"></span>
                 <button type="button" class="settings-btn" id="settings-btn" title="Instellingen" style="display:none">⚙️</button>
             </div>
+        </div>
+        <div class="zoom-toolbar" id="zoom-toolbar">
+            <button type="button" class="zoom-bar-btn" id="zoom-out-btn" title="Uitzoomen (−)">−</button>
+            <span class="zoom-bar-pct" id="zoom-indicator">100%</span>
+            <button type="button" class="zoom-bar-btn" id="zoom-in-btn" title="Inzoomen (+)">+</button>
+            <button type="button" class="zoom-bar-btn actief" id="zoom-fit-btn" title="Alles in beeld passen">↕</button>
         </div>
         <div class="table-scroll-wrap">
             <table class="planning-table">
@@ -1741,19 +1744,26 @@
             var indicator = document.getElementById('zoom-indicator');
             if (indicator) indicator.textContent = Math.round(tableZoom * 100) + '%';
             var fitBtn = document.getElementById('zoom-fit-btn');
-            if (fitBtn) { if (tableZoomAuto) fitBtn.classList.add('actief'); else fitBtn.classList.remove('actief'); }
+            if (fitBtn) {
+                if (tableZoomAuto) fitBtn.classList.add('actief');
+                else fitBtn.classList.remove('actief');
+            }
         }
         function autoFitZoom() {
             if (!tableZoomAuto) return;
             var wrap = document.querySelector('.table-scroll-wrap');
             var table = document.querySelector('.planning-table');
             if (!wrap || !table) return;
+            /* Meet de beschikbare hoogte = hoofd-content minus header */
+            var main = document.querySelector('.main-content');
+            var header = document.querySelector('.main-content-header');
+            var beschikbaar = main ? main.clientHeight - (header ? header.offsetHeight : 0) - 2 : 0;
+            /* Reset zoom tijdelijk om echte tafelhoogte te meten */
             var huidig = table.style.zoom;
             table.style.zoom = '';
-            var beschikbaar = wrap.clientHeight;
             var tabelHoogte = table.scrollHeight;
             table.style.zoom = huidig;
-            if (beschikbaar > 0 && tabelHoogte > 0 && tabelHoogte > beschikbaar) {
+            if (beschikbaar > 30 && tabelHoogte > 0 && tabelHoogte > beschikbaar) {
                 pasZoomToe(beschikbaar / tabelHoogte);
             } else {
                 pasZoomToe(1.0);
