@@ -2019,6 +2019,9 @@
                             }
                         });
                         return{cardId:cardId,placements:placements,cardSnapshot:cardSnapshot,migratieNodig:migratieNodig};
+                    }).catch(function(){
+                        /* 5.1 – als één kaart niet geladen kan worden, gewoon overslaan i.p.v. alles te breken */
+                        return{cardId:cardId,placements:[],cardSnapshot:null,migratieNodig:false};
                     });
                 });
                 return Promise.all(idPromises).then(function(resultatenPerId){
@@ -2407,9 +2410,9 @@
 
         /* Standaardwaarden per view */
         var INST_DEFAULTS = {
-            week:  { weekdag: 150, weekend: 100, ploegKol: 130, verlofHoogte: 56 },
-            multi: { weekdag: 120, weekend:  80, ploegKol: 130, verlofHoogte: 56 },
-            month: { weekdag: 100, weekend:  67, ploegKol: 130, verlofHoogte: 56 }
+            week:  { weekdag: 150, weekend: 100, ploegKol: 130 },
+            multi: { weekdag: 120, weekend:  80, ploegKol: 130 },
+            month: { weekdag: 100, weekend:  67, ploegKol: 130 }
         };
 
         /* Huidige instellingen (gevuld bij laden) */
@@ -2433,8 +2436,6 @@
                 css += 'body[data-view="' + v + '"] .col-dag { min-width:' + s.weekdag + 'px; width:' + s.weekdag + 'px; }\n';
                 css += 'body[data-view="' + v + '"] .col-dag.is-weekend { min-width:' + s.weekend + 'px; width:' + s.weekend + 'px; }\n';
                 css += 'body[data-view="' + v + '"] .col-ploeg { width:' + s.ploegKol + 'px; min-width:' + s.ploegKol + 'px; }\n';
-                css += 'body[data-view="' + v + '"] .verlof-zone { min-height:' + s.verlofHoogte + 'px; }\n';
-                css += 'body[data-view="' + v + '"] .row-verlof-label { min-height:' + s.verlofHoogte + 'px; }\n';
             });
             colStijlEl.textContent = css;
         }
@@ -2532,11 +2533,6 @@
             body.appendChild(maakNumInput('Weekend kolom', 'weekend', 40, 200, 5));
             body.appendChild(maakNumInput('Ploeg kolom (1e kol)', 'ploegKol', 80, 300, 5));
 
-            var secRij = document.createElement('div'); secRij.className = 'settings-section-label';
-            secRij.innerText = 'Rijhoogte';
-            body.appendChild(secRij);
-            body.appendChild(maakNumInput('Verlof rijhoogte', 'verlofHoogte', 30, 300, 2));
-
             /* Knoppenrij onderaan */
             var btnRij = document.createElement('div'); btnRij.className = 'settings-btn-rij';
 
@@ -2568,6 +2564,55 @@
             btnRij.appendChild(slaStdBtn);
             body.appendChild(btnRij);
 
+            /* ── Backup & Herstel sectie ── */
+            var hr = document.createElement('hr');
+            hr.style.cssText = 'border:none;border-top:1px solid #ebecf0;margin:16px 0 12px;';
+            body.appendChild(hr);
+
+            var secBak = document.createElement('div'); secBak.className = 'settings-section-label';
+            secBak.style.marginTop = '0'; secBak.innerText = 'Backup & Herstel';
+            body.appendChild(secBak);
+
+            /* Export knop */
+            var exportBtn = document.createElement('button');
+            exportBtn.className = 'settings-reset-btn';
+            exportBtn.style.cssText = 'margin-top:6px;background:#e3fcef;color:#006644;border-color:#57d9a3;';
+            exportBtn.innerText = '💾 Download back-up (JSON)';
+            exportBtn.addEventListener('click', function() {
+                exportBtn.innerText = '⏳ Bezig met verzamelen…';
+                exportBtn.disabled = true;
+                exporteerBackup().then(function() {
+                    exportBtn.innerText = '✓ Back-up gedownload!';
+                    setTimeout(function() { exportBtn.innerText = '💾 Download back-up (JSON)'; exportBtn.disabled = false; }, 2500);
+                }).catch(function() {
+                    exportBtn.innerText = '⚠️ Fout — probeer opnieuw';
+                    exportBtn.disabled = false;
+                });
+            });
+            body.appendChild(exportBtn);
+
+            /* Import / herstel */
+            var importLabel = document.createElement('div');
+            importLabel.style.cssText = 'font-size:12px;color:#5e6c84;margin:10px 0 4px;';
+            importLabel.innerText = '📂 Herstel vanuit back-upbestand:';
+            body.appendChild(importLabel);
+
+            var importInput = document.createElement('input');
+            importInput.type = 'file'; importInput.accept = '.json';
+            importInput.style.cssText = 'width:100%;font-size:12px;font-family:inherit;color:#172b4d;';
+            importInput.addEventListener('change', function() {
+                if (!this.files || !this.files[0]) return;
+                var f = this.files[0];
+                this.value = '';
+                importeerBackup(f, function() { sluitSettings(); });
+            });
+            body.appendChild(importInput);
+
+            var importHint = document.createElement('div');
+            importHint.style.cssText = 'font-size:11px;color:#97a0af;margin-top:4px;font-style:italic;';
+            importHint.innerText = '⚠️ Herstel overschrijft alle huidige planningsdata.';
+            body.appendChild(importHint);
+
             panel.appendChild(body);
             overlay.appendChild(panel);
             document.body.appendChild(overlay);
@@ -2593,6 +2638,190 @@
                 bouwSettingsPaneel();
                 toonSettings();
             });
+        })();
+
+        /* ════════════════════════════════════════════════════════
+           ── BACKUP & HERSTEL (5.2 / 5.3) ──
+           ════════════════════════════════════════════════════════ */
+
+        var BACKUP_REMINDER_KEY = 'ploegenPlanningLastBackup';
+        var BACKUP_INTERVAL_DAGEN = 14;
+        var _backupReminderGetoond = false;
+
+        /* ── Export: verzamel alle data en download als JSON ── */
+        function exporteerBackup() {
+            return Promise.all([
+                t.get('board','shared','ploegen',[]),
+                t.get('board','shared','interventions',[]),
+                t.get('board','shared','verlofItems',[]),
+                t.get('board','shared','plannedCardIds',[]),
+                t.get('board','shared','layoutInstellingen',null),
+                t.get('board','shared','layoutStandaard',null)
+            ]).then(function(res) {
+                var data = {
+                    versie: 2,
+                    tijdstip: new Date().toISOString(),
+                    ploegen:           res[0] || [],
+                    interventions:     res[1] || [],
+                    verlofItems:       res[2] || [],
+                    plannedCardIds:    res[3] || [],
+                    layoutInstellingen: res[4],
+                    layoutStandaard:   res[5],
+                    placements:    {},
+                    cardSnapshots: {}
+                };
+                var ids = Array.isArray(data.plannedCardIds) ? data.plannedCardIds : [];
+                return Promise.all(ids.map(function(cid) {
+                    return Promise.all([
+                        t.get(cid,'shared','placements',[]),
+                        t.get(cid,'shared','cardSnapshot',null)
+                    ]).then(function(r) {
+                        if (r[0] && r[0].length > 0) data.placements[cid] = r[0];
+                        if (r[1]) data.cardSnapshots[cid] = r[1];
+                    }).catch(function(){});
+                })).then(function() {
+                    var json = JSON.stringify(data, null, 2);
+                    var blob = new Blob([json], {type:'application/json'});
+                    var url  = URL.createObjectURL(blob);
+                    var a    = document.createElement('a');
+                    a.href   = url;
+                    a.download = 'ploegen-planning-backup-' + new Date().toISOString().slice(0,10) + '.json';
+                    document.body.appendChild(a); a.click();
+                    setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+                    try { localStorage.setItem(BACKUP_REMINDER_KEY, new Date().toISOString()); } catch(e){}
+                });
+            });
+        }
+
+        /* ── Import: herstel vanuit JSON-bestand ── */
+        function importeerBackup(bestand, onKlaar) {
+            if (!isAdmin) return;
+            var reader = new FileReader();
+            reader.onerror = function(){ alert('⚠️ Kon het bestand niet lezen.'); };
+            reader.onload  = function(e) {
+                var data;
+                try { data = JSON.parse(e.target.result); } catch(err) {
+                    alert('⚠️ Ongeldig bestand — controleer of je het juiste JSON-back-upbestand hebt geselecteerd.');
+                    return;
+                }
+                if (!data || !data.versie) {
+                    alert('⚠️ Dit is geen geldige ploegen-planning back-up.');
+                    return;
+                }
+                if (!confirm(
+                    '⚠️ Back-up herstellen?\n\n' +
+                    'Tijdstip back-up: ' + (data.tijdstip ? data.tijdstip.replace('T',' ').slice(0,16) : 'onbekend') + '\n\n' +
+                    'Dit overschrijft ALLE huidige planningsdata:\n' +
+                    '  • Ploegen\n  • Verlof\n  • Interventies\n  • Alle geplande kaarten\n\n' +
+                    'Deze actie kan NIET ongedaan worden gemaakt.\nDoorgaan?'
+                )) return;
+
+                var ops = [
+                    t.set('board','shared','ploegen',        data.ploegen        || []),
+                    t.set('board','shared','interventions',  data.interventions  || []),
+                    t.set('board','shared','verlofItems',    data.verlofItems    || []),
+                    t.set('board','shared','plannedCardIds', data.plannedCardIds || [])
+                ];
+                if (data.layoutInstellingen) ops.push(t.set('board','shared','layoutInstellingen', data.layoutInstellingen));
+                if (data.layoutStandaard)    ops.push(t.set('board','shared','layoutStandaard',    data.layoutStandaard));
+
+                var pl = data.placements    || {};
+                var sn = data.cardSnapshots || {};
+                Object.keys(pl).forEach(function(cid){ ops.push(t.set(cid,'shared','placements',   pl[cid])); });
+                Object.keys(sn).forEach(function(cid){ if(sn[cid]) ops.push(t.set(cid,'shared','cardSnapshot', sn[cid])); });
+
+                Promise.all(ops).then(function(){
+                    if (onKlaar) onKlaar();
+                    laadEnRenderAlles();
+                }).catch(function(err){
+                    alert('⚠️ Herstel mislukt: ' + (err && err.message ? err.message : 'Onbekende fout'));
+                });
+            };
+            reader.readAsText(bestand);
+        }
+
+        /* ── Periodieke back-up herinnering ── */
+        function controleerBackupReminder() {
+            if (!isAdmin || _backupReminderGetoond) return;
+            var tonen = false;
+            try {
+                var laaste = localStorage.getItem(BACKUP_REMINDER_KEY);
+                if (!laaste) { tonen = true; }
+                else {
+                    var dagenGeleden = (Date.now() - new Date(laaste).getTime()) / 86400000;
+                    if (dagenGeleden >= BACKUP_INTERVAL_DAGEN) tonen = true;
+                }
+            } catch(e) { tonen = true; }
+            if (tonen) { _backupReminderGetoond = true; setTimeout(toonBackupReminder, 3000); }
+        }
+
+        function toonBackupReminder() {
+            if (document.getElementById('backup-reminder-overlay')) return;
+            var laasteTekst = '';
+            try {
+                var l = localStorage.getItem(BACKUP_REMINDER_KEY);
+                if (l) {
+                    var d = new Date(l);
+                    laasteTekst = '(laatste: ' + String(d.getDate()).padStart(2,'0') + '/' +
+                        String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear() + ')';
+                }
+            } catch(e){}
+
+            var overlay = document.createElement('div');
+            overlay.id = 'backup-reminder-overlay';
+            overlay.style.cssText = 'position:fixed;inset:0;background:rgba(9,30,66,0.42);display:flex;align-items:center;justify-content:center;z-index:900;';
+
+            var popup = document.createElement('div');
+            popup.style.cssText = 'background:#fff;border-radius:10px;width:min(400px,92vw);padding:28px 24px 20px;box-shadow:0 8px 32px rgba(0,0,0,0.28);text-align:center;font-family:inherit;';
+
+            var icoon = document.createElement('div');
+            icoon.style.cssText = 'font-size:44px;margin-bottom:10px;'; icoon.innerText = '💾';
+
+            var titel = document.createElement('div');
+            titel.style.cssText = 'font-size:16px;font-weight:700;color:#172b4d;margin-bottom:8px;';
+            titel.innerText = 'Back-up herinnering';
+
+            var tekst = document.createElement('div');
+            tekst.style.cssText = 'font-size:13px;color:#5e6c84;line-height:1.55;margin-bottom:22px;white-space:pre-wrap;';
+            tekst.innerText = 'Het is al meer dan ' + BACKUP_INTERVAL_DAGEN + ' dagen geleden dat er een back-up werd gemaakt ' +
+                laasteTekst + '.\n\nDownload regelmatig een kopie om je planning te beschermen.';
+
+            var btnWrap = document.createElement('div');
+            btnWrap.style.cssText = 'display:flex;gap:10px;justify-content:center;flex-wrap:wrap;';
+
+            var dlBtn = document.createElement('button');
+            dlBtn.style.cssText = 'background:#0052cc;color:#fff;border:none;border-radius:6px;padding:10px 22px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:background 0.15s;';
+            dlBtn.innerText = '💾 Download back-up';
+            dlBtn.addEventListener('mouseover',function(){ dlBtn.style.background='#0747a6'; });
+            dlBtn.addEventListener('mouseout', function(){ dlBtn.style.background='#0052cc'; });
+            dlBtn.addEventListener('click', function() {
+                dlBtn.innerText = '⏳ Bezig…'; dlBtn.disabled = true;
+                exporteerBackup().then(function(){
+                    document.body.removeChild(overlay);
+                }).catch(function(){
+                    dlBtn.innerText = '💾 Download back-up'; dlBtn.disabled = false;
+                });
+            });
+
+            var laterBtn = document.createElement('button');
+            laterBtn.style.cssText = 'background:none;color:#5e6c84;border:1px solid #dfe1e6;border-radius:6px;padding:10px 22px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;';
+            laterBtn.innerText = 'Later herinneren';
+            laterBtn.addEventListener('click', function() {
+                /* stel de teller terug zodat reminder pas na 3 dagen opnieuw verschijnt */
+                try { localStorage.setItem(BACKUP_REMINDER_KEY, new Date(Date.now() - (BACKUP_INTERVAL_DAGEN - 3) * 86400000).toISOString()); } catch(e){}
+                document.body.removeChild(overlay);
+            });
+
+            btnWrap.appendChild(dlBtn); btnWrap.appendChild(laterBtn);
+            popup.appendChild(icoon); popup.appendChild(titel); popup.appendChild(tekst); popup.appendChild(btnWrap);
+            overlay.appendChild(popup);
+            document.body.appendChild(overlay);
+        }
+
+        /* Activeer reminder check telkens als admin-status gezet wordt */
+        (function() {
+            var orig2 = toepassenAdminStatus;
+            toepassenAdminStatus = function() { orig2(); controleerBackupReminder(); };
         })();
 
         /* Laad instellingen bij opstart (wordt aangeroepen voor t.render) */
