@@ -293,22 +293,8 @@
         }
         .col-ploeg { width: 130px; }
 
-        /* ── KOLOMBREEDTE per view ── */
-        body[data-view="week"]  .col-dag { min-width: 150px; width: auto; }
-        body[data-view="multi"] .col-dag { min-width: 120px; width: 120px; }
-        body[data-view="month"] .col-dag { min-width: 100px; width: 100px; }
-
-        /* ── WEEKEND: ~1/3 smaller dan weekdag ── */
-        body[data-view="week"]  .col-dag.is-weekend { min-width: 100px; width: 100px; }
-        body[data-view="multi"] .col-dag.is-weekend { min-width: 80px;  width: 80px; }
-        body[data-view="month"] .col-dag.is-weekend { min-width: 67px;  width: 67px; }
-
-        /* ── TABEL LAYOUT: auto voor multi/maand zodat min-width gerespecteerd wordt ── */
-        body[data-view="week"]  .planning-table { table-layout: fixed; }
-        body[data-view="multi"] .planning-table { table-layout: auto; }
-        body[data-view="month"] .planning-table { table-layout: auto; }
-
-        /* ── WEEKEND-KOLOMMEN ── */
+        /* ── KOLOMBREEDTE: ingesteld via JS (col-dag breedte via <style id="col-stijl">) ── */
+        .planning-table { table-layout: auto; }
         .planning-table th.is-weekend { background-color: #dcdfe4; color: #6b778c; font-size: 11px; }
 
         .planning-table td.is-weekend { background-color: #f1f2f4; }
@@ -594,6 +580,74 @@
         }
         .planning-table th.is-verleden { opacity: 0.6; }
 
+        /* ── INSTELLINGEN KNOP ── */
+        .settings-btn {
+            border: none; background: none; font-family: inherit;
+            font-size: 18px; color: #5e6c84; width: 32px; height: 32px;
+            border-radius: 6px; cursor: pointer; display: inline-flex;
+            align-items: center; justify-content: center;
+            transition: background-color 0.15s, color 0.15s;
+        }
+        .settings-btn:hover { background-color: #ebecf0; color: #0052cc; }
+
+        /* ── INSTELLINGEN PANEEL ── */
+        .settings-overlay {
+            position: fixed; inset: 0;
+            background: rgba(9,30,66,0.35);
+            display: flex; align-items: flex-start; justify-content: flex-end;
+            padding: 60px 20px 0 0; z-index: 500;
+        }
+        .settings-panel {
+            background: #fff; border-radius: 8px;
+            width: 340px; max-height: calc(100vh - 80px); overflow-y: auto;
+            box-shadow: 0 8px 28px rgba(0,0,0,0.25); padding: 0;
+        }
+        .settings-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 16px 10px; border-bottom: 1px solid #ebecf0;
+            position: sticky; top: 0; background: #fff; z-index: 1;
+        }
+        .settings-header h3 { margin: 0; font-size: 14px; font-weight: 700; color: #172b4d; }
+        .settings-close {
+            cursor: pointer; font-size: 20px; color: #5e6c84;
+            line-height: 1; opacity: 0.7; background: none; border: none;
+        }
+        .settings-close:hover { opacity: 1; }
+        .settings-body { padding: 12px 16px 16px; }
+        .settings-view-tabs {
+            display: flex; gap: 4px; margin-bottom: 14px;
+            background: #ebecf0; border-radius: 6px; padding: 3px;
+        }
+        .settings-view-tab {
+            flex: 1; border: none; background: none; font-family: inherit;
+            font-size: 12px; font-weight: 700; color: #5e6c84;
+            padding: 5px 8px; border-radius: 4px; cursor: pointer;
+            transition: background 0.12s, color 0.12s;
+        }
+        .settings-view-tab.actief { background: #fff; color: #0052cc; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .settings-section-label {
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.05em; color: #5e6c84; margin: 14px 0 8px;
+        }
+        .settings-section-label:first-child { margin-top: 0; }
+        .settings-row {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 10px; margin-bottom: 10px;
+        }
+        .settings-row label { font-size: 13px; color: #172b4d; flex-shrink: 0; min-width: 130px; }
+        .settings-row input[type=range] { flex: 1; accent-color: #0052cc; }
+        .settings-row .val-badge {
+            font-size: 12px; font-weight: 700; color: #0052cc;
+            min-width: 38px; text-align: right;
+        }
+        .settings-reset-btn {
+            display: block; width: 100%; margin-top: 14px;
+            background: none; border: 1px solid #dfe1e6; border-radius: 6px;
+            font-family: inherit; font-size: 12px; font-weight: 600; color: #5e6c84;
+            padding: 7px; cursor: pointer; transition: background 0.12s, color 0.12s;
+        }
+        .settings-reset-btn:hover { background: #ebecf0; color: #172b4d; }
+
         /* Print-knoppen */
         .print-btn-group {
             display: inline-flex; align-items: center; gap: 4px;
@@ -733,6 +787,7 @@
                     <div class="legenda-items" id="legenda-items"></div>
                 </div>
                 <span class="mode-indicator" id="mode-indicator"></span>
+                <button type="button" class="settings-btn" id="settings-btn" title="Instellingen" style="display:none">⚙️</button>
             </div>
         </div>
         <div class="table-scroll-wrap">
@@ -2303,6 +2358,170 @@
         var searchInput=document.getElementById('sidebar-search');
         if(searchInput)searchInput.addEventListener('input',function(){filterZijbalk(this.value);});
         document.addEventListener('focusout',function(e){var t2=e.target;if(t2&&t2.closest&&t2.closest('.dropzone[data-row-type="ploeg"]'))setTimeout(herlayoutPloegRijen,0);});
+
+        /* ════════════════════════════════════════════════════════
+           ── INSTELLINGEN PANEEL ──
+           Sla kolombreedtes + rijhoogte per view op via t.set.
+           ════════════════════════════════════════════════════════ */
+
+        var INSTELLINGEN_KEY = 'layoutInstellingen';
+
+        /* Standaardwaarden per view */
+        var INST_DEFAULTS = {
+            week:  { weekdag: 150, weekend: 100, ploegKol: 130, headerHoogte: 40 },
+            multi: { weekdag: 120, weekend:  80, ploegKol: 130, headerHoogte: 40 },
+            month: { weekdag: 100, weekend:  67, ploegKol: 130, headerHoogte: 40 }
+        };
+
+        /* Huidige instellingen (gevuld bij laden) */
+        var instellingen = {
+            week:  Object.assign({}, INST_DEFAULTS.week),
+            multi: Object.assign({}, INST_DEFAULTS.multi),
+            month: Object.assign({}, INST_DEFAULTS.month)
+        };
+
+        /* Actieve tab in het paneel */
+        var settingsPaneelView = 'week';
+
+        /* ── CSS injectiepunt ── */
+        var colStijlEl = document.getElementById('col-stijl');
+        if (!colStijlEl) { colStijlEl = document.createElement('style'); colStijlEl.id = 'col-stijl'; document.head.appendChild(colStijlEl); }
+
+        function pasColStijlToe() {
+            var css = '';
+            ['week','multi','month'].forEach(function(v) {
+                var s = instellingen[v];
+                css += 'body[data-view="' + v + '"] .col-dag { min-width:' + s.weekdag + 'px; width:' + s.weekdag + 'px; }\n';
+                css += 'body[data-view="' + v + '"] .col-dag.is-weekend { min-width:' + s.weekend + 'px; width:' + s.weekend + 'px; }\n';
+                css += 'body[data-view="' + v + '"] .col-ploeg { width:' + s.ploegKol + 'px; min-width:' + s.ploegKol + 'px; }\n';
+                css += 'body[data-view="' + v + '"] .planning-table th { height:' + s.headerHoogte + 'px; }\n';
+            });
+            colStijlEl.textContent = css;
+        }
+
+        function slaInstellingenOp() {
+            t.set('board', 'shared', INSTELLINGEN_KEY, instellingen);
+        }
+
+        function laadInstellingen() {
+            return t.get('board', 'shared', INSTELLINGEN_KEY, null).then(function(opgeslagen) {
+                if (opgeslagen && typeof opgeslagen === 'object') {
+                    ['week','multi','month'].forEach(function(v) {
+                        if (opgeslagen[v]) instellingen[v] = Object.assign({}, INST_DEFAULTS[v], opgeslagen[v]);
+                    });
+                }
+                pasColStijlToe();
+            });
+        }
+
+        /* ── Paneel bouwen ── */
+        function bouwSettingsPaneel() {
+            var overlay = document.createElement('div');
+            overlay.className = 'settings-overlay';
+            overlay.id = 'settings-overlay';
+            overlay.addEventListener('click', function(e) { if (e.target === overlay) sluitSettings(); });
+
+            var panel = document.createElement('div');
+            panel.className = 'settings-panel';
+
+            /* Header */
+            var hdr = document.createElement('div'); hdr.className = 'settings-header';
+            var title = document.createElement('h3'); title.innerText = '⚙️ Lay-out instellingen';
+            var closeBtn = document.createElement('button'); closeBtn.className = 'settings-close'; closeBtn.innerHTML = '&times;';
+            closeBtn.addEventListener('click', sluitSettings);
+            hdr.appendChild(title); hdr.appendChild(closeBtn); panel.appendChild(hdr);
+
+            var body = document.createElement('div'); body.className = 'settings-body';
+
+            /* View tabs */
+            var tabs = document.createElement('div'); tabs.className = 'settings-view-tabs';
+            [['week','Week'],['multi','2-3 weken'],['month','Maand']].forEach(function(pair) {
+                var tb = document.createElement('button');
+                tb.className = 'settings-view-tab' + (pair[0] === settingsPaneelView ? ' actief' : '');
+                tb.innerText = pair[1]; tb.dataset.tab = pair[0];
+                tb.addEventListener('click', function() {
+                    settingsPaneelView = pair[0];
+                    sluitSettings();
+                    bouwSettingsPaneel();
+                    toonSettings();
+                });
+                tabs.appendChild(tb);
+            });
+            body.appendChild(tabs);
+
+            /* Sliders voor huidige tab-view */
+            var sv = instellingen[settingsPaneelView];
+            var vLabels = { week: 'Week', multi: '2-3 weken', month: 'Maand' };
+
+            function maakSlider(labelTekst, sleutel, min, max, stap) {
+                var rij = document.createElement('div'); rij.className = 'settings-row';
+                var lbl = document.createElement('label'); lbl.innerText = labelTekst;
+                var slider = document.createElement('input');
+                slider.type = 'range'; slider.min = min; slider.max = max; slider.step = stap;
+                slider.value = sv[sleutel];
+                var badge = document.createElement('span'); badge.className = 'val-badge'; badge.innerText = sv[sleutel] + 'px';
+                slider.addEventListener('input', function() {
+                    badge.innerText = this.value + 'px';
+                    instellingen[settingsPaneelView][sleutel] = parseInt(this.value, 10);
+                    pasColStijlToe();
+                });
+                slider.addEventListener('change', function() { slaInstellingenOp(); });
+                rij.appendChild(lbl); rij.appendChild(slider); rij.appendChild(badge);
+                return rij;
+            }
+
+            var secKol = document.createElement('div'); secKol.className = 'settings-section-label';
+            secKol.innerText = 'Kolombreedtes — ' + vLabels[settingsPaneelView];
+            body.appendChild(secKol);
+            body.appendChild(maakSlider('Weekdag kolom', 'weekdag', 60, 300, 5));
+            body.appendChild(maakSlider('Weekend kolom', 'weekend', 40, 200, 5));
+            body.appendChild(maakSlider('Ploeg kolom (1e kol)', 'ploegKol', 80, 300, 5));
+
+            var secRij = document.createElement('div'); secRij.className = 'settings-section-label';
+            secRij.innerText = 'Rijhoogte';
+            body.appendChild(secRij);
+            body.appendChild(maakSlider('Header rijhoogte', 'headerHoogte', 28, 80, 2));
+
+            /* Reset knop */
+            var resetBtn = document.createElement('button');
+            resetBtn.className = 'settings-reset-btn';
+            resetBtn.innerText = '↺ Standaardwaarden herstellen voor ' + vLabels[settingsPaneelView];
+            resetBtn.addEventListener('click', function() {
+                instellingen[settingsPaneelView] = Object.assign({}, INST_DEFAULTS[settingsPaneelView]);
+                pasColStijlToe(); slaInstellingenOp();
+                sluitSettings(); bouwSettingsPaneel(); toonSettings();
+            });
+            body.appendChild(resetBtn);
+
+            panel.appendChild(body);
+            overlay.appendChild(panel);
+            document.body.appendChild(overlay);
+        }
+
+        function toonSettings() { var o = document.getElementById('settings-overlay'); if (o) o.style.display = 'flex'; }
+        function sluitSettings() { var o = document.getElementById('settings-overlay'); if (o && o.parentNode) o.parentNode.removeChild(o); }
+
+        /* Tandwiel knop tonen enkel voor admins — wordt aangeroepen na toepassenAdminStatus */
+        var origToepassenAdminStatus = toepassenAdminStatus;
+        toepassenAdminStatus = function() {
+            origToepassenAdminStatus();
+            var btn = document.getElementById('settings-btn');
+            if (btn) btn.style.display = isAdmin ? 'inline-flex' : 'none';
+        };
+
+        (function koppelSettingsKnop() {
+            var btn = document.getElementById('settings-btn');
+            if (!btn) return;
+            btn.addEventListener('click', function() {
+                if (document.getElementById('settings-overlay')) { sluitSettings(); return; }
+                settingsPaneelView = VIEW_MODUS; /* open op huidige view-tab */
+                bouwSettingsPaneel();
+                toonSettings();
+            });
+        })();
+
+        /* Laad instellingen bij opstart (wordt aangeroepen voor t.render) */
+        laadInstellingen();
     </script>
 </body>
 </html>
