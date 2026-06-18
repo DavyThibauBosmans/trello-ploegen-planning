@@ -738,6 +738,7 @@
             .legenda { border: none !important; box-shadow: none !important; background: transparent !important; }
             .legenda-items { display: flex !important; flex-wrap: wrap !important; padding: 0 0 6px 0 !important; }
             .legenda-toggle .chev { display: none !important; }
+            .legenda-swatch { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             .main-content-header { margin-bottom: 6px !important; flex-wrap: nowrap !important; }
             .main-content h2 { font-size: 14px !important; }
             .periode-label { font-size: 12px !important; display: inline !important; }
@@ -2095,6 +2096,7 @@
                 var extraFields=parseDescriptionFields(card.desc);
                 for(var label in extraFields){
                     if(label.indexOf('Adres')!==-1&&card.address)continue;
+                    if(label.indexOf('Klant')!==-1)continue;
                     var fieldEl=document.createElement('div');fieldEl.className='card-address';fieldEl.innerText=label+': '+extraFields[label];bodyContainer.appendChild(fieldEl);
                 }
             }
