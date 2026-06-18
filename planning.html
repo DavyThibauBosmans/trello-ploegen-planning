@@ -293,18 +293,13 @@
         }
         .col-ploeg { width: 130px; }
 
-        body[data-view="week"]  .col-dag { width: auto; min-width: 150px; }
-        body[data-view="multi"] .col-dag { width: 150px; min-width: 150px; }
-        body[data-view="month"] .col-dag { width: 140px; min-width: 140px; }
+        /* ── KOLOMBREEDTE: zelfde minimum voor alle views ── */
+        .col-dag { width: auto; min-width: 150px; }
 
-        /* ── WEEKEND-KOLOMMEN ── */
-        .planning-table th.is-weekend {
-            background-color: #dcdfe4; color: #6b778c;
-            font-size: 11px;
-        }
-        body[data-view="week"]  .col-dag.is-weekend { min-width: 70px; width: 70px; }
-        body[data-view="multi"] .col-dag.is-weekend { min-width: 56px; width: 56px; }
-        body[data-view="month"] .col-dag.is-weekend { min-width: 48px; width: 48px; }
+        /* ── WEEKEND-KOLOMMEN: ook vaste minimumbreedte ── */
+        .planning-table th.is-weekend { background-color: #dcdfe4; color: #6b778c; font-size: 11px; }
+        .col-dag.is-weekend { min-width: 90px; width: 90px; }
+
         .planning-table td.is-weekend { background-color: #f1f2f4; }
         .planning-table td.dropzone.is-weekend.verlof-zone { background-color: #f5f3ea; }
         .is-weekend .placement-band .card-title,
@@ -565,7 +560,9 @@
             white-space: nowrap;
         }
 
-        /* ── VERLEDEN & VANDAAG MARKERING ── */
+        /* ── VERLEDEN & VANDAAG MARKERING ──
+           is-verleden wordt nu ook op de huidige dag toegepast.
+           is-vandaag styling (blauw kader/header) is verwijderd. */
         .planning-table td.is-verleden {
             background-image:
                 linear-gradient(rgba(255, 214, 0, 0.10), rgba(255, 214, 0, 0.10)),
@@ -586,20 +583,7 @@
         }
         .planning-table th.is-verleden { opacity: 0.6; }
 
-        .planning-table th.is-vandaag {
-            background-color: #0052cc !important; color: #fff !important;
-        }
-        .planning-table td.is-vandaag {
-            box-shadow: inset 3px 0 0 #0052cc, inset -3px 0 0 #0052cc;
-            background-color: #f0f6ff;
-        }
-        .planning-table td.is-vandaag.verlof-zone { background-color: #fdf8ec; }
-
-        /* ════════════════════════════════════════════════════════════
-           ── STAP 4.4: PRINT-KNOPPEN ──
-           Twee knoppen: 🖨️ Week (A3 staand) en 🖨️ Maand (A3 liggend).
-           Stijl: subtiel maar duidelijk, gegroepeerd naast de andere UI-knoppen.
-           ════════════════════════════════════════════════════════════ */
+        /* Print-knoppen */
         .print-btn-group {
             display: inline-flex; align-items: center; gap: 4px;
             background-color: #ebecf0; border-radius: 8px; padding: 3px;
@@ -615,115 +599,49 @@
             background-color: #fff; color: #0052cc;
             box-shadow: 0 1px 3px rgba(0,0,0,0.12);
         }
-        .print-btn svg {
-            width: 13px; height: 13px; flex-shrink: 0;
-            fill: currentColor;
-        }
-        /* Scheidingslijn tussen de twee printknopen */
-        .print-btn-sep {
-            width: 1px; height: 18px; background-color: #c1c7d0;
-            flex-shrink: 0;
-        }
+        .print-btn svg { width: 13px; height: 13px; flex-shrink: 0; fill: currentColor; }
+        .print-btn-sep { width: 1px; height: 18px; background-color: #c1c7d0; flex-shrink: 0; }
 
-        /* ════════════════════════════════════════════════════════════
-           ── STAP 4.4: PRINT STYLESHEET ──
-           Wordt injecteerd als <style id="print-override"> vlak voor window.print().
-           Bevat @page met A3-formaat en oriëntatie, plus alle verberg-regels.
-           ════════════════════════════════════════════════════════════ */
-
-        /* Basis print-stijl (altijd actief bij afdrukken, ongeacht modus) */
         @media print {
-            /* ── Verberg ALLES behalve de planningstabel ── */
             body { background-color: #fff !important; overflow: visible !important; height: auto !important; }
             .sidebar { display: none !important; }
             .main-content { padding: 4mm !important; margin: 0 !important; width: 100% !important; overflow: visible !important; }
             .table-scroll-wrap { overflow: visible !important; }
-
-            /* ── UI-knoppen en interactieve elementen verbergen ── */
-            .view-switcher,
-            .tijdlijn-nav,
-            .print-btn-group,
-            .mode-indicator,
-            .card-controls,
-            .band-controls,
-            .cell-add-btn,
-            .color-picker-menu,
-            .card-popup-overlay,
-            .ploeg-delete-btn,
-            .add-ploeg-row,
-            .verlof-add-btn,
-            .span-resize-handle,
-            .verlof-segment .delete-btn,
+            .view-switcher, .tijdlijn-nav, .print-btn-group, .mode-indicator,
+            .card-controls, .band-controls, .cell-add-btn, .color-picker-menu,
+            .card-popup-overlay, .ploeg-delete-btn, .add-ploeg-row, .verlof-add-btn,
+            .span-resize-handle, .verlof-segment .delete-btn,
             .zwevend-toggle-btn { display: none !important; }
-
-            /* ── Lege velden verbergen ── */
             .card-info-placement:empty { display: none !important; }
             .card-address-editable:empty { display: none !important; }
-
-            /* ── Info-veld stijl voor print ── */
             .card-info-placement {
                 background-color: transparent !important;
                 border-left: 2px solid rgba(0,0,0,0.25) !important;
                 padding: 2px 0 0 4px !important; margin-top: 4px !important;
                 font-size: 10px !important;
             }
-
-            /* ── Kaart en band stijlen ── */
             .planning-card, .verlof-segment, .placement-band {
                 box-shadow: none !important; border: 1px solid rgba(0,0,0,0.15) !important;
                 -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
                 break-inside: avoid !important;
             }
             .planning-table { box-shadow: none !important; border-radius: 0 !important; }
-            .planning-table th,
-            .planning-table td { padding: 4px 5px !important; }
-
-            /* ── Kleurbehoud bij print (essentieel voor projectleiders) ── */
-            .planning-table th.is-weekend,
-            .planning-table td.is-weekend,
-            .planning-table td.is-verleden,
-            .planning-table th.is-vandaag,
-            .planning-table td.is-vandaag,
-            .planning-card,
-            .placement-band,
-            .verlof-segment,
+            .planning-table th, .planning-table td { padding: 4px 5px !important; }
+            .planning-table th.is-weekend, .planning-table td.is-weekend,
+            .planning-table td.is-verleden, .planning-table th.is-verleden,
+            .planning-card, .placement-band, .verlof-segment,
             .row-verlof-label { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-
-            /* Vandaag-kolom houdt blauwe rand bij print */
-            .planning-table td.is-vandaag {
-                box-shadow: inset 3px 0 0 #0052cc, inset -3px 0 0 #0052cc !important;
-            }
-
-            /* ── Legende altijd tonen bij print (ook als ingeklapt) ── */
             .legenda { border: none !important; box-shadow: none !important; background: transparent !important; }
             .legenda-items { display: flex !important; flex-wrap: wrap !important; padding: 0 0 6px 0 !important; }
             .legenda-toggle .chev { display: none !important; }
-
-            /* ── Header layout compact ── */
-            .main-content-header {
-                margin-bottom: 6px !important;
-                flex-wrap: nowrap !important;
-            }
+            .main-content-header { margin-bottom: 6px !important; flex-wrap: nowrap !important; }
             .main-content h2 { font-size: 14px !important; }
             .periode-label { font-size: 12px !important; display: inline !important; }
-
-            /* ── Zwevend: behoud stijl maar geen transform ── */
-            .planning-card.zwevend,
-            .placement-band.zwevend {
-                transform: none !important;
-            }
+            .planning-card.zwevend, .placement-band.zwevend { transform: none !important; }
             .zwevend-badge { display: inline-block !important; }
         }
 
-        /* ── Week-print modus: A3 staand (297 × 420 mm) ── */
         @media print {
-            /* Schaalt de volledige main-content zodat hij ZEKER op 1 pagina past.
-               transform-origin top-left + scale past de breedte aan de pagina aan.
-               De browser honoreert dit binnen de @page marges. */
-            body.print-mode-week .main-content {
-                transform-origin: top left;
-                /* scale wordt via JS ingesteld op basis van de werkelijke breedte */
-            }
             body.print-mode-week .planning-table { font-size: 11px !important; table-layout: auto !important; }
             body.print-mode-week .col-ploeg { width: 100px !important; }
             body.print-mode-week .col-dag { min-width: 0 !important; }
@@ -734,7 +652,6 @@
             body.print-mode-week .table-scroll-wrap { overflow: visible !important; width: 100% !important; }
         }
 
-        /* ── Maand-print modus: A3 liggend (420 × 297 mm) ── */
         @media print {
             body.print-mode-month .planning-table { font-size: 8px !important; table-layout: auto !important; }
             body.print-mode-month .col-ploeg { width: 70px !important; }
@@ -772,39 +689,32 @@
                 <span class="periode-label" id="periode-label"></span>
             </div>
             <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-                <!-- TIJDLIJN-NAVIGATIE -->
                 <div class="tijdlijn-nav" id="tijdlijn-nav">
                     <button type="button" class="nav-btn" id="nav-prev" title="Vorige periode">‹</button>
                     <button type="button" class="nav-today-btn" id="nav-today" title="Spring naar vandaag">Vandaag</button>
                     <button type="button" class="nav-btn" id="nav-next" title="Volgende periode">›</button>
                     <input type="date" class="nav-datepicker" id="nav-datepicker" title="Spring naar een datum">
                 </div>
-                <!-- VIEW-SCHAKELAAR -->
                 <div class="view-switcher" id="view-switcher">
                     <button type="button" class="view-switch-btn" data-view-mode="week">Week</button>
                     <button type="button" class="view-switch-btn" data-view-mode="multi">2-3 weken</button>
                     <button type="button" class="view-switch-btn" data-view-mode="month">Maand</button>
                 </div>
-
-                <!-- ── STAP 4.4: PRINT-KNOPPEN ── -->
                 <div class="print-btn-group" id="print-btn-group" title="Afdrukken">
-                    <button type="button" class="print-btn" id="print-week-btn"
-                            title="Weekplanning afdrukken — A3 staand">
+                    <button type="button" class="print-btn" id="print-week-btn" title="Weekplanning afdrukken — A3 staand">
                         <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
                             <path d="M4 0h8a1 1 0 0 1 1 1v4H3V1a1 1 0 0 1 1-1zm-2 6h12a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1h-1v2a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-2H2a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1zm9 6H5v2h6v-2zm1-4a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5z"/>
                         </svg>
                         Week A3
                     </button>
                     <div class="print-btn-sep"></div>
-                    <button type="button" class="print-btn" id="print-month-btn"
-                            title="Maandplanning afdrukken — A3 liggend">
+                    <button type="button" class="print-btn" id="print-month-btn" title="Maandplanning afdrukken — A3 liggend">
                         <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
                             <path d="M4 0h8a1 1 0 0 1 1 1v4H3V1a1 1 0 0 1 1-1zm-2 6h12a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1h-1v2a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-2H2a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1zm9 6H5v2h6v-2zm1-4a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5z"/>
                         </svg>
                         Maand A3
                     </button>
                 </div>
-
                 <div class="legenda" id="legenda">
                     <button type="button" class="legenda-toggle" id="legenda-toggle">
                         <span class="chev">▶</span> Legende projectleiders
@@ -829,27 +739,20 @@
     <script>
         var t = TrelloPowerUp.iframe();
 
-        /* ── DYNAMISCHE PLOEGEN ── */
         var DEFAULT_PLOEGEN = ["Ploeg 1", "Ploeg 2", "Ploeg 5", "Ploeg 7 / Extra"];
         var ploegen = DEFAULT_PLOEGEN.slice();
-
-        /* ── VERLOF ── */
         var VERLOF_ROW_KEY = '__verlof__';
-
-        /* ── VIEW-MODUS ── */
         var VIEW_MODUS = 'week';
         var WEEK_DAGNAMEN_KORT = ['Zo', 'Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za'];
         var WEEK_DAGNAMEN_LANG = ['Zondag', 'Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag'];
         var MAAND_NAMEN_KORT = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
         var MAAND_NAMEN_LANG = ['januari','februari','maart','april','mei','juni','juli','augustus','september','oktober','november','december'];
 
-        /* ── ANKER-DATUM ── */
         var ankerDatum = new Date();
         ankerDatum.setHours(0, 0, 0, 0);
 
         var datumsVanDeWeek = [];
         var weekendVlaggen = [];
-
         var trelloKaartCache = {};
         var placementCtx = {};
 
@@ -864,7 +767,6 @@
             { bg: '#00c2e0', text: '#172b4d' }
         ];
 
-        /* ── PROJECTLEIDERS ── */
         var PROJECTLEIDERS = [
             { username: 'jenstriest',      naam: 'Jens',            bg: '#ff9f1a', text: '#172b4d' },
             { username: 'evageeroms',      naam: 'Eva',             bg: '#61bd4f', text: '#ffffff' },
@@ -874,7 +776,6 @@
         ];
         var STANDAARD_KAART_STIJL = { bg: '#eaecf0', text: '#172b4d' };
 
-        /* ── VIEW-ONLY MODUS ── */
         var DEV_MODE = false;
         var ADMIN_USERNAMES = ['laurenabsillis1', 'davythibau01'];
         var isAdmin = false;
@@ -883,94 +784,53 @@
             var indicator = document.getElementById('mode-indicator');
             if (isAdmin) {
                 document.body.classList.remove('view-only-mode');
-                if (indicator) {
-                    indicator.textContent = '✏️ Bewerken ingeschakeld';
-                    indicator.className = 'mode-indicator edit-mode';
-                }
+                if (indicator) { indicator.textContent = '✏️ Bewerken ingeschakeld'; indicator.className = 'mode-indicator edit-mode'; }
             } else {
                 document.body.classList.add('view-only-mode');
-                if (indicator) {
-                    indicator.textContent = '👁️ Alleen-kijken modus';
-                    indicator.className = 'mode-indicator view-only';
-                }
+                if (indicator) { indicator.textContent = '👁️ Alleen-kijken modus'; indicator.className = 'mode-indicator view-only'; }
             }
         }
 
         document.addEventListener('click', function() {
-            var openMenus = document.querySelectorAll('.color-picker-menu');
-            openMenus.forEach(function(m) { m.remove(); });
+            document.querySelectorAll('.color-picker-menu').forEach(function(m) { m.remove(); });
         });
 
-        /* ════════════════════════════════════════════════════════════
-           ── STAP 4.4: PRINT LOGICA ──
-           printPlanning(modus):
-             'week'  → A3 staand  (297 × 420 mm), 7 kolommen
-             'month' → A3 liggend (420 × 297 mm), alle dagen van de maand
-
-           Werkwijze:
-           1. Injecteer een tijdelijke <style> met de juiste @page-regel.
-           2. Voeg een body-class toe zodat de CSS-selectoren de juiste
-              font/kolom-groottes toepassen.
-           3. Roep window.print() aan — de browser stuurt direct naar het
-              printerdialooglot (en biedt daar ook PDF-opslaan aan).
-           4. Ruim de tijdelijke class en style na 1 s op (na de print-dialog).
-           ════════════════════════════════════════════════════════════ */
+        /* ── PRINT LOGICA ── */
         function printPlanning(modus) {
-            /* Verwijder eventueel nog aanwezige oude print-styles */
             var oudeStyle = document.getElementById('print-page-override');
             if (oudeStyle) oudeStyle.remove();
             document.body.classList.remove('print-mode-week', 'print-mode-month');
-
-            /* ── A3-paginaformaten in mm ──
-               Netto afdrukgebied = pagina minus marges.
-               Week staand  : 297 × 420 mm → netto ± 281 × 400 mm
-               Maand liggend: 420 × 297 mm → netto ± 408 × 281 mm
-               1 mm ≈ 3.7795 px bij 96 dpi (CSS-pixels).
-               We berekenen een schaalfactor zodat de tabel ALTIJD binnen
-               dit gebied valt, ongeacht het aantal ploegen of dagen. */
             var MM_TO_PX = 3.7795;
             var pageCSS, nettoBreedteMM, nettoHoogteMM;
             if (modus === 'week') {
                 pageCSS        = '@page { size: A3 portrait; margin: 10mm 8mm 10mm 8mm; }';
-                nettoBreedteMM = 297 - 8 - 8;   /* 281 mm */
-                nettoHoogteMM  = 420 - 10 - 10; /* 400 mm */
+                nettoBreedteMM = 297 - 8 - 8;
+                nettoHoogteMM  = 420 - 10 - 10;
             } else {
                 pageCSS        = '@page { size: A3 landscape; margin: 8mm 6mm 8mm 6mm; }';
-                nettoBreedteMM = 420 - 6 - 6;   /* 408 mm */
-                nettoHoogteMM  = 297 - 8 - 8;   /* 281 mm */
+                nettoBreedteMM = 420 - 6 - 6;
+                nettoHoogteMM  = 297 - 8 - 8;
             }
             var nettoBreedtePx = nettoBreedteMM * MM_TO_PX;
             var nettoHoogtePx  = nettoHoogteMM  * MM_TO_PX;
-
             var stijlEl = document.createElement('style');
             stijlEl.id = 'print-page-override';
             stijlEl.textContent = pageCSS;
             document.head.appendChild(stijlEl);
-
-            /* Voeg body-class toe (CSS pikt deze op voor font-groottes e.d.) */
             document.body.classList.add('print-mode-' + modus);
-
-            /* ── Schaalfactor berekenen ──
-               Meting: werkelijke breedte en hoogte van de tabel + header NADAT
-               de print-klasse (kleinere fonts) is toegepast. */
             setTimeout(function() {
                 var mainContent = document.querySelector('.main-content');
                 var tabelWrap   = document.querySelector('.table-scroll-wrap');
                 if (mainContent && tabelWrap) {
-                    /* Reset eventuele vorige schaal */
                     mainContent.style.transform = '';
                     mainContent.style.transformOrigin = '';
                     mainContent.style.width = '';
-
                     var contentBreedte = mainContent.scrollWidth;
                     var contentHoogte  = mainContent.scrollHeight;
-
                     var schaalB = nettoBreedtePx / contentBreedte;
                     var schaalH = nettoHoogtePx  / contentHoogte;
-                    var schaal  = Math.min(schaalB, schaalH, 1); /* nooit opschalen, wel verkleinen */
-
+                    var schaal  = Math.min(schaalB, schaalH, 1);
                     if (schaal < 0.999) {
-                        /* Injecteer schaal als extra print-stijl */
                         stijlEl.textContent += [
                             '@media print {',
                             '  .main-content {',
@@ -982,10 +842,7 @@
                         ].join('\n');
                     }
                 }
-
                 window.print();
-
-                /* Ruim op na het sluiten van het print-dialoog */
                 setTimeout(function() {
                     document.body.classList.remove('print-mode-week', 'print-mode-month');
                     var s = document.getElementById('print-page-override');
@@ -999,7 +856,6 @@
             }, 120);
         }
 
-        /* Koppel de printknopen */
         (function koppelPrintKnoppen() {
             var weekBtn  = document.getElementById('print-week-btn');
             var maandBtn = document.getElementById('print-month-btn');
@@ -1043,10 +899,9 @@
             });
         }
 
-        /* ── VIEW-SCHAKELAAR LOGICA ── */
+        /* ── VIEW-SCHAKELAAR ── */
         function markeerActieveViewKnop() {
-            var knoppen = document.querySelectorAll('.view-switch-btn');
-            knoppen.forEach(function(btn) {
+            document.querySelectorAll('.view-switch-btn').forEach(function(btn) {
                 if (btn.dataset.viewMode === VIEW_MODUS) btn.classList.add('actief');
                 else btn.classList.remove('actief');
             });
@@ -1078,17 +933,13 @@
         function startVanHuidigePeriode(d) {
             var basis = new Date(d.getFullYear(), d.getMonth(), d.getDate());
             basis.setHours(0, 0, 0, 0);
-            if (VIEW_MODUS === 'month') {
-                return new Date(basis.getFullYear(), basis.getMonth(), 1);
-            }
+            if (VIEW_MODUS === 'month') return new Date(basis.getFullYear(), basis.getMonth(), 1);
             var dag = basis.getDay();
             var afstand = (dag === 0) ? -6 : 1 - dag;
             basis.setDate(basis.getDate() + afstand);
             return basis;
         }
-        function snapAnkerNaarPeriode() {
-            ankerDatum = startVanHuidigePeriode(ankerDatum);
-        }
+        function snapAnkerNaarPeriode() { ankerDatum = startVanHuidigePeriode(ankerDatum); }
         function verschuifAnker(richting) {
             var d = new Date(ankerDatum);
             if (VIEW_MODUS === 'month') {
@@ -1104,11 +955,8 @@
             laadEnRenderAlles();
         }
         function springNaarVandaag() {
-            ankerDatum = new Date();
-            ankerDatum.setHours(0, 0, 0, 0);
-            snapAnkerNaarPeriode();
-            bewaarAnker();
-            laadEnRenderAlles();
+            ankerDatum = new Date(); ankerDatum.setHours(0, 0, 0, 0);
+            snapAnkerNaarPeriode(); bewaarAnker(); laadEnRenderAlles();
         }
         function springNaarDatum(isoStr) {
             if (!isoStr) return;
@@ -1116,53 +964,45 @@
             if (parts.length !== 3) return;
             var d = new Date(parseInt(parts[0],10), parseInt(parts[1],10)-1, parseInt(parts[2],10));
             if (isNaN(d.getTime())) return;
-            d.setHours(0, 0, 0, 0);
-            ankerDatum = d;
-            snapAnkerNaarPeriode();
-            bewaarAnker();
-            laadEnRenderAlles();
+            d.setHours(0, 0, 0, 0); ankerDatum = d;
+            snapAnkerNaarPeriode(); bewaarAnker(); laadEnRenderAlles();
         }
-        function bewaarAnker() {
-            t.set('board', 'shared', 'ankerDatum', isoVanDate(ankerDatum));
-        }
+        function bewaarAnker() { t.set('board', 'shared', 'ankerDatum', isoVanDate(ankerDatum)); }
 
         (function koppelTijdlijnNav() {
-            var prev = document.getElementById('nav-prev');
-            var next = document.getElementById('nav-next');
-            var today = document.getElementById('nav-today');
+            var prev   = document.getElementById('nav-prev');
+            var next   = document.getElementById('nav-next');
+            var today  = document.getElementById('nav-today');
             var picker = document.getElementById('nav-datepicker');
-            if (prev)  prev.addEventListener('click', function() { verschuifAnker(-1); });
-            if (next)  next.addEventListener('click', function() { verschuifAnker(1); });
+            if (prev)  prev.addEventListener('click',  function() { verschuifAnker(-1); });
+            if (next)  next.addEventListener('click',  function() { verschuifAnker(1); });
             if (today) today.addEventListener('click', springNaarVandaag);
             if (picker) {
                 var nu = new Date();
-                var min = new Date(nu.getFullYear() - 1, 0, 1);
-                var max = new Date(nu.getFullYear() + 2, 11, 31);
-                picker.min = isoVanDate(min);
-                picker.max = isoVanDate(max);
+                picker.min = isoVanDate(new Date(nu.getFullYear() - 1, 0, 1));
+                picker.max = isoVanDate(new Date(nu.getFullYear() + 2, 11, 31));
                 picker.addEventListener('change', function() { springNaarDatum(this.value); });
             }
         })();
 
-        /* ── OMSCHRIJVING PARSER ── */
+        /* ── OMSCHRIJVING PARSER (architect weggelaten) ── */
         function parseDescriptionFields(desc) {
             if (!desc) return {};
             var lines = desc.split('\n');
             var extracted = {};
             var fieldMappings = [
-                { key: 'Project Naam',        label: '📁 Project'    },
-                { key: 'Voornaam Klant',      label: '👤 Klant'      },
-                { key: 'Tel Klant',           label: '📞 Tel Klant'  },
-                { key: 'Bouwfirma/Architect', label: '📐 Arch.'      },
-                { key: 'Toegang werf',        label: '🔑 Toegang'    },
-                { key: 'CIAW',                label: '📋 CIAW'       },
-                { key: 'Opmerkingen',         label: '💬 Opmerking'  },
-                { key: 'Gsm',                 label: '📞 Gsm'        },
-                { key: 'Mail',                label: '✉️ Mail'        },
-                { key: 'Bestellingen',        label: '📦 Bestel'     },
-                { key: 'Meerwerken',          label: '➕ Meerwerk'   },
-                { key: 'Plaatsingsadres',     label: '📍 Adres'      },
-                { key: 'Adres',               label: '📍 Adres'      }
+                { key: 'Project Naam',    label: '📁 Project'   },
+                { key: 'Voornaam Klant',  label: '👤 Klant'     },
+                { key: 'Tel Klant',       label: '📞 Tel Klant' },
+                { key: 'Toegang werf',    label: '🔑 Toegang'   },
+                { key: 'CIAW',            label: '📋 CIAW'      },
+                { key: 'Opmerkingen',     label: '💬 Opmerking' },
+                { key: 'Gsm',             label: '📞 Gsm'       },
+                { key: 'Mail',            label: '✉️ Mail'       },
+                { key: 'Bestellingen',    label: '📦 Bestel'    },
+                { key: 'Meerwerken',      label: '➕ Meerwerk'  },
+                { key: 'Plaatsingsadres', label: '📍 Adres'     },
+                { key: 'Adres',           label: '📍 Adres'     }
             ];
             lines.forEach(function(line) {
                 var parts = line.split(':');
@@ -1185,57 +1025,41 @@
 
         /* ── DATUM HELPERS ── */
         function isoVanDate(d) {
-            return d.getFullYear() + '-' +
-                   String(d.getMonth() + 1).padStart(2, '0') + '-' +
-                   String(d.getDate()).padStart(2, '0');
+            return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
         }
-        function isISO(str) {
-            return typeof str === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(str);
-        }
+        function isISO(str) { return typeof str === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(str); }
         function ddMMNaarDate(datumStr) {
             if (!datumStr) return null;
             if (isISO(datumStr)) {
                 var p = datumStr.split('-');
                 var d = new Date(parseInt(p[0],10), parseInt(p[1],10)-1, parseInt(p[2],10));
-                d.setHours(0, 0, 0, 0);
-                return d;
+                d.setHours(0,0,0,0); return d;
             }
             var parts = datumStr.split('-');
             if (parts.length < 2) return null;
-            var dag = parseInt(parts[0], 10);
-            var maand = parseInt(parts[1], 10) - 1;
-            var jaar = (ankerDatum ? ankerDatum.getFullYear() : new Date().getFullYear());
-            var od = new Date(jaar, maand, dag);
-            od.setHours(0, 0, 0, 0);
-            return od;
+            var dag = parseInt(parts[0],10), maand = parseInt(parts[1],10)-1;
+            var jaar = ankerDatum ? ankerDatum.getFullYear() : new Date().getFullYear();
+            var od = new Date(jaar, maand, dag); od.setHours(0,0,0,0); return od;
         }
         function dateNaarDdMM(d) { return isoVanDate(d); }
         function aantalDagenTussen(start, eind) {
-            var s = ddMMNaarDate(start);
-            var e = ddMMNaarDate(eind);
+            var s = ddMMNaarDate(start), e = ddMMNaarDate(eind);
             if (!s || !e) return 0;
-            return Math.round((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24));
+            return Math.round((e.getTime() - s.getTime()) / (1000*60*60*24));
         }
         function voegDagenToe(datumStr, dagen) {
-            var d = ddMMNaarDate(datumStr);
-            if (!d) return datumStr;
-            d.setDate(d.getDate() + dagen);
-            return dateNaarDdMM(d);
+            var d = ddMMNaarDate(datumStr); if (!d) return datumStr;
+            d.setDate(d.getDate() + dagen); return dateNaarDdMM(d);
         }
         function dagenBinnenWeek(startDatum, eindDatum) {
-            var sD = ddMMNaarDate(startDatum);
-            var eD = ddMMNaarDate(eindDatum);
+            var sD = ddMMNaarDate(startDatum), eD = ddMMNaarDate(eindDatum);
             if (!sD || !eD) return [];
             if (eD < sD) { var tmp = sD; sD = eD; eD = tmp; }
             var binnen = [];
             datumsVanDeWeek.forEach(function(weekDag) {
                 var d = ddMMNaarDate(weekDag);
                 if (d >= sD && d <= eD) {
-                    binnen.push({
-                        datum: weekDag,
-                        isExactStart: d.getTime() === sD.getTime(),
-                        isExactEind:  d.getTime() === eD.getTime()
-                    });
+                    binnen.push({ datum: weekDag, isExactStart: d.getTime()===sD.getTime(), isExactEind: d.getTime()===eD.getTime() });
                 }
             });
             binnen.forEach(function(d, idx) {
@@ -1266,8 +1090,7 @@
                 var dStart = eersteD.getDate() + ' ' + MAAND_NAMEN_KORT[eersteD.getMonth()];
                 var dEind  = laatsteD.getDate() + ' ' + MAAND_NAMEN_KORT[laatsteD.getMonth()] + ' ' + laatsteD.getFullYear();
                 if (VIEW_MODUS === 'multi') {
-                    var wkEind = isoWeekNummer(laatsteD);
-                    tekst = 'Week ' + wk + '–' + wkEind + ' · ' + dStart + ' — ' + dEind;
+                    tekst = 'Week ' + wk + '–' + isoWeekNummer(laatsteD) + ' · ' + dStart + ' — ' + dEind;
                 } else {
                     tekst = 'Week ' + wk + ' · ' + dStart + ' — ' + dEind;
                 }
@@ -1284,37 +1107,32 @@
             if (picker) picker.value = isoVanDate(ankerDatum);
         }
 
-        /* ── ZICHTBARE DAGEN BEREKENEN ── */
+        /* ── ZICHTBARE DAGEN ── */
         function berekenWeekDatums() {
-            datumsVanDeWeek = [];
-            weekendVlaggen = [];
+            datumsVanDeWeek = []; weekendVlaggen = [];
             var startDatum = startVanHuidigePeriode(ankerDatum);
             var aantalDagen;
             if (VIEW_MODUS === 'month') {
-                var laatste = new Date(startDatum.getFullYear(), startDatum.getMonth() + 1, 0);
-                aantalDagen = laatste.getDate();
+                aantalDagen = new Date(startDatum.getFullYear(), startDatum.getMonth() + 1, 0).getDate();
             } else {
                 aantalDagen = (VIEW_MODUS === 'multi') ? 21 : 7;
             }
             for (var i = 0; i < aantalDagen; i++) {
                 var d = new Date(startDatum);
-                d.setDate(startDatum.getDate() + i);
-                d.setHours(0, 0, 0, 0);
+                d.setDate(startDatum.getDate() + i); d.setHours(0,0,0,0);
                 datumsVanDeWeek.push(dateNaarDdMM(d));
-                var weekdagIndex = d.getDay();
-                weekendVlaggen.push(weekdagIndex === 0 || weekdagIndex === 6);
+                weekendVlaggen.push(d.getDay() === 0 || d.getDay() === 6);
             }
             bouwTabelHeader();
             updatePeriodeLabel();
         }
 
-        /* ── DYNAMISCHE TABEL-HEADER ── */
+        /* ── TABEL-HEADER ──
+           is-vandaag wordt nu ook als is-verleden behandeld (geen blauwe stijl meer). */
         function bouwTabelHeader() {
             var headRow = document.getElementById('table-head-row');
             if (!headRow) return;
-            while (headRow.children.length > 1) {
-                headRow.removeChild(headRow.lastChild);
-            }
+            while (headRow.children.length > 1) headRow.removeChild(headRow.lastChild);
             var vandaagISO = isoVanDate(new Date());
             datumsVanDeWeek.forEach(function(ddmm, idx) {
                 var th = document.createElement('th');
@@ -1322,18 +1140,17 @@
                 var isWeekend = weekendVlaggen[idx];
                 if (isWeekend) th.classList.add('is-weekend');
                 var d = ddMMNaarDate(ddmm);
-                var dd = String(d.getDate()).padStart(2, '0');
-                var mm = String(d.getMonth() + 1).padStart(2, '0');
-                var weekdagIndex = d.getDay();
+                var dd = String(d.getDate()).padStart(2,'0');
+                var mm = String(d.getMonth()+1).padStart(2,'0');
                 var dISO = isoVanDate(d);
-                if (dISO === vandaagISO) th.classList.add('is-vandaag');
-                else if (dISO < vandaagISO) th.classList.add('is-verleden');
+                /* Markeer verleden én vandaag als is-verleden (geen is-vandaag meer) */
+                if (dISO <= vandaagISO) th.classList.add('is-verleden');
                 if (isWeekend) {
-                    th.innerHTML = WEEK_DAGNAMEN_KORT[weekdagIndex] + '<br>' + dd + '/' + mm;
+                    th.innerHTML = WEEK_DAGNAMEN_KORT[d.getDay()] + '<br>' + dd + '/' + mm;
                 } else if (VIEW_MODUS === 'month') {
-                    th.innerText = WEEK_DAGNAMEN_KORT[weekdagIndex] + ' ' + dd + '/' + mm;
+                    th.innerText = WEEK_DAGNAMEN_KORT[d.getDay()] + ' ' + dd + '/' + mm;
                 } else {
-                    th.innerText = WEEK_DAGNAMEN_LANG[weekdagIndex] + ' ' + dd + '/' + mm;
+                    th.innerText = WEEK_DAGNAMEN_LANG[d.getDay()] + ' ' + dd + '/' + mm;
                 }
                 headRow.appendChild(th);
             });
@@ -1348,14 +1165,10 @@
             var bestaand = rijEl.querySelector('.ploeg-warning');
             if (bestaand) bestaand.remove();
             var w = document.createElement('div');
-            w.className = 'ploeg-warning';
-            w.innerText = '⚠️ ' + tekst;
+            w.className = 'ploeg-warning'; w.innerText = '⚠️ ' + tekst;
             rijEl.appendChild(w);
             setTimeout(function() { w.classList.add('show'); }, 10);
-            setTimeout(function() {
-                w.classList.remove('show');
-                setTimeout(function() { if (w.parentNode) w.parentNode.removeChild(w); }, 200);
-            }, 3200);
+            setTimeout(function() { w.classList.remove('show'); setTimeout(function() { if (w.parentNode) w.parentNode.removeChild(w); }, 200); }, 3200);
         }
 
         /* ── TABEL OPBOUW ── */
@@ -1365,10 +1178,10 @@
             var aantalDagen = datumsVanDeWeek.length;
             var vandaagISO = isoVanDate(new Date());
 
+            /* markeerTijd: verleden én vandaag krijgen is-verleden */
             function markeerTijd(cel, datumStr) {
                 var dISO = isoVanDate(ddMMNaarDate(datumStr));
-                if (dISO === vandaagISO) cel.classList.add('is-vandaag');
-                else if (dISO < vandaagISO) cel.classList.add('is-verleden');
+                if (dISO <= vandaagISO) cel.classList.add('is-verleden');
             }
 
             /* VERLOF-RIJ */
@@ -1391,14 +1204,11 @@
                 tdV.addEventListener('drop',      drop);
                 var addBtnV = document.createElement('button');
                 addBtnV.className = 'verlof-add-btn';
-                addBtnV.innerHTML = '+';
-                addBtnV.type = 'button';
+                addBtnV.innerHTML = '+'; addBtnV.type = 'button';
                 addBtnV.title = 'Snel verlof toevoegen';
                 (function(datum) {
                     addBtnV.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        if (!isAdmin) return;
-                        voegVerlofToe(datum);
+                        e.stopPropagation(); if (!isAdmin) return; voegVerlofToe(datum);
                     });
                 })(datumsVanDeWeek[i]);
                 tdV.appendChild(addBtnV);
@@ -1423,26 +1233,16 @@
                     naamElement.addEventListener('click', function() {
                         if (!isAdmin) return;
                         if (naamElement.isContentEditable) return;
-                        naamElement.contentEditable = true;
-                        naamElement.focus();
-                        var range = document.createRange();
-                        range.selectNodeContents(naamElement);
-                        var sel = window.getSelection();
-                        sel.removeAllRanges();
-                        sel.addRange(range);
+                        naamElement.contentEditable = true; naamElement.focus();
+                        var range = document.createRange(); range.selectNodeContents(naamElement);
+                        var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
                     });
                     naamElement.addEventListener('blur', function() {
                         naamElement.contentEditable = false;
                         var nieuwe = naamElement.innerText.trim();
                         if (!nieuwe || nieuwe === oudeNaam) { naamElement.innerText = oudeNaam; return; }
-                        var bestaatAl = ploegen.some(function(p) {
-                            return p !== oudeNaam && p.toLowerCase() === nieuwe.toLowerCase();
-                        });
-                        if (bestaatAl) {
-                            naamElement.innerText = oudeNaam;
-                            toonPloegMelding(rijElement, 'Er is al een ploeg met de naam "' + nieuwe + '".');
-                            return;
-                        }
+                        var bestaatAl = ploegen.some(function(p) { return p !== oudeNaam && p.toLowerCase() === nieuwe.toLowerCase(); });
+                        if (bestaatAl) { naamElement.innerText = oudeNaam; toonPloegMelding(rijElement, 'Er is al een ploeg met de naam "' + nieuwe + '".'); return; }
                         hernoemPloeg(oudeNaam, nieuwe);
                     });
                     naamElement.addEventListener('keydown', function(e) {
@@ -1457,9 +1257,7 @@
                 delPloegBtn.title = 'Verwijder deze ploeg';
                 (function(naam, rijElement) {
                     delPloegBtn.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        if (!isAdmin) return;
-                        verwijderPloeg(naam, rijElement);
+                        e.stopPropagation(); if (!isAdmin) return; verwijderPloeg(naam, rijElement);
                     });
                 })(ploeg, tr);
                 wrap.appendChild(delPloegBtn);
@@ -1479,12 +1277,10 @@
                     td.addEventListener('drop',      drop);
                     var addBtn = document.createElement('button');
                     addBtn.className = 'cell-add-btn';
-                    addBtn.innerHTML = '+';
-                    addBtn.type = 'button';
+                    addBtn.innerHTML = '+'; addBtn.type = 'button';
                     addBtn.title = 'Snelle interventie toevoegen';
                     addBtn.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        if (!isAdmin) return;
+                        e.stopPropagation(); if (!isAdmin) return;
                         var pzone = this.parentElement;
                         voegDirecteInterventieToe(pzone.dataset.ploeg, pzone.dataset.datum);
                     });
@@ -1494,19 +1290,14 @@
                 tbody.appendChild(tr);
             });
 
-            /* + PLOEG TOEVOEGEN RIJ */
             var trAdd = document.createElement('tr');
             trAdd.className = 'add-ploeg-row';
             var tdAdd = document.createElement('td');
             tdAdd.colSpan = aantalDagen + 1;
             var addPloegBtn = document.createElement('button');
-            addPloegBtn.className = 'add-ploeg-btn';
-            addPloegBtn.type = 'button';
+            addPloegBtn.className = 'add-ploeg-btn'; addPloegBtn.type = 'button';
             addPloegBtn.innerHTML = '+ Ploeg toevoegen';
-            addPloegBtn.addEventListener('click', function() {
-                if (!isAdmin) return;
-                voegPloegToe();
-            });
+            addPloegBtn.addEventListener('click', function() { if (!isAdmin) return; voegPloegToe(); });
             tdAdd.appendChild(addPloegBtn);
             trAdd.appendChild(tdAdd);
             tbody.appendChild(trAdd);
@@ -1517,62 +1308,44 @@
             if (!members || members.length === 0) return STANDAARD_KAART_STIJL;
             var usernames = members.map(function(m) { return m.username; });
             for (var i = 0; i < PROJECTLEIDERS.length; i++) {
-                if (usernames.indexOf(PROJECTLEIDERS[i].username) !== -1) {
+                if (usernames.indexOf(PROJECTLEIDERS[i].username) !== -1)
                     return { bg: PROJECTLEIDERS[i].bg, text: PROJECTLEIDERS[i].text };
-                }
             }
             return STANDAARD_KAART_STIJL;
         }
 
-        function genInstanceId(cardId) {
-            return cardId + '::' + Date.now() + '-' + Math.floor(Math.random() * 9999);
-        }
+        function genInstanceId(cardId) { return cardId + '::' + Date.now() + '-' + Math.floor(Math.random() * 9999); }
         function cardIdVanInstantie(instanceId) { return instanceId.split('::')[0]; }
 
         function isArchiefLijst(naam) {
             if (!naam) return false;
             var n = naam.trim().toLowerCase();
-            return n.indexOf('archiveren') !== -1
-                || n.indexOf('archief')    !== -1
-                || n.indexOf('archive')    !== -1;
+            return n.indexOf('archiveren') !== -1 || n.indexOf('archief') !== -1 || n.indexOf('archive') !== -1;
         }
 
         function maakKaartSnapshot(card) {
-            return {
-                n: card.name || '',
-                a: card.address || '',
-                u: card.url || '',
-                m: (card.members || []).map(function(m) { return m.username; })
-            };
+            return { n: card.name||'', a: card.address||'', u: card.url||'', m: (card.members||[]).map(function(m){return m.username;}) };
         }
         function snapshotNaarKaart(snap) {
             var naam    = (snap && (snap.n || snap.name))    || '(gearchiveerd project)';
             var adres   = (snap && (snap.a || snap.address)) || '';
             var members = [];
-            if (snap && snap.m) {
-                members = snap.m.map(function(u) { return { username: u }; });
-            } else if (snap && snap.members) {
-                members = snap.members;
-            }
+            if (snap && snap.m) { members = snap.m.map(function(u) { return { username: u }; }); }
+            else if (snap && snap.members) { members = snap.members; }
             return { name: naam, address: adres, desc: '', members: members };
         }
 
         function voegCardToeAanIndex(cardId) {
             return t.get('board', 'shared', 'plannedCardIds', []).then(function(lijst) {
                 var arr = Array.isArray(lijst) ? lijst : [];
-                if (arr.indexOf(cardId) === -1) {
-                    arr.push(cardId);
-                    return t.set('board', 'shared', 'plannedCardIds', arr);
-                }
+                if (arr.indexOf(cardId) === -1) { arr.push(cardId); return t.set('board', 'shared', 'plannedCardIds', arr); }
             });
         }
         function verwijderCardUitIndex(cardId) {
             return t.get('board', 'shared', 'plannedCardIds', []).then(function(lijst) {
                 var arr = Array.isArray(lijst) ? lijst : [];
                 var gefilterd = arr.filter(function(x) { return x !== cardId; });
-                if (gefilterd.length !== arr.length) {
-                    return t.set('board', 'shared', 'plannedCardIds', gefilterd);
-                }
+                if (gefilterd.length !== arr.length) return t.set('board', 'shared', 'plannedCardIds', gefilterd);
             });
         }
 
@@ -1583,15 +1356,12 @@
             var kaarten = pool.querySelectorAll('.planning-card');
             var zichtbaar = 0;
             kaarten.forEach(function(kaart) {
-                var body = kaart.querySelector('.card-body');
-                var tekst = (body ? body.textContent : kaart.textContent).toLowerCase();
+                var tekst = (kaart.querySelector('.card-body') ? kaart.querySelector('.card-body').textContent : kaart.textContent).toLowerCase();
                 if (q === '' || tekst.indexOf(q) !== -1) { kaart.style.display = ''; zichtbaar++; }
                 else { kaart.style.display = 'none'; }
             });
             var leegMsg = document.getElementById('search-empty');
-            if (leegMsg) {
-                leegMsg.style.display = (q !== '' && kaarten.length > 0 && zichtbaar === 0) ? 'block' : 'none';
-            }
+            if (leegMsg) leegMsg.style.display = (q !== '' && kaarten.length > 0 && zichtbaar === 0) ? 'block' : 'none';
         }
 
         /* ── PLOEG-MUTATIES ── */
@@ -1599,10 +1369,8 @@
             var i = 1, nieuwe;
             while (true) {
                 nieuwe = 'Ploeg ' + i;
-                var bestaat = ploegen.some(function(p) { return p.toLowerCase() === nieuwe.toLowerCase(); });
-                if (!bestaat) break;
-                i++;
-                if (i > 999) { nieuwe = 'Nieuwe ploeg ' + Date.now(); break; }
+                if (!ploegen.some(function(p) { return p.toLowerCase() === nieuwe.toLowerCase(); })) break;
+                i++; if (i > 999) { nieuwe = 'Nieuwe ploeg ' + Date.now(); break; }
             }
             ploegen.push(nieuwe);
             t.set('board', 'shared', 'ploegen', ploegen).then(laadEnRenderAlles);
@@ -1612,12 +1380,10 @@
             var idx = ploegen.indexOf(oudeNaam);
             if (idx === -1) return Promise.resolve();
             ploegen[idx] = nieuweNaam;
-            var promises = [];
-            promises.push(t.set('board', 'shared', 'ploegen', ploegen));
+            var promises = [t.set('board', 'shared', 'ploegen', ploegen)];
             promises.push(
                 t.get('board', 'shared', 'interventions', []).then(function(lijst) {
-                    var arr = Array.isArray(lijst) ? lijst : [];
-                    var gewijzigd = false;
+                    var arr = Array.isArray(lijst) ? lijst : [], gewijzigd = false;
                     arr.forEach(function(it) { if (it.ploeg === oudeNaam) { it.ploeg = nieuweNaam; gewijzigd = true; } });
                     if (gewijzigd) return t.set('board', 'shared', 'interventions', arr);
                 })
@@ -1627,8 +1393,7 @@
                     var arr = Array.isArray(ids) ? ids : [];
                     return Promise.all(arr.map(function(cid) {
                         return t.get(cid, 'shared', 'placements', []).then(function(plist) {
-                            var pa = Array.isArray(plist) ? plist : [];
-                            var gewijzigd = false;
+                            var pa = Array.isArray(plist) ? plist : [], gewijzigd = false;
                             pa.forEach(function(p) { if (p.ploeg === oudeNaam) { p.ploeg = nieuweNaam; gewijzigd = true; } });
                             if (gewijzigd) return t.set(cid, 'shared', 'placements', pa);
                         });
@@ -1639,36 +1404,22 @@
         }
 
         function verwijderPloeg(naam, rijElement) {
-            /* ── STAP 4.4 BUGFIX: bevestiging vóór verwijdering ── */
-            if (!confirm('⚠️ Ploeg "' + naam + '" verwijderen?\n\nDit kan niet ongedaan worden gemaakt. Zorg dat alle projecten en interventies eerst verplaatst of verwijderd zijn.')) {
-                return;
-            }
+            if (!confirm('⚠️ Ploeg "' + naam + '" verwijderen?\n\nDit kan niet ongedaan worden gemaakt.')) return;
             Promise.all([
                 t.get('board', 'shared', 'interventions', []),
                 t.get('board', 'shared', 'plannedCardIds', [])
             ]).then(function(r) {
                 var ints = Array.isArray(r[0]) ? r[0] : [];
-                var heeftInterventies = ints.some(function(i) { return i.ploeg === naam; });
-                if (heeftInterventies) {
-                    toonPloegMelding(rijElement, 'Deze ploeg bevat nog interventies. Verwijder of verplaats ze eerst.');
-                    return;
+                if (ints.some(function(i) { return i.ploeg === naam; })) {
+                    toonPloegMelding(rijElement, 'Deze ploeg bevat nog interventies. Verwijder of verplaats ze eerst.'); return;
                 }
                 var ids = Array.isArray(r[1]) ? r[1] : [];
-                return Promise.all(ids.map(function(cid) {
-                    return t.get(cid, 'shared', 'placements', []);
-                })).then(function(allePlacements) {
-                    var heeftPlacements = allePlacements.some(function(plist) {
-                        var pa = Array.isArray(plist) ? plist : [];
-                        return pa.some(function(p) { return p.ploeg === naam; });
-                    });
-                    if (heeftPlacements) {
-                        toonPloegMelding(rijElement, 'Deze ploeg bevat nog geplande projecten. Sleep ze eerst naar de zijbalk of een andere ploeg.');
-                        return;
-                    }
-                    if (ploegen.length <= 1) {
-                        toonPloegMelding(rijElement, 'Er moet minstens één ploeg overblijven.');
-                        return;
-                    }
+                return Promise.all(ids.map(function(cid) { return t.get(cid, 'shared', 'placements', []); }))
+                .then(function(allePlacements) {
+                    if (allePlacements.some(function(plist) {
+                        return (Array.isArray(plist)?plist:[]).some(function(p) { return p.ploeg === naam; });
+                    })) { toonPloegMelding(rijElement, 'Deze ploeg bevat nog geplande projecten.'); return; }
+                    if (ploegen.length <= 1) { toonPloegMelding(rijElement, 'Er moet minstens één ploeg overblijven.'); return; }
                     ploegen = ploegen.filter(function(p) { return p !== naam; });
                     return t.set('board', 'shared', 'ploegen', ploegen).then(laadEnRenderAlles);
                 });
@@ -1678,59 +1429,39 @@
         /* ── VERLOF-MUTATIES ── */
         function voegVerlofToe(datum) {
             if (!isAdmin) return;
-            var nieuw = {
-                id:         'verlof-' + Date.now() + '-' + Math.floor(Math.random() * 9999),
-                naam:       'Naam',
-                startDatum: datum,
-                eindDatum:  datum,
-                ploeg:      VERLOF_ROW_KEY
-            };
-            t.get('board', 'shared', 'verlofItems', [])
-            .then(function(lijst) {
+            var nieuw = { id: 'verlof-' + Date.now() + '-' + Math.floor(Math.random()*9999), naam: 'Naam', startDatum: datum, eindDatum: datum, ploeg: VERLOF_ROW_KEY };
+            t.get('board', 'shared', 'verlofItems', []).then(function(lijst) {
                 var arr = Array.isArray(lijst) ? lijst : [];
                 arr.push(nieuw);
                 return t.set('board', 'shared', 'verlofItems', arr);
-            })
-            .then(function() {
+            }).then(function() {
                 tekenVerlofItem(nieuw);
                 var eersteSegment = document.querySelector('[data-verlof-id="' + nieuw.id + '"] .verlof-naam-editable');
                 if (eersteSegment) {
-                    eersteSegment.contentEditable = true;
-                    eersteSegment.focus();
-                    var range = document.createRange();
-                    range.selectNodeContents(eersteSegment);
-                    var sel = window.getSelection();
-                    sel.removeAllRanges();
-                    sel.addRange(range);
+                    eersteSegment.contentEditable = true; eersteSegment.focus();
+                    var range = document.createRange(); range.selectNodeContents(eersteSegment);
+                    var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
                 }
             });
         }
 
         function updateVerlofNaam(id, nieuweNaam) {
             t.get('board', 'shared', 'verlofItems', []).then(function(lijst) {
-                var arr = Array.isArray(lijst) ? lijst : [];
-                return t.set('board', 'shared', 'verlofItems',
-                    arr.map(function(v) { if (v.id === id) v.naam = nieuweNaam; return v; })
-                );
+                return t.set('board', 'shared', 'verlofItems', (Array.isArray(lijst)?lijst:[]).map(function(v) { if (v.id===id) v.naam=nieuweNaam; return v; }));
             });
         }
 
         function verwijderVerlof(id) {
             if (!isAdmin) return;
             t.get('board', 'shared', 'verlofItems', []).then(function(lijst) {
-                var arr = Array.isArray(lijst) ? lijst : [];
-                return t.set('board', 'shared', 'verlofItems', arr.filter(function(v) { return v.id !== id; }));
+                return t.set('board', 'shared', 'verlofItems', (Array.isArray(lijst)?lijst:[]).filter(function(v) { return v.id !== id; }));
             }).then(function() {
-                document.querySelectorAll('[data-verlof-id="' + id + '"]').forEach(function(el) {
-                    if (el.parentNode) el.parentNode.removeChild(el);
-                });
+                document.querySelectorAll('[data-verlof-id="' + id + '"]').forEach(function(el) { if (el.parentNode) el.parentNode.removeChild(el); });
             });
         }
 
         function hertekenEnkelVerlofItem(item) {
-            document.querySelectorAll('[data-verlof-id="' + item.id + '"]').forEach(function(el) {
-                if (el.parentNode) el.parentNode.removeChild(el);
-            });
+            document.querySelectorAll('[data-verlof-id="' + item.id + '"]').forEach(function(el) { if (el.parentNode) el.parentNode.removeChild(el); });
             if (!item.startDatum || !item.eindDatum) return;
             tekenVerlofItem(item);
         }
@@ -1740,12 +1471,7 @@
             segmentDagen.forEach(function(dag) {
                 var zone = document.getElementById(maakZoneId(VERLOF_ROW_KEY, dag.datum));
                 if (!zone) return;
-                var seg = maakVerlofSegment(item, {
-                    datum:          dag.datum,
-                    isFirstVisible: dag.isFirstVisible,
-                    isLastVisible:  dag.isLastVisible
-                });
-                zone.appendChild(seg);
+                zone.appendChild(maakVerlofSegment(item, { datum: dag.datum, isFirstVisible: dag.isFirstVisible, isLastVisible: dag.isLastVisible }));
             });
         }
 
@@ -1756,9 +1482,7 @@
             if (!opts.isLastVisible)  el.classList.add('not-last');
             if (!opts.isFirstVisible && !opts.isLastVisible) el.classList.add('continuation');
             el.id = 'vseg-' + item.id + '-' + opts.datum;
-            el.dataset.verlofId = item.id;
-            el.dataset.datum    = opts.datum;
-            el.dataset.rol      = 'verlof';
+            el.dataset.verlofId = item.id; el.dataset.datum = opts.datum; el.dataset.rol = 'verlof';
             el.draggable = isAdmin;
             var bodyEl = document.createElement('div');
             bodyEl.className = 'verlof-segment-body';
@@ -1771,13 +1495,9 @@
                     naamElement.addEventListener('click', function() {
                         if (!isAdmin) return;
                         if (naamElement.isContentEditable) return;
-                        naamElement.contentEditable = true;
-                        naamElement.focus();
-                        var range = document.createRange();
-                        range.selectNodeContents(naamElement);
-                        var sel = window.getSelection();
-                        sel.removeAllRanges();
-                        sel.addRange(range);
+                        naamElement.contentEditable = true; naamElement.focus();
+                        var range = document.createRange(); range.selectNodeContents(naamElement);
+                        var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
                     });
                     naamElement.addEventListener('blur', function() {
                         naamElement.contentEditable = false;
@@ -1788,31 +1508,22 @@
                     naamElement.addEventListener('keydown', function(e) {
                         if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); naamElement.blur(); }
                     });
-                    naamElement.addEventListener('mousedown', function(e) {
-                        if (naamElement.isContentEditable) e.stopPropagation();
-                    });
+                    naamElement.addEventListener('mousedown', function(e) { if (naamElement.isContentEditable) e.stopPropagation(); });
                 })(item.id, naamEl);
                 bodyEl.appendChild(naamEl);
                 if (isAdmin) {
                     var delBtn = document.createElement('span');
-                    delBtn.className = 'delete-btn';
-                    delBtn.innerHTML = '&times;';
-                    delBtn.title = 'Verwijder verlof';
+                    delBtn.className = 'delete-btn'; delBtn.innerHTML = '&times;'; delBtn.title = 'Verwijder verlof';
                     (function(itemId) {
                         delBtn.addEventListener('click', function(e) { e.stopPropagation(); verwijderVerlof(itemId); });
                         delBtn.addEventListener('mousedown', function(e) { e.stopPropagation(); });
                     })(item.id);
                     bodyEl.appendChild(delBtn);
                 }
-            } else {
-                bodyEl.innerHTML = '&nbsp;';
-            }
+            } else { bodyEl.innerHTML = '&nbsp;'; }
             el.appendChild(bodyEl);
             if (opts.isLastVisible && isAdmin) {
-                (function(itemSnapshot) {
-                    var handle = maakResizeHandle(function(e) { startVerlofResize(e, itemSnapshot); });
-                    el.appendChild(handle);
-                })(item);
+                el.appendChild(maakResizeHandle(function(e) { startVerlofResize(e, item); }));
             }
             el.addEventListener('dragstart', drag);
             el.addEventListener('dragend',   dragEnd);
@@ -1832,73 +1543,46 @@
         var verlofResizeState = null;
         function startVerlofResize(e, itemSnapshot) {
             if (!isAdmin) return;
-            e.preventDefault();
-            e.stopPropagation();
-            verlofResizeState = {
-                itemId:        itemSnapshot.id,
-                naam:          itemSnapshot.naam,
-                startDatum:    itemSnapshot.startDatum,
-                origineelEind: itemSnapshot.eindDatum,
-                huidigEind:    itemSnapshot.eindDatum
-            };
+            e.preventDefault(); e.stopPropagation();
+            verlofResizeState = { itemId: itemSnapshot.id, naam: itemSnapshot.naam, startDatum: itemSnapshot.startDatum, origineelEind: itemSnapshot.eindDatum, huidigEind: itemSnapshot.eindDatum };
             document.body.classList.add('span-resizing');
             document.addEventListener('mousemove', onVerlofResizeMove);
             document.addEventListener('mouseup',   onVerlofResizeEnd);
         }
         function onVerlofResizeMove(e) {
             if (!verlofResizeState) return;
-            var el = document.elementFromPoint(e.clientX, e.clientY);
-            if (!el) return;
-            var zone = el.closest ? el.closest('.verlof-zone') : null;
+            var zone = (document.elementFromPoint(e.clientX, e.clientY) || {}).closest ? document.elementFromPoint(e.clientX, e.clientY).closest('.verlof-zone') : null;
             if (!zone || !zone.dataset.datum) return;
             var nieuweEind = zone.dataset.datum;
-            var sD = ddMMNaarDate(verlofResizeState.startDatum);
-            var nD = ddMMNaarDate(nieuweEind);
+            var sD = ddMMNaarDate(verlofResizeState.startDatum), nD = ddMMNaarDate(nieuweEind);
             if (sD && nD && nD < sD) nieuweEind = verlofResizeState.startDatum;
             if (nieuweEind === verlofResizeState.huidigEind) return;
             verlofResizeState.huidigEind = nieuweEind;
-            hertekenEnkelVerlofItem({
-                id: verlofResizeState.itemId, naam: verlofResizeState.naam,
-                startDatum: verlofResizeState.startDatum, eindDatum: verlofResizeState.huidigEind,
-                ploeg: VERLOF_ROW_KEY
-            });
+            hertekenEnkelVerlofItem({ id: verlofResizeState.itemId, naam: verlofResizeState.naam, startDatum: verlofResizeState.startDatum, eindDatum: verlofResizeState.huidigEind, ploeg: VERLOF_ROW_KEY });
         }
         function onVerlofResizeEnd() {
             if (!verlofResizeState) return;
             document.body.classList.remove('span-resizing');
             document.removeEventListener('mousemove', onVerlofResizeMove);
             document.removeEventListener('mouseup',   onVerlofResizeEnd);
-            var itemId = verlofResizeState.itemId;
-            var nieuweEind = verlofResizeState.huidigEind;
-            var ongewijzigd = (nieuweEind === verlofResizeState.origineelEind);
+            var itemId = verlofResizeState.itemId, nieuweEind = verlofResizeState.huidigEind, ongewijzigd = (nieuweEind === verlofResizeState.origineelEind);
             verlofResizeState = null;
             if (ongewijzigd) return;
             t.get('board', 'shared', 'verlofItems', []).then(function(lijst) {
-                var arr = Array.isArray(lijst) ? lijst : [];
-                return t.set('board', 'shared', 'verlofItems', arr.map(function(v) {
-                    if (v.id === itemId) v.eindDatum = nieuweEind;
-                    return v;
-                }));
+                return t.set('board', 'shared', 'verlofItems', (Array.isArray(lijst)?lijst:[]).map(function(v) { if (v.id===itemId) v.eindDatum=nieuweEind; return v; }));
             });
         }
 
         /* ── STAPELLOGICA ── */
         var stackMap = {};
-        var BAND_HOOGTE = 56;
-        var BAND_GAP    = 4;
-        var BAND_TOP    = 6;
+        var BAND_HOOGTE = 56, BAND_GAP = 4, BAND_TOP = 6;
         function rijNaarTop(rij) { return BAND_TOP + rij * (BAND_HOOGTE + BAND_GAP); }
         function stapelReserveer(zoneIds, instanceId) {
             zoneIds.forEach(function(zid) { if (!stackMap[zid]) stackMap[zid] = {}; });
             var rij = 0;
             while (true) {
-                var vrij = zoneIds.every(function(zid) {
-                    var bezetter = stackMap[zid][rij];
-                    return bezetter === undefined || bezetter === instanceId;
-                });
-                if (vrij) break;
-                rij++;
-                if (rij > 200) break;
+                if (zoneIds.every(function(zid) { var b=stackMap[zid][rij]; return b===undefined||b===instanceId; })) break;
+                rij++; if (rij > 200) break;
             }
             zoneIds.forEach(function(zid) { stackMap[zid][rij] = instanceId; });
             zoneIds.forEach(updateZoneHoogte);
@@ -1906,1429 +1590,708 @@
         }
         function stapelVrijgeven(instanceId) {
             Object.keys(stackMap).forEach(function(zid) {
-                var zone = stackMap[zid];
-                Object.keys(zone).forEach(function(rij) {
-                    if (zone[rij] === instanceId) delete zone[rij];
-                });
+                Object.keys(stackMap[zid]).forEach(function(rij) { if (stackMap[zid][rij]===instanceId) delete stackMap[zid][rij]; });
                 updateZoneHoogte(zid);
             });
         }
         function updateZoneHoogte(zoneId) {
-            var zone = document.getElementById(zoneId);
-            if (!zone) return;
-            var zoneRijen = stackMap[zoneId] || {};
-            var maxRij = -1;
-            Object.keys(zoneRijen).forEach(function(r) {
-                var ri = parseInt(r, 10);
-                if (ri > maxRij) maxRij = ri;
-            });
-            if (maxRij < 0) {
-                zone.style.minHeight = '';
-            } else {
-                var nodig = rijNaarTop(maxRij) + BAND_HOOGTE + 30;
-                zone.style.minHeight = Math.max(80, nodig) + 'px';
-            }
+            var zone = document.getElementById(zoneId); if (!zone) return;
+            var zoneRijen = stackMap[zoneId] || {}, maxRij = -1;
+            Object.keys(zoneRijen).forEach(function(r) { var ri=parseInt(r,10); if (ri>maxRij) maxRij=ri; });
+            zone.style.minHeight = maxRij < 0 ? '' : Math.max(80, rijNaarTop(maxRij) + BAND_HOOGTE + 30) + 'px';
         }
         function herlayoutPloegRijen() {
             var zones = document.querySelectorAll('.dropzone[data-row-type="ploeg"]');
             var perPloeg = {};
-            zones.forEach(function(z) {
-                var pl = z.dataset.ploeg;
-                if (pl === undefined) return;
-                if (!perPloeg[pl]) perPloeg[pl] = [];
-                perPloeg[pl].push(z);
-            });
+            zones.forEach(function(z) { var pl=z.dataset.ploeg; if (!pl) return; if (!perPloeg[pl]) perPloeg[pl]=[]; perPloeg[pl].push(z); });
             Object.keys(perPloeg).forEach(function(pl) {
-                var cellen = perPloeg[pl];
-                var baanHoogtes = {};
-                var items = [];
+                var cellen = perPloeg[pl], baanHoogtes = {}, items = [];
                 cellen.forEach(function(z) {
                     z.querySelectorAll('.planning-card, .placement-band').forEach(function(el) {
                         if (el.dataset.lane === undefined || el.dataset.lane === '') return;
-                        var baan = parseInt(el.dataset.lane, 10);
-                        if (isNaN(baan)) return;
-                        el.style.height = 'auto';
-                        var h = el.offsetHeight;
+                        var baan = parseInt(el.dataset.lane, 10); if (isNaN(baan)) return;
+                        el.style.height = 'auto'; var h = el.offsetHeight;
                         if (!baanHoogtes[baan] || h > baanHoogtes[baan]) baanHoogtes[baan] = h;
                         items.push({ el: el, baan: baan });
                     });
                 });
-                var banen = Object.keys(baanHoogtes)
-                    .map(function(k) { return parseInt(k, 10); })
-                    .sort(function(a, b) { return a - b; });
-                var tops = {};
-                var cursor = BAND_TOP;
-                banen.forEach(function(b) {
-                    tops[b] = cursor;
-                    cursor += baanHoogtes[b] + BAND_GAP;
-                });
-                var totaal = (banen.length ? (cursor - BAND_GAP) : BAND_TOP) + 30;
-                items.forEach(function(it) {
-                    it.el.style.top    = tops[it.baan] + 'px';
-                    it.el.style.height = baanHoogtes[it.baan] + 'px';
-                    it.el.style.bottom = 'auto';
-                });
-                cellen.forEach(function(z) {
-                    z.style.minHeight = Math.max(80, totaal) + 'px';
-                });
+                var banen = Object.keys(baanHoogtes).map(function(k){return parseInt(k,10);}).sort(function(a,b){return a-b;});
+                var tops = {}, cursor = BAND_TOP;
+                banen.forEach(function(b) { tops[b]=cursor; cursor+=baanHoogtes[b]+BAND_GAP; });
+                var totaal = (banen.length ? (cursor-BAND_GAP) : BAND_TOP) + 30;
+                items.forEach(function(it) { it.el.style.top=tops[it.baan]+'px'; it.el.style.height=baanHoogtes[it.baan]+'px'; it.el.style.bottom='auto'; });
+                cellen.forEach(function(z) { z.style.minHeight=Math.max(80,totaal)+'px'; });
             });
         }
         function placementStart(p) { return p.datum; }
         function placementEind(p)  { return p.eindDatum || p.datum; }
 
         function hertekenEnkelPlacement(p, ctx) {
-            document.querySelectorAll('[data-instance-id="' + p.instanceId + '"]').forEach(function(el) {
-                if (el.parentNode) el.parentNode.removeChild(el);
-            });
-            stapelVrijgeven(p.instanceId);
-            tekenPlacement(p, ctx);
-            herlayoutPloegRijen();
+            document.querySelectorAll('[data-instance-id="' + p.instanceId + '"]').forEach(function(el) { if (el.parentNode) el.parentNode.removeChild(el); });
+            stapelVrijgeven(p.instanceId); tekenPlacement(p, ctx); herlayoutPloegRijen();
         }
 
         function tekenPlacement(p, ctx) {
             if (!p.ploeg || !p.datum) return;
             placementCtx[p.instanceId] = ctx;
-            var start = placementStart(p);
-            var eind  = placementEind(p);
-            var dagen = dagenBinnenWeek(start, eind);
-            if (dagen.length === 0) return;
-            var meerdaags = (start !== eind) && (dagen.length > 1 ||
-                (aantalDagenTussen(start, eind) > 0));
+            var start=placementStart(p), eind=placementEind(p);
+            var dagen=dagenBinnenWeek(start,eind);
+            if (dagen.length===0) return;
+            var meerdaags = (start!==eind) && (dagen.length>1 || aantalDagenTussen(start,eind)>0);
             if (!meerdaags) {
-                var zoneId = maakZoneId(p.ploeg, start);
-                var zone = document.getElementById(zoneId);
+                var zoneId=maakZoneId(p.ploeg,start), zone=document.getElementById(zoneId);
                 if (!zone) return;
-                var pos1 = stapelReserveer([zoneId], p.instanceId);
-                var kaart = maakTrelloInstantieKaart(ctx.card, p, {
-                    isArchief: ctx.isArchief, kanTonen: ctx.kanTonen, url: ctx.url,
-                    metResize: true, ctx: ctx
-                });
-                kaart.dataset.lane     = pos1.rij;
-                kaart.dataset.ploegRow = p.ploeg;
-                zone.appendChild(kaart);
+                var pos1=stapelReserveer([zoneId],p.instanceId);
+                var kaart=maakTrelloInstantieKaart(ctx.card,p,{isArchief:ctx.isArchief,kanTonen:ctx.kanTonen,url:ctx.url,metResize:true,ctx:ctx});
+                kaart.dataset.lane=pos1.rij; kaart.dataset.ploegRow=p.ploeg; zone.appendChild(kaart);
             } else {
-                var zoneIds = dagen.map(function(dag) { return maakZoneId(p.ploeg, dag.datum); });
-                var pos = stapelReserveer(zoneIds, p.instanceId);
+                var zoneIds=dagen.map(function(dag){return maakZoneId(p.ploeg,dag.datum);});
+                var pos=stapelReserveer(zoneIds,p.instanceId);
                 dagen.forEach(function(dag) {
-                    var zone = document.getElementById(maakZoneId(p.ploeg, dag.datum));
-                    if (!zone) return;
-                    var seg = maakPlacementBandSegment(ctx.card, p, {
-                        datum: dag.datum,
-                        isFirstVisible: dag.isFirstVisible,
-                        isLastVisible:  dag.isLastVisible,
-                        ctx: ctx,
-                        top:    pos.top,
-                        height: BAND_HOOGTE
-                    });
-                    seg.dataset.lane     = pos.rij;
-                    seg.dataset.ploegRow = p.ploeg;
-                    zone.appendChild(seg);
+                    var zone=document.getElementById(maakZoneId(p.ploeg,dag.datum)); if (!zone) return;
+                    var seg=maakPlacementBandSegment(ctx.card,p,{datum:dag.datum,isFirstVisible:dag.isFirstVisible,isLastVisible:dag.isLastVisible,ctx:ctx,top:pos.top,height:BAND_HOOGTE});
+                    seg.dataset.lane=pos.rij; seg.dataset.ploegRow=p.ploeg; zone.appendChild(seg);
                 });
             }
         }
 
         function maakPlacementBandSegment(card, p, opts) {
-            var ctx = opts.ctx;
-            var el = document.createElement('div');
-            el.className = 'placement-band';
+            var ctx=opts.ctx;
+            var el=document.createElement('div');
+            el.className='placement-band';
             if (!opts.isFirstVisible) el.classList.add('band-not-first');
             if (!opts.isLastVisible)  el.classList.add('band-not-last');
             if (p.zwevend) el.classList.add('zwevend');
-            el.id = 'pseg-' + p.instanceId + '-' + opts.datum;
-            el.dataset.instanceId = p.instanceId;
-            el.dataset.datum      = opts.datum;
-            el.dataset.rol        = 'instantie';
-            el.draggable = isAdmin;
-            el.style.top    = (opts.top !== undefined ? opts.top : 6) + 'px';
-            el.style.height = (opts.height !== undefined ? opts.height : BAND_HOOGTE) + 'px';
-            el.style.bottom = 'auto';
-            var stijl = bepaalTrelloKaartStijl(card.members);
-            el.style.backgroundColor = stijl.bg;
-            el.style.color           = stijl.text;
+            el.id='pseg-'+p.instanceId+'-'+opts.datum;
+            el.dataset.instanceId=p.instanceId; el.dataset.datum=opts.datum; el.dataset.rol='instantie';
+            el.draggable=isAdmin;
+            el.style.top=(opts.top!==undefined?opts.top:6)+'px';
+            el.style.height=(opts.height!==undefined?opts.height:BAND_HOOGTE)+'px';
+            el.style.bottom='auto';
+            var stijl=bepaalTrelloKaartStijl(card.members);
+            el.style.backgroundColor=stijl.bg; el.style.color=stijl.text;
             if (opts.isFirstVisible) {
-                var body = document.createElement('div');
-                body.className = 'card-body';
-                vulTrelloBasis(body, card);
-                if (ctx.isArchief) {
-                    var tag = document.createElement('span');
-                    tag.className = 'archief-tag';
-                    tag.innerText = '📦 Archief';
-                    body.appendChild(tag);
-                }
-                if (p.zwevend) {
-                    var zbadge = document.createElement('span');
-                    zbadge.className = 'zwevend-badge';
-                    zbadge.innerText = '☁ Onzeker';
-                    body.appendChild(zbadge);
-                }
-                var infoEl = document.createElement('div');
-                infoEl.className = 'card-info-placement';
-                infoEl.innerText = p.infoPlaatsing || '';
-                maakBewerkbaarVeld(infoEl, function(txt) {
-                    updateInstantieInfo(cardIdVanInstantie(p.instanceId), p.instanceId, txt);
-                });
-                body.appendChild(infoEl);
-                el.appendChild(body);
+                var body=document.createElement('div'); body.className='card-body';
+                vulTrelloBasis(body,card);
+                if (ctx.isArchief) { var tag=document.createElement('span'); tag.className='archief-tag'; tag.innerText='📦 Archief'; body.appendChild(tag); }
+                if (p.zwevend) { var zbadge=document.createElement('span'); zbadge.className='zwevend-badge'; zbadge.innerText='☁ Onzeker'; body.appendChild(zbadge); }
+                var infoEl=document.createElement('div'); infoEl.className='card-info-placement'; infoEl.innerText=p.infoPlaatsing||'';
+                maakBewerkbaarVeld(infoEl,function(txt){updateInstantieInfo(cardIdVanInstantie(p.instanceId),p.instanceId,txt);});
+                body.appendChild(infoEl); el.appendChild(body);
                 if (isAdmin) {
-                    var zwBtn = document.createElement('span');
-                    zwBtn.className = 'zwevend-toggle-btn' + (p.zwevend ? ' actief' : '');
-                    zwBtn.title = p.zwevend ? 'Markeer als zeker ingepland' : 'Markeer als onzeker (zwevend)';
-                    zwBtn.innerHTML = '☁';
-                    (function(placement, segEl) {
-                        zwBtn.addEventListener('click', function(e) {
-                            e.stopPropagation();
-                            toggleZwevend(placement, ctx);
-                        });
-                    })(p, el);
-                    var controls = document.createElement('div');
-                    controls.className = 'card-controls band-controls';
-                    controls.appendChild(zwBtn);
-                    el.appendChild(controls);
+                    var zwBtn=document.createElement('span');
+                    zwBtn.className='zwevend-toggle-btn'+(p.zwevend?' actief':'');
+                    zwBtn.title=p.zwevend?'Markeer als zeker ingepland':'Markeer als onzeker (zwevend)';
+                    zwBtn.innerHTML='☁';
+                    (function(placement){ zwBtn.addEventListener('click',function(e){e.stopPropagation();toggleZwevend(placement,ctx);}); })(p);
+                    var controls=document.createElement('div'); controls.className='card-controls band-controls'; controls.appendChild(zwBtn); el.appendChild(controls);
                 }
             }
-            if (opts.isLastVisible && isAdmin) {
-                var handle = maakResizeHandle(function(e) { startPlacementResize(e, p, ctx); });
-                el.appendChild(handle);
-            }
-            el.addEventListener('dragstart', drag);
-            el.addEventListener('dragend',   dragEnd);
-            koppelKaartOpenen(el, {
-                kaartData: card, kanTonen: !!ctx.kanTonen,
-                cardId: cardIdVanInstantie(p.instanceId), url: ctx.url || ''
-            });
+            if (opts.isLastVisible && isAdmin) el.appendChild(maakResizeHandle(function(e){startPlacementResize(e,p,ctx);}));
+            el.addEventListener('dragstart',drag); el.addEventListener('dragend',dragEnd);
+            koppelKaartOpenen(el,{kaartData:card,kanTonen:!!ctx.kanTonen,cardId:cardIdVanInstantie(p.instanceId),url:ctx.url||''});
             return el;
         }
 
-        /* ── ZWEVEND TOGGLE ── */
         function toggleZwevend(p, ctx) {
             if (!isAdmin) return;
-            var cardId = cardIdVanInstantie(p.instanceId);
-            t.get(cardId, 'shared', 'placements', []).then(function(lijst) {
-                var arr = Array.isArray(lijst) ? lijst : [];
-                arr = arr.map(function(pl) {
-                    if (pl.instanceId === p.instanceId) {
-                        pl.zwevend = !pl.zwevend;
-                        p.zwevend  = pl.zwevend;
-                    }
-                    return pl;
-                });
-                return t.set(cardId, 'shared', 'placements', arr);
-            }).then(function() {
-                hertekenEnkelPlacement(p, ctx);
-            });
+            var cardId=cardIdVanInstantie(p.instanceId);
+            t.get(cardId,'shared','placements',[]).then(function(lijst) {
+                var arr=Array.isArray(lijst)?lijst:[];
+                arr=arr.map(function(pl){if(pl.instanceId===p.instanceId){pl.zwevend=!pl.zwevend;p.zwevend=pl.zwevend;}return pl;});
+                return t.set(cardId,'shared','placements',arr);
+            }).then(function(){hertekenEnkelPlacement(p,ctx);});
         }
 
         /* ── PLACEMENT RESIZE ── */
-        var placementResizeState = null;
-        function startPlacementResize(e, p, ctx) {
-            if (!isAdmin) return;
-            e.preventDefault();
-            e.stopPropagation();
-            placementResizeState = {
-                instanceId: p.instanceId,
-                cardId:     cardIdVanInstantie(p.instanceId),
-                ploeg:      p.ploeg,
-                start:      placementStart(p),
-                origEind:   placementEind(p),
-                huidigEind: placementEind(p),
-                werkItem:   {
-                    instanceId: p.instanceId, ploeg: p.ploeg,
-                    datum: placementStart(p), eindDatum: placementEind(p),
-                    infoPlaatsing: p.infoPlaatsing,
-                    zwevend: p.zwevend
-                },
-                ctx: ctx
-            };
+        var placementResizeState=null;
+        function startPlacementResize(e,p,ctx){
+            if(!isAdmin)return; e.preventDefault(); e.stopPropagation();
+            placementResizeState={instanceId:p.instanceId,cardId:cardIdVanInstantie(p.instanceId),ploeg:p.ploeg,start:placementStart(p),origEind:placementEind(p),huidigEind:placementEind(p),werkItem:{instanceId:p.instanceId,ploeg:p.ploeg,datum:placementStart(p),eindDatum:placementEind(p),infoPlaatsing:p.infoPlaatsing,zwevend:p.zwevend},ctx:ctx};
             document.body.classList.add('span-resizing');
-            document.addEventListener('mousemove', onPlacementResizeMove);
-            document.addEventListener('mouseup',   onPlacementResizeEnd);
+            document.addEventListener('mousemove',onPlacementResizeMove);
+            document.addEventListener('mouseup',onPlacementResizeEnd);
         }
-        function onPlacementResizeMove(e) {
-            if (!placementResizeState) return;
-            var el = document.elementFromPoint(e.clientX, e.clientY);
-            if (!el) return;
-            var zone = el.closest ? el.closest('.dropzone') : null;
-            if (!zone || zone.dataset.rowType !== 'ploeg') return;
-            if (zone.dataset.ploeg !== placementResizeState.ploeg) return;
-            var nieuwEind = zone.dataset.datum;
-            var sD = ddMMNaarDate(placementResizeState.start);
-            var nD = ddMMNaarDate(nieuwEind);
-            if (sD && nD && nD < sD) nieuwEind = placementResizeState.start;
-            if (nieuwEind === placementResizeState.huidigEind) return;
-            placementResizeState.huidigEind = nieuwEind;
-            placementResizeState.werkItem.eindDatum = nieuwEind;
-            hertekenEnkelPlacement(placementResizeState.werkItem, placementResizeState.ctx);
+        function onPlacementResizeMove(e){
+            if(!placementResizeState)return;
+            var el=document.elementFromPoint(e.clientX,e.clientY); if(!el)return;
+            var zone=el.closest?el.closest('.dropzone'):null;
+            if(!zone||zone.dataset.rowType!=='ploeg'||zone.dataset.ploeg!==placementResizeState.ploeg)return;
+            var nieuwEind=zone.dataset.datum;
+            var sD=ddMMNaarDate(placementResizeState.start),nD=ddMMNaarDate(nieuwEind);
+            if(sD&&nD&&nD<sD)nieuwEind=placementResizeState.start;
+            if(nieuwEind===placementResizeState.huidigEind)return;
+            placementResizeState.huidigEind=nieuwEind; placementResizeState.werkItem.eindDatum=nieuwEind;
+            hertekenEnkelPlacement(placementResizeState.werkItem,placementResizeState.ctx);
         }
-        function onPlacementResizeEnd() {
-            if (!placementResizeState) return;
+        function onPlacementResizeEnd(){
+            if(!placementResizeState)return;
             document.body.classList.remove('span-resizing');
-            document.removeEventListener('mousemove', onPlacementResizeMove);
-            document.removeEventListener('mouseup',   onPlacementResizeEnd);
-            var st = placementResizeState;
-            placementResizeState = null;
-            if (st.huidigEind === st.origEind) return;
-            t.get(st.cardId, 'shared', 'placements', []).then(function(lijst) {
-                var arr = Array.isArray(lijst) ? lijst : [];
-                return t.set(st.cardId, 'shared', 'placements', arr.map(function(p) {
-                    if (p.instanceId === st.instanceId) {
-                        if (st.huidigEind === p.datum) { delete p.eindDatum; }
-                        else { p.eindDatum = st.huidigEind; }
-                    }
-                    return p;
+            document.removeEventListener('mousemove',onPlacementResizeMove);
+            document.removeEventListener('mouseup',onPlacementResizeEnd);
+            var st=placementResizeState; placementResizeState=null;
+            if(st.huidigEind===st.origEind)return;
+            t.get(st.cardId,'shared','placements',[]).then(function(lijst){
+                return t.set(st.cardId,'shared','placements',(Array.isArray(lijst)?lijst:[]).map(function(p){
+                    if(p.instanceId===st.instanceId){if(st.huidigEind===p.datum){delete p.eindDatum;}else{p.eindDatum=st.huidigEind;}}return p;
                 }));
             });
         }
 
         /* ── INTERVENTIES ── */
-        function intStart(i) { return i.datum; }
-        function intEind(i)  { return i.eindDatum || i.datum; }
+        function intStart(i){return i.datum;}
+        function intEind(i){return i.eindDatum||i.datum;}
 
-        function hertekenEnkeleInterventie(int) {
-            document.querySelectorAll('[data-int-id="' + int.id + '"]').forEach(function(el) {
-                if (el.parentNode) el.parentNode.removeChild(el);
-            });
-            var oudLos = document.getElementById(int.id);
-            if (oudLos && oudLos.parentNode) oudLos.parentNode.removeChild(oudLos);
-            stapelVrijgeven(int.id);
-            tekenInterventie(int);
-            herlayoutPloegRijen();
+        function hertekenEnkeleInterventie(int){
+            document.querySelectorAll('[data-int-id="'+int.id+'"]').forEach(function(el){if(el.parentNode)el.parentNode.removeChild(el);});
+            var oudLos=document.getElementById(int.id); if(oudLos&&oudLos.parentNode)oudLos.parentNode.removeChild(oudLos);
+            stapelVrijgeven(int.id); tekenInterventie(int); herlayoutPloegRijen();
         }
 
-        function tekenInterventie(int) {
-            if (!int.ploeg || !int.datum) {
-                var pool = document.getElementById('sidebar-pool');
-                if (pool) pool.appendChild(maakInterventieKaart(int));
-                return;
-            }
-            var start = intStart(int);
-            var eind  = intEind(int);
-            var dagen = dagenBinnenWeek(start, eind);
-            if (dagen.length === 0) return;
-            var meerdaags = (start !== eind) && (dagen.length > 1 || aantalDagenTussen(start, eind) > 0);
-
-            if (!meerdaags) {
-                var zoneId = maakZoneId(int.ploeg, start);
-                var zone = document.getElementById(zoneId);
-                if (!zone) {
-                    var pool = document.getElementById('sidebar-pool');
-                    if (pool) pool.appendChild(maakInterventieKaart(int));
-                    return;
-                }
-                var pos1 = stapelReserveer([zoneId], int.id);
-                var kaart = maakInterventieKaart(int, { metResize: true });
-                kaart.dataset.lane     = pos1.rij;
-                kaart.dataset.ploegRow = int.ploeg;
-                zone.appendChild(kaart);
+        function tekenInterventie(int){
+            if(!int.ploeg||!int.datum){var pool=document.getElementById('sidebar-pool');if(pool)pool.appendChild(maakInterventieKaart(int));return;}
+            var start=intStart(int),eind=intEind(int),dagen=dagenBinnenWeek(start,eind);
+            if(dagen.length===0)return;
+            var meerdaags=(start!==eind)&&(dagen.length>1||aantalDagenTussen(start,eind)>0);
+            if(!meerdaags){
+                var zoneId=maakZoneId(int.ploeg,start),zone=document.getElementById(zoneId);
+                if(!zone){var pool=document.getElementById('sidebar-pool');if(pool)pool.appendChild(maakInterventieKaart(int));return;}
+                var pos1=stapelReserveer([zoneId],int.id);
+                var kaart=maakInterventieKaart(int,{metResize:true});
+                kaart.dataset.lane=pos1.rij; kaart.dataset.ploegRow=int.ploeg; zone.appendChild(kaart);
             } else {
-                var zoneIds = dagen.map(function(dag) { return maakZoneId(int.ploeg, dag.datum); });
-                var pos = stapelReserveer(zoneIds, int.id);
-                dagen.forEach(function(dag) {
-                    var zone = document.getElementById(maakZoneId(int.ploeg, dag.datum));
-                    if (!zone) return;
-                    var seg = maakInterventieBandSegment(int, {
-                        datum: dag.datum,
-                        isFirstVisible: dag.isFirstVisible,
-                        isLastVisible:  dag.isLastVisible,
-                        top: pos.top, height: BAND_HOOGTE
-                    });
-                    seg.dataset.lane     = pos.rij;
-                    seg.dataset.ploegRow = int.ploeg;
-                    zone.appendChild(seg);
+                var zoneIds=dagen.map(function(dag){return maakZoneId(int.ploeg,dag.datum);});
+                var pos=stapelReserveer(zoneIds,int.id);
+                dagen.forEach(function(dag){
+                    var zone=document.getElementById(maakZoneId(int.ploeg,dag.datum));if(!zone)return;
+                    var seg=maakInterventieBandSegment(int,{datum:dag.datum,isFirstVisible:dag.isFirstVisible,isLastVisible:dag.isLastVisible,top:pos.top,height:BAND_HOOGTE});
+                    seg.dataset.lane=pos.rij; seg.dataset.ploegRow=int.ploeg; zone.appendChild(seg);
                 });
             }
         }
 
-        function maakInterventieBandSegment(int, opts) {
-            var el = document.createElement('div');
-            el.className = 'placement-band';
-            if (!opts.isFirstVisible) el.classList.add('band-not-first');
-            if (!opts.isLastVisible)  el.classList.add('band-not-last');
-            if (int.zwevend) el.classList.add('zwevend');
-            el.id = 'iseg-' + int.id + '-' + opts.datum;
-            el.dataset.intId = int.id;
-            el.dataset.datum = opts.datum;
-            el.dataset.rol   = 'interventie';
-            el.draggable = isAdmin;
-            el.style.top    = (opts.top !== undefined ? opts.top : 6) + 'px';
-            el.style.height = (opts.height !== undefined ? opts.height : BAND_HOOGTE) + 'px';
-            el.style.bottom = 'auto';
-            var stijl = int.colorObj || CUSTOM_COLORS[0];
-            el.style.backgroundColor = stijl.bg;
-            el.style.color           = stijl.text;
-
-            if (opts.isFirstVisible) {
-                var body = document.createElement('div');
-                body.className = 'card-body';
-                var titleEl = document.createElement('div');
-                titleEl.className = 'card-title';
-                titleEl.innerText = int.name;
-                maakBewerkbaarVeld(titleEl, function(txt) { updateInterventionText(int.id, txt); });
+        function maakInterventieBandSegment(int,opts){
+            var el=document.createElement('div');
+            el.className='placement-band';
+            if(!opts.isFirstVisible)el.classList.add('band-not-first');
+            if(!opts.isLastVisible)el.classList.add('band-not-last');
+            if(int.zwevend)el.classList.add('zwevend');
+            el.id='iseg-'+int.id+'-'+opts.datum;
+            el.dataset.intId=int.id; el.dataset.datum=opts.datum; el.dataset.rol='interventie';
+            el.draggable=isAdmin;
+            el.style.top=(opts.top!==undefined?opts.top:6)+'px';
+            el.style.height=(opts.height!==undefined?opts.height:BAND_HOOGTE)+'px';
+            el.style.bottom='auto';
+            var stijl=int.colorObj||CUSTOM_COLORS[0];
+            el.style.backgroundColor=stijl.bg; el.style.color=stijl.text;
+            if(opts.isFirstVisible){
+                var body=document.createElement('div');body.className='card-body';
+                var titleEl=document.createElement('div');titleEl.className='card-title';titleEl.innerText=int.name;
+                maakBewerkbaarVeld(titleEl,function(txt){updateInterventionText(int.id,txt);});
                 body.appendChild(titleEl);
-                if (int.address) {
-                    var adresEl = document.createElement('div');
-                    adresEl.className = 'card-address';
-                    adresEl.innerText = '📍 ' + int.address;
-                    body.appendChild(adresEl);
-                }
-                var infoEl = document.createElement('div');
-                infoEl.className = 'card-info-placement';
-                infoEl.innerText = int.infoPlaatsing || '';
-                maakBewerkbaarVeld(infoEl, function(txt) { updateInterventionInfo(int.id, txt); });
+                if(int.address){var adresEl=document.createElement('div');adresEl.className='card-address';adresEl.innerText='📍 '+int.address;body.appendChild(adresEl);}
+                var infoEl=document.createElement('div');infoEl.className='card-info-placement';infoEl.innerText=int.infoPlaatsing||'';
+                maakBewerkbaarVeld(infoEl,function(txt){updateInterventionInfo(int.id,txt);});
                 body.appendChild(infoEl);
-                if (int.zwevend) {
-                    var zbadge = document.createElement('span');
-                    zbadge.className = 'zwevend-badge';
-                    zbadge.innerText = '☁ Onzeker';
-                    body.appendChild(zbadge);
-                }
+                if(int.zwevend){var zbadge=document.createElement('span');zbadge.className='zwevend-badge';zbadge.innerText='☁ Onzeker';body.appendChild(zbadge);}
                 el.appendChild(body);
-                if (isAdmin) {
-                    var controls = document.createElement('div');
-                    controls.className = 'card-controls band-controls';
-                    var izwBtn = document.createElement('span');
-                    izwBtn.className = 'zwevend-toggle-btn' + (int.zwevend ? ' actief' : '');
-                    izwBtn.title = int.zwevend ? 'Markeer als zeker ingepland' : 'Markeer als onzeker (zwevend)';
-                    izwBtn.innerHTML = '☁';
-                    izwBtn.addEventListener('click', function(e) { e.stopPropagation(); toggleZwevendInterventie(int.id); });
+                if(isAdmin){
+                    var controls=document.createElement('div');controls.className='card-controls band-controls';
+                    var izwBtn=document.createElement('span');izwBtn.className='zwevend-toggle-btn'+(int.zwevend?' actief':'');
+                    izwBtn.title=int.zwevend?'Markeer als zeker ingepland':'Markeer als onzeker (zwevend)';izwBtn.innerHTML='☁';
+                    izwBtn.addEventListener('click',function(e){e.stopPropagation();toggleZwevendInterventie(int.id);});
                     controls.appendChild(izwBtn);
-                    var colorBtn = document.createElement('span');
-                    colorBtn.className = 'color-btn';
-                    colorBtn.innerHTML = '🎨';
-                    colorBtn.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        document.querySelectorAll('.color-picker-menu').forEach(function(m) { m.remove(); });
-                        var pickerMenu = document.createElement('div');
-                        pickerMenu.className = 'color-picker-menu';
-                        CUSTOM_COLORS.forEach(function(kleur) {
-                            var swatch = document.createElement('div');
-                            swatch.className = 'color-swatch';
-                            swatch.style.backgroundColor = kleur.bg;
-                            swatch.addEventListener('click', function(e2) {
-                                e2.stopPropagation();
-                                setInterventionColor(int.id, null, kleur);
-                                pickerMenu.remove();
-                            });
-                            pickerMenu.appendChild(swatch);
-                        });
-                        controls.appendChild(pickerMenu);
+                    var colorBtn=document.createElement('span');colorBtn.className='color-btn';colorBtn.innerHTML='🎨';
+                    colorBtn.addEventListener('click',function(e){
+                        e.stopPropagation();document.querySelectorAll('.color-picker-menu').forEach(function(m){m.remove();});
+                        var pm=document.createElement('div');pm.className='color-picker-menu';
+                        CUSTOM_COLORS.forEach(function(kleur){var sw=document.createElement('div');sw.className='color-swatch';sw.style.backgroundColor=kleur.bg;sw.addEventListener('click',function(e2){e2.stopPropagation();setInterventionColor(int.id,null,kleur);pm.remove();});pm.appendChild(sw);});
+                        controls.appendChild(pm);
                     });
                     controls.appendChild(colorBtn);
-                    var delBtn = document.createElement('span');
-                    delBtn.className = 'delete-btn';
-                    delBtn.innerHTML = '&times;';
-                    delBtn.addEventListener('click', function(e) { e.stopPropagation(); verwijderInterventie(int.id); });
-                    controls.appendChild(delBtn);
-                    el.appendChild(controls);
+                    var delBtn=document.createElement('span');delBtn.className='delete-btn';delBtn.innerHTML='&times;';
+                    delBtn.addEventListener('click',function(e){e.stopPropagation();verwijderInterventie(int.id);});
+                    controls.appendChild(delBtn);el.appendChild(controls);
                 }
             }
-            if (opts.isLastVisible && isAdmin) {
-                var handle = maakResizeHandle(function(e) { startInterventieResize(e, int); });
-                el.appendChild(handle);
-            }
-            el.addEventListener('dragstart', drag);
-            el.addEventListener('dragend',   dragEnd);
+            if(opts.isLastVisible&&isAdmin)el.appendChild(maakResizeHandle(function(e){startInterventieResize(e,int);}));
+            el.addEventListener('dragstart',drag);el.addEventListener('dragend',dragEnd);
             return el;
         }
 
         /* ── INTERVENTIE RESIZE ── */
-        var interventieResizeState = null;
-        function startInterventieResize(e, int) {
-            if (!isAdmin) return;
-            e.preventDefault();
-            e.stopPropagation();
-            interventieResizeState = {
-                id:         int.id,
-                ploeg:      int.ploeg,
-                start:      intStart(int),
-                origEind:   intEind(int),
-                huidigEind: intEind(int),
-                werkItem:   JSON.parse(JSON.stringify(int))
-            };
-            interventieResizeState.werkItem.datum = intStart(int);
-            interventieResizeState.werkItem.eindDatum = intEind(int);
+        var interventieResizeState=null;
+        function startInterventieResize(e,int){
+            if(!isAdmin)return;e.preventDefault();e.stopPropagation();
+            interventieResizeState={id:int.id,ploeg:int.ploeg,start:intStart(int),origEind:intEind(int),huidigEind:intEind(int),werkItem:JSON.parse(JSON.stringify(int))};
+            interventieResizeState.werkItem.datum=intStart(int);interventieResizeState.werkItem.eindDatum=intEind(int);
             document.body.classList.add('span-resizing');
-            document.addEventListener('mousemove', onInterventieResizeMove);
-            document.addEventListener('mouseup',   onInterventieResizeEnd);
+            document.addEventListener('mousemove',onInterventieResizeMove);document.addEventListener('mouseup',onInterventieResizeEnd);
         }
-        function onInterventieResizeMove(e) {
-            if (!interventieResizeState) return;
-            var el = document.elementFromPoint(e.clientX, e.clientY);
-            if (!el) return;
-            var zone = el.closest ? el.closest('.dropzone') : null;
-            if (!zone || zone.dataset.rowType !== 'ploeg') return;
-            if (zone.dataset.ploeg !== interventieResizeState.ploeg) return;
-            var nieuwEind = zone.dataset.datum;
-            var sD = ddMMNaarDate(interventieResizeState.start);
-            var nD = ddMMNaarDate(nieuwEind);
-            if (sD && nD && nD < sD) nieuwEind = interventieResizeState.start;
-            if (nieuwEind === interventieResizeState.huidigEind) return;
-            interventieResizeState.huidigEind = nieuwEind;
-            interventieResizeState.werkItem.eindDatum = nieuwEind;
+        function onInterventieResizeMove(e){
+            if(!interventieResizeState)return;
+            var el=document.elementFromPoint(e.clientX,e.clientY);if(!el)return;
+            var zone=el.closest?el.closest('.dropzone'):null;
+            if(!zone||zone.dataset.rowType!=='ploeg'||zone.dataset.ploeg!==interventieResizeState.ploeg)return;
+            var nieuwEind=zone.dataset.datum;
+            var sD=ddMMNaarDate(interventieResizeState.start),nD=ddMMNaarDate(nieuwEind);
+            if(sD&&nD&&nD<sD)nieuwEind=interventieResizeState.start;
+            if(nieuwEind===interventieResizeState.huidigEind)return;
+            interventieResizeState.huidigEind=nieuwEind;interventieResizeState.werkItem.eindDatum=nieuwEind;
             hertekenEnkeleInterventie(interventieResizeState.werkItem);
         }
-        function onInterventieResizeEnd() {
-            if (!interventieResizeState) return;
+        function onInterventieResizeEnd(){
+            if(!interventieResizeState)return;
             document.body.classList.remove('span-resizing');
-            document.removeEventListener('mousemove', onInterventieResizeMove);
-            document.removeEventListener('mouseup',   onInterventieResizeEnd);
-            var st = interventieResizeState;
-            interventieResizeState = null;
-            if (st.huidigEind === st.origEind) return;
-            t.get('board', 'shared', 'interventions', []).then(function(lijst) {
-                var arr = Array.isArray(lijst) ? lijst : [];
-                return t.set('board', 'shared', 'interventions', arr.map(function(i) {
-                    if (i.id === st.id) {
-                        if (st.huidigEind === i.datum) { delete i.eindDatum; }
-                        else { i.eindDatum = st.huidigEind; }
-                    }
-                    return i;
+            document.removeEventListener('mousemove',onInterventieResizeMove);document.removeEventListener('mouseup',onInterventieResizeEnd);
+            var st=interventieResizeState;interventieResizeState=null;
+            if(st.huidigEind===st.origEind)return;
+            t.get('board','shared','interventions',[]).then(function(lijst){
+                return t.set('board','shared','interventions',(Array.isArray(lijst)?lijst:[]).map(function(i){
+                    if(i.id===st.id){if(st.huidigEind===i.datum){delete i.eindDatum;}else{i.eindDatum=st.huidigEind;}}return i;
                 }));
             });
         }
 
         /* ── HOOFDLAADFUNCTIE ── */
-        function laadEnRenderAlles() {
-            berekenWeekDatums();
-            bouwLegende();
-            markeerActieveViewKnop();
-            trelloKaartCache = {};
-            placementCtx = {};
-            stackMap = {};
-            var pool       = document.getElementById('sidebar-pool');
-            var loadingMsg = document.getElementById('loading-msg');
-            var errorMsg   = document.getElementById('error-msg');
-            if (loadingMsg) loadingMsg.style.display = 'block';
-            if (errorMsg)   errorMsg.style.display   = 'none';
-            if (pool)       pool.innerHTML = '';
-            if (DEV_MODE) {
-                isAdmin = true;
-                toepassenAdminStatus();
-            } else {
-                t.member('username').then(function(member) {
-                    var username = (member && member.username) ? member.username.toLowerCase() : '';
-                    isAdmin = ADMIN_USERNAMES.indexOf(username) !== -1;
-                    toepassenAdminStatus();
-                }).catch(function() { isAdmin = false; toepassenAdminStatus(); });
-            }
+        function laadEnRenderAlles(){
+            berekenWeekDatums();bouwLegende();markeerActieveViewKnop();
+            trelloKaartCache={};placementCtx={};stackMap={};
+            var pool=document.getElementById('sidebar-pool');
+            var loadingMsg=document.getElementById('loading-msg');
+            var errorMsg=document.getElementById('error-msg');
+            if(loadingMsg)loadingMsg.style.display='block';
+            if(errorMsg)errorMsg.style.display='none';
+            if(pool)pool.innerHTML='';
+            if(DEV_MODE){isAdmin=true;toepassenAdminStatus();}
+            else{t.member('username').then(function(member){var u=(member&&member.username)?member.username.toLowerCase():'';isAdmin=ADMIN_USERNAMES.indexOf(u)!==-1;toepassenAdminStatus();}).catch(function(){isAdmin=false;toepassenAdminStatus();});}
             return Promise.all([
-                t.cards('id', 'name', 'members', 'address', 'desc', 'idList', 'url', 'labels', 'due', 'dueComplete'),
-                t.lists('id', 'name'),
-                t.get('board', 'shared', 'interventions', []),
-                t.get('board', 'shared', 'plannedCardIds', []),
-                t.get('board', 'shared', 'ploegen',       null),
-                t.get('board', 'shared', 'verlofItems',   [])
-            ])
-            .then(function(resultaten) {
-                var cards             = resultaten[0];
-                var lists             = resultaten[1];
-                var interventions     = resultaten[2];
-                var indexIds          = Array.isArray(resultaten[3]) ? resultaten[3] : [];
-                var opgeslagenPloegen = resultaten[4];
-                var verlofItems       = Array.isArray(resultaten[5]) ? resultaten[5] : [];
-                if (Array.isArray(opgeslagenPloegen) && opgeslagenPloegen.length > 0) {
-                    ploegen = opgeslagenPloegen.slice();
-                } else {
-                    ploegen = DEFAULT_PLOEGEN.slice();
-                    t.set('board', 'shared', 'ploegen', ploegen);
-                }
-                var verlofMigratieNodig = false;
-                verlofItems.forEach(function(v) {
-                    if (!v.startDatum && v.datum) {
-                        v.startDatum = v.datum;
-                        v.eindDatum  = v.eindDatum || v.datum;
-                        delete v.datum;
-                        verlofMigratieNodig = true;
-                    }
-                    if (!v.eindDatum && v.startDatum) { v.eindDatum = v.startDatum; verlofMigratieNodig = true; }
+                t.cards('id','name','members','address','desc','idList','url','labels','due','dueComplete'),
+                t.lists('id','name'),
+                t.get('board','shared','interventions',[]),
+                t.get('board','shared','plannedCardIds',[]),
+                t.get('board','shared','ploegen',null),
+                t.get('board','shared','verlofItems',[])
+            ]).then(function(resultaten){
+                var cards=resultaten[0],lists=resultaten[1],interventions=resultaten[2];
+                var indexIds=Array.isArray(resultaten[3])?resultaten[3]:[];
+                var opgeslagenPloegen=resultaten[4];
+                var verlofItems=Array.isArray(resultaten[5])?resultaten[5]:[];
+                if(Array.isArray(opgeslagenPloegen)&&opgeslagenPloegen.length>0){ploegen=opgeslagenPloegen.slice();}
+                else{ploegen=DEFAULT_PLOEGEN.slice();t.set('board','shared','ploegen',ploegen);}
+                var verlofMigratieNodig=false;
+                verlofItems.forEach(function(v){
+                    if(!v.startDatum&&v.datum){v.startDatum=v.datum;v.eindDatum=v.eindDatum||v.datum;delete v.datum;verlofMigratieNodig=true;}
+                    if(!v.eindDatum&&v.startDatum){v.eindDatum=v.startDatum;verlofMigratieNodig=true;}
                 });
-                if (verlofMigratieNodig) t.set('board', 'shared', 'verlofItems', verlofItems);
+                if(verlofMigratieNodig)t.set('board','shared','verlofItems',verlofItems);
                 bouwTabel();
-                if (loadingMsg) loadingMsg.style.display = 'none';
-                var archiefLijstIds = {};
-                lists.forEach(function(l) { if (isArchiefLijst(l.name)) archiefLijstIds[l.id] = true; });
-                var visibleById = {};
-                cards.forEach(function(c) { visibleById[c.id] = c; });
-                var alleIds = [];
-                var gezien  = {};
-                cards.forEach(function(c)  { if (!gezien[c.id]) { gezien[c.id] = true; alleIds.push(c.id); } });
-                indexIds.forEach(function(id) { if (!gezien[id]) { gezien[id] = true; alleIds.push(id); } });
-                var idPromises = alleIds.map(function(cardId) {
+                if(loadingMsg)loadingMsg.style.display='none';
+                var archiefLijstIds={};
+                lists.forEach(function(l){if(isArchiefLijst(l.name))archiefLijstIds[l.id]=true;});
+                var visibleById={};cards.forEach(function(c){visibleById[c.id]=c;});
+                var alleIds=[],gezien={};
+                cards.forEach(function(c){if(!gezien[c.id]){gezien[c.id]=true;alleIds.push(c.id);}});
+                indexIds.forEach(function(id){if(!gezien[id]){gezien[id]=true;alleIds.push(id);}});
+                var idPromises=alleIds.map(function(cardId){
                     return Promise.all([
-                        t.get(cardId, 'shared', 'placements',    null),
-                        t.get(cardId, 'shared', 'planning',      null),
-                        t.get(cardId, 'shared', 'infoPlaatsing', ''),
-                        t.get(cardId, 'shared', 'cardSnapshot',  null)
-                    ]).then(function(stored) {
-                        var placements   = stored[0];
-                        var cardSnapshot = stored[3];
-                        if (!Array.isArray(placements)) {
-                            var oud = stored[1];
-                            if (oud && oud.ploeg && oud.datum) {
-                                placements = [{
-                                    instanceId:    genInstanceId(cardId),
-                                    ploeg:         oud.ploeg,
-                                    datum:         oud.datum,
-                                    infoPlaatsing: stored[2] || ''
-                                }];
-                                t.set(cardId, 'shared', 'placements', placements);
-                            } else { placements = []; }
+                        t.get(cardId,'shared','placements',null),
+                        t.get(cardId,'shared','planning',null),
+                        t.get(cardId,'shared','infoPlaatsing',''),
+                        t.get(cardId,'shared','cardSnapshot',null)
+                    ]).then(function(stored){
+                        var placements=stored[0],cardSnapshot=stored[3];
+                        if(!Array.isArray(placements)){
+                            var oud=stored[1];
+                            if(oud&&oud.ploeg&&oud.datum){placements=[{instanceId:genInstanceId(cardId),ploeg:oud.ploeg,datum:oud.datum,infoPlaatsing:stored[2]||''}];t.set(cardId,'shared','placements',placements);}
+                            else{placements=[];}
                         }
-                        var migratieNodig = false;
-                        placements.forEach(function(p) {
-                            if (p.snapshot) {
-                                if (!cardSnapshot) {
-                                    var s = p.snapshot;
-                                    if (s.n !== undefined) { cardSnapshot = s; }
-                                    else {
-                                        cardSnapshot = {
-                                            n: s.name || '', a: s.address || '', u: s.url || '',
-                                            m: (s.members || []).map(function(m) { return m.username || m; })
-                                        };
-                                    }
-                                }
-                                delete p.snapshot;
-                                migratieNodig = true;
+                        var migratieNodig=false;
+                        placements.forEach(function(p){
+                            if(p.snapshot){
+                                if(!cardSnapshot){var s=p.snapshot;if(s.n!==undefined){cardSnapshot=s;}else{cardSnapshot={n:s.name||'',a:s.address||'',u:s.url||'',m:(s.members||[]).map(function(m){return m.username||m;})};}}
+                                delete p.snapshot;migratieNodig=true;
                             }
                         });
-                        return {
-                            cardId: cardId, placements: placements,
-                            cardSnapshot: cardSnapshot, migratieNodig: migratieNodig
-                        };
+                        return{cardId:cardId,placements:placements,cardSnapshot:cardSnapshot,migratieNodig:migratieNodig};
                     });
                 });
-                return Promise.all(idPromises).then(function(resultatenPerId) {
-                    var nieuweIndex = [];
-                    resultatenPerId.forEach(function(r) {
-                        var cardId       = r.cardId;
-                        var placements   = r.placements;
-                        var cardSnapshot = r.cardSnapshot;
-                        var migratieNodig = r.migratieNodig;
-                        var liveCard     = visibleById[cardId];
-                        var isZichtbaar    = !!liveCard;
-                        var inArchiefLijst = isZichtbaar && !!archiefLijstIds[liveCard.idList];
-                        var verbergUitZijbalk = (!isZichtbaar) || inArchiefLijst;
-                        if (placements.length > 0 && nieuweIndex.indexOf(cardId) === -1) nieuweIndex.push(cardId);
-                        if (isZichtbaar) {
-                            trelloKaartCache[cardId] = liveCard;
-                            var verseSnap = maakKaartSnapshot(liveCard);
-                            if (JSON.stringify(cardSnapshot) !== JSON.stringify(verseSnap)) {
-                                cardSnapshot = verseSnap;
-                                t.set(cardId, 'shared', 'cardSnapshot', cardSnapshot);
-                            }
+                return Promise.all(idPromises).then(function(resultatenPerId){
+                    var nieuweIndex=[];
+                    resultatenPerId.forEach(function(r){
+                        var cardId=r.cardId,placements=r.placements,cardSnapshot=r.cardSnapshot,migratieNodig=r.migratieNodig;
+                        var liveCard=visibleById[cardId],isZichtbaar=!!liveCard;
+                        var inArchiefLijst=isZichtbaar&&!!archiefLijstIds[liveCard.idList];
+                        var verbergUitZijbalk=(!isZichtbaar)||inArchiefLijst;
+                        if(placements.length>0&&nieuweIndex.indexOf(cardId)===-1)nieuweIndex.push(cardId);
+                        if(isZichtbaar){
+                            trelloKaartCache[cardId]=liveCard;
+                            var verseSnap=maakKaartSnapshot(liveCard);
+                            if(JSON.stringify(cardSnapshot)!==JSON.stringify(verseSnap)){cardSnapshot=verseSnap;t.set(cardId,'shared','cardSnapshot',cardSnapshot);}
                         }
-                        if (migratieNodig) {
-                            t.set(cardId, 'shared', 'placements', placements);
-                            if (cardSnapshot) t.set(cardId, 'shared', 'cardSnapshot', cardSnapshot);
-                        }
-                        if (isZichtbaar && !verbergUitZijbalk) {
-                            pool.appendChild(maakTrelloBronKaart(liveCard, placements.length));
-                        }
-                        placements.forEach(function(p) {
-                            if (!p.ploeg || !p.datum) return;
-                            var kaartData = isZichtbaar ? liveCard : snapshotNaarKaart(cardSnapshot || {});
-                            var openUrl   = isZichtbaar ? (liveCard.url || '')
-                                                        : ((cardSnapshot && (cardSnapshot.u || cardSnapshot.url)) || '');
-                            var ctx = {
-                                card: kaartData, kanTonen: isZichtbaar,
-                                url: openUrl, isArchief: verbergUitZijbalk, ploeg: p.ploeg
-                            };
-                            tekenPlacement(p, ctx);
+                        if(migratieNodig){t.set(cardId,'shared','placements',placements);if(cardSnapshot)t.set(cardId,'shared','cardSnapshot',cardSnapshot);}
+                        if(isZichtbaar&&!verbergUitZijbalk)pool.appendChild(maakTrelloBronKaart(liveCard,placements.length));
+                        placements.forEach(function(p){
+                            if(!p.ploeg||!p.datum)return;
+                            var kaartData=isZichtbaar?liveCard:snapshotNaarKaart(cardSnapshot||{});
+                            var openUrl=isZichtbaar?(liveCard.url||''):((cardSnapshot&&(cardSnapshot.u||cardSnapshot.url))||'');
+                            var ctx={card:kaartData,kanTonen:isZichtbaar,url:openUrl,isArchief:verbergUitZijbalk,ploeg:p.ploeg};
+                            tekenPlacement(p,ctx);
                         });
                     });
-                    if (JSON.stringify(nieuweIndex.slice().sort()) !== JSON.stringify(indexIds.slice().sort())) {
-                        t.set('board', 'shared', 'plannedCardIds', nieuweIndex);
-                    }
-                    interventions.forEach(function(int) { tekenInterventie(int); });
-                    verlofItems.forEach(function(v) { tekenVerlofItem(v); });
+                    if(JSON.stringify(nieuweIndex.slice().sort())!==JSON.stringify(indexIds.slice().sort()))t.set('board','shared','plannedCardIds',nieuweIndex);
+                    interventions.forEach(function(int){tekenInterventie(int);});
+                    verlofItems.forEach(function(v){tekenVerlofItem(v);});
                     herlayoutPloegRijen();
-                    var zoekVeld = document.getElementById('sidebar-search');
-                    if (zoekVeld) filterZijbalk(zoekVeld.value);
+                    var zoekVeld=document.getElementById('sidebar-search');
+                    if(zoekVeld)filterZijbalk(zoekVeld.value);
                 });
-            })
-            .catch(function(err) {
-                console.error('Fout bij laden kaarten:', err && err.message ? err.message : err);
-                if (loadingMsg) loadingMsg.style.display = 'none';
-                if (errorMsg)   errorMsg.style.display   = 'block';
+            }).catch(function(err){
+                console.error('Fout bij laden kaarten:',err&&err.message?err.message:err);
+                if(loadingMsg)loadingMsg.style.display='none';
+                if(errorMsg)errorMsg.style.display='block';
             });
         }
 
-        /* ── VIEW + ANKER LADEN BIJ OPSTART ── */
-        t.render(function() {
-            return Promise.all([
-                t.get('board', 'shared', 'viewMode', 'week'),
-                t.get('board', 'shared', 'ankerDatum', null)
-            ]).then(function(res) {
-                var opgeslagenView = res[0];
-                var opgeslagenAnker = res[1];
-                if (['week', 'multi', 'month'].indexOf(opgeslagenView) !== -1) {
-                    VIEW_MODUS = opgeslagenView;
-                }
-                document.body.dataset.view = VIEW_MODUS;
-                if (isISO(opgeslagenAnker)) {
-                    var p = opgeslagenAnker.split('-');
-                    ankerDatum = new Date(parseInt(p[0],10), parseInt(p[1],10)-1, parseInt(p[2],10));
-                    ankerDatum.setHours(0,0,0,0);
-                } else {
-                    ankerDatum = new Date();
-                    ankerDatum.setHours(0,0,0,0);
-                }
-                snapAnkerNaarPeriode();
-                return laadEnRenderAlles();
+        t.render(function(){
+            return Promise.all([t.get('board','shared','viewMode','week'),t.get('board','shared','ankerDatum',null)]).then(function(res){
+                var opgeslagenView=res[0],opgeslagenAnker=res[1];
+                if(['week','multi','month'].indexOf(opgeslagenView)!==-1)VIEW_MODUS=opgeslagenView;
+                document.body.dataset.view=VIEW_MODUS;
+                if(isISO(opgeslagenAnker)){var p=opgeslagenAnker.split('-');ankerDatum=new Date(parseInt(p[0],10),parseInt(p[1],10)-1,parseInt(p[2],10));ankerDatum.setHours(0,0,0,0);}
+                else{ankerDatum=new Date();ankerDatum.setHours(0,0,0,0);}
+                snapAnkerNaarPeriode();return laadEnRenderAlles();
             });
         });
 
-        /* ── HULPFUNCTIE: VELD BEWERKBAAR MAKEN ── */
-        function maakBewerkbaarVeld(veldEl, opslaanCallback) {
-            veldEl.contentEditable = false;
-            veldEl.addEventListener('click', function() {
-                if (!isAdmin) return;
-                if (veldEl.isContentEditable) return;
-                veldEl.contentEditable = true;
-                veldEl.focus();
-                var range = document.createRange();
-                range.selectNodeContents(veldEl);
-                range.collapse(false);
-                var sel = window.getSelection();
-                sel.removeAllRanges();
-                sel.addRange(range);
-            });
-            veldEl.addEventListener('blur', function() {
-                veldEl.contentEditable = false;
-                var txt = veldEl.innerText.trim();
-                if (!txt) { veldEl.innerHTML = ''; }
-                opslaanCallback(txt);
-            });
-            veldEl.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') {
-                    if (e.shiftKey) {
-                        e.preventDefault();
-                        if (document.queryCommandSupported && document.queryCommandSupported('insertLineBreak')) {
-                            document.execCommand('insertLineBreak');
-                        } else {
-                            var sel = window.getSelection();
-                            if (sel && sel.rangeCount > 0) {
-                                var range = sel.getRangeAt(0);
-                                range.deleteContents();
-                                var br = document.createElement('br');
-                                range.insertNode(br);
-                                range.setStartAfter(br);
-                                range.setEndAfter(br);
-                                sel.removeAllRanges();
-                                sel.addRange(range);
-                            }
-                        }
-                    } else { e.preventDefault(); veldEl.blur(); }
-                }
+        /* ── HULPFUNCTIE: VELD BEWERKBAAR ── */
+        function maakBewerkbaarVeld(veldEl,opslaanCallback){
+            veldEl.contentEditable=false;
+            veldEl.addEventListener('click',function(){if(!isAdmin)return;if(veldEl.isContentEditable)return;veldEl.contentEditable=true;veldEl.focus();var range=document.createRange();range.selectNodeContents(veldEl);range.collapse(false);var sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);});
+            veldEl.addEventListener('blur',function(){veldEl.contentEditable=false;var txt=veldEl.innerText.trim();if(!txt){veldEl.innerHTML='';}opslaanCallback(txt);});
+            veldEl.addEventListener('keydown',function(e){
+                if(e.key==='Enter'){if(e.shiftKey){e.preventDefault();if(document.queryCommandSupported&&document.queryCommandSupported('insertLineBreak')){document.execCommand('insertLineBreak');}else{var sel=window.getSelection();if(sel&&sel.rangeCount>0){var range=sel.getRangeAt(0);range.deleteContents();var br=document.createElement('br');range.insertNode(br);range.setStartAfter(br);range.setEndAfter(br);sel.removeAllRanges();sel.addRange(range);}}}else{e.preventDefault();veldEl.blur();}}
             });
         }
 
         /* ── GEDEELDE PROJECTINHOUD ── */
-        function vulTrelloBasis(bodyContainer, card) {
-            var titleEl = document.createElement('div');
-            titleEl.className = 'card-title';
-            titleEl.innerText = card.name;
-            bodyContainer.appendChild(titleEl);
-            if (card.address) {
-                var adresEl = document.createElement('div');
-                adresEl.className = 'card-address';
-                adresEl.innerText = '📍 ' + card.address;
-                bodyContainer.appendChild(adresEl);
-            }
-            if (card.desc) {
-                var extraFields = parseDescriptionFields(card.desc);
-                for (var label in extraFields) {
-                    if (label.indexOf('Adres') !== -1 && card.address) continue;
-                    var fieldEl = document.createElement('div');
-                    fieldEl.className = 'card-address';
-                    fieldEl.innerText = label + ': ' + extraFields[label];
-                    bodyContainer.appendChild(fieldEl);
+        function vulTrelloBasis(bodyContainer,card){
+            var titleEl=document.createElement('div');titleEl.className='card-title';titleEl.innerText=card.name;bodyContainer.appendChild(titleEl);
+            if(card.address){var adresEl=document.createElement('div');adresEl.className='card-address';adresEl.innerText='📍 '+card.address;bodyContainer.appendChild(adresEl);}
+            if(card.desc){
+                var extraFields=parseDescriptionFields(card.desc);
+                for(var label in extraFields){
+                    if(label.indexOf('Adres')!==-1&&card.address)continue;
+                    var fieldEl=document.createElement('div');fieldEl.className='card-address';fieldEl.innerText=label+': '+extraFields[label];bodyContainer.appendChild(fieldEl);
                 }
             }
         }
 
         /* ── KAART-INFO POPUP ── */
-        function koppelKaartOpenen(el, info) {
-            if (!info || (!info.cardId && !info.url)) return;
-            el.title = 'Klik voor kaartinfo — de planning blijft open';
-            el.addEventListener('click', function(e) {
-                if (e.target.closest('.card-info-placement, .card-address-editable, .card-controls, .span-resize-handle')) return;
-                var sel = window.getSelection();
-                if (sel && sel.toString().length > 0) return;
-                toonKaartPopup(info.kaartData || {}, info);
+        function koppelKaartOpenen(el,info){
+            if(!info||(!info.cardId&&!info.url))return;
+            el.title='Klik voor kaartinfo — de planning blijft open';
+            el.addEventListener('click',function(e){
+                if(e.target.closest('.card-info-placement, .card-address-editable, .card-controls, .span-resize-handle'))return;
+                var sel=window.getSelection();if(sel&&sel.toString().length>0)return;
+                toonKaartPopup(info.kaartData||{},info);
             });
         }
-        function sluitKaartPopup() {
-            var bestaand = document.getElementById('card-popup-overlay');
-            if (bestaand && bestaand.parentNode) bestaand.parentNode.removeChild(bestaand);
-        }
-        var TRELLO_LABEL_KLEUREN = {
-            green:'#61bd4f', yellow:'#f2d600', orange:'#ff9f1a', red:'#eb5a46',
-            purple:'#c377e0', blue:'#0079bf', sky:'#00c2e0', lime:'#51e898',
-            pink:'#ff78cb', black:'#344563'
-        };
-        function labelKleur(c) {
-            if (!c) return '#b3bac5';
-            var basis = String(c).split('_')[0];
-            return TRELLO_LABEL_KLEUREN[basis] || '#b3bac5';
-        }
-        function formatteerDatum(iso) {
-            if (!iso) return '';
-            var d = new Date(iso);
-            if (isNaN(d.getTime())) return '';
-            var dd = String(d.getDate()).padStart(2, '0');
-            var mm = String(d.getMonth() + 1).padStart(2, '0');
-            var hh = String(d.getHours()).padStart(2, '0');
-            var mi = String(d.getMinutes()).padStart(2, '0');
-            return dd + '/' + mm + '/' + d.getFullYear() + ' ' + hh + ':' + mi;
-        }
-        function toonKaartPopup(kaartData, info) {
+        function sluitKaartPopup(){var b=document.getElementById('card-popup-overlay');if(b&&b.parentNode)b.parentNode.removeChild(b);}
+        var TRELLO_LABEL_KLEUREN={green:'#61bd4f',yellow:'#f2d600',orange:'#ff9f1a',red:'#eb5a46',purple:'#c377e0',blue:'#0079bf',sky:'#00c2e0',lime:'#51e898',pink:'#ff78cb',black:'#344563'};
+        function labelKleur(c){if(!c)return'#b3bac5';return TRELLO_LABEL_KLEUREN[String(c).split('_')[0]]||'#b3bac5';}
+        function formatteerDatum(iso){if(!iso)return'';var d=new Date(iso);if(isNaN(d.getTime()))return'';return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
+        function toonKaartPopup(kaartData,info){
             sluitKaartPopup();
-            var overlay = document.createElement('div');
-            overlay.className = 'card-popup-overlay';
-            overlay.id        = 'card-popup-overlay';
-            overlay.addEventListener('click', function(e) { if (e.target === overlay) sluitKaartPopup(); });
-            function onEsc(ev) {
-                if (ev.key === 'Escape') { sluitKaartPopup(); document.removeEventListener('keydown', onEsc); }
-            }
-            document.addEventListener('keydown', onEsc);
-            var popup = document.createElement('div');
-            popup.className = 'card-popup';
-            var sluit = document.createElement('span');
-            sluit.className = 'card-popup-close';
-            sluit.innerHTML = '&times;';
-            sluit.title = 'Sluiten (terug naar planning)';
-            sluit.addEventListener('click', sluitKaartPopup);
-            popup.appendChild(sluit);
-            var stijl = bepaalTrelloKaartStijl(kaartData.members);
-            var bar = document.createElement('div');
-            bar.className = 'card-popup-color-bar';
-            bar.style.backgroundColor = stijl.bg;
-            popup.appendChild(bar);
-            var titel = document.createElement('div');
-            titel.className = 'card-popup-title';
-            titel.innerText = kaartData.name || '(naam onbekend)';
-            popup.appendChild(titel);
-            var ledenNamen = (kaartData.members || []).map(function(m) {
-                return m.fullName || m.username || m.initials || '';
-            }).filter(function(n) { return n; });
-            if (ledenNamen.length) {
-                var leden = document.createElement('div');
-                leden.className = 'card-popup-field';
-                leden.innerText = '👥 ' + ledenNamen.join(', ');
-                popup.appendChild(leden);
-            }
-            if (kaartData.labels && kaartData.labels.length) {
-                var labelWrap = document.createElement('div');
-                labelWrap.className = 'card-popup-labels';
-                kaartData.labels.forEach(function(lbl) {
-                    var chip = document.createElement('span');
-                    chip.className = 'card-popup-label';
-                    chip.style.backgroundColor = labelKleur(lbl.color);
-                    chip.innerText = lbl.name || (lbl.color || 'label');
-                    labelWrap.appendChild(chip);
-                });
-                popup.appendChild(labelWrap);
-            }
-            if (kaartData.due) {
-                var due = document.createElement('div');
-                due.className = 'card-popup-field';
-                due.innerText = '📅 Vervaldatum: ' + formatteerDatum(kaartData.due)
-                    + (kaartData.dueComplete ? ' ✓ voltooid' : '');
-                popup.appendChild(due);
-            }
-            var adresTekst = kaartData.address || '';
-            if (adresTekst) {
-                var adr = document.createElement('div');
-                adr.className = 'card-popup-field';
-                adr.innerText = '📍 ' + adresTekst;
-                popup.appendChild(adr);
-            }
-            if (kaartData.desc && kaartData.desc.trim()) {
-                var descLabel = document.createElement('div');
-                descLabel.className = 'card-popup-section-label';
-                descLabel.innerText = '📝 Omschrijving';
-                popup.appendChild(descLabel);
-                var descBlok = document.createElement('div');
-                descBlok.className = 'card-popup-desc';
-                descBlok.innerText = kaartData.desc;
-                popup.appendChild(descBlok);
-            } else if (!adresTekst && !ledenNamen.length) {
-                var leeg = document.createElement('div');
-                leeg.className = 'card-popup-field';
-                leeg.style.fontStyle = 'italic';
-                leeg.style.opacity = '0.7';
-                leeg.innerText = 'Geen extra info beschikbaar — open de volledige kaart voor alle details.';
-                popup.appendChild(leeg);
-            }
-            if (!info.kanTonen) {
-                var archiefNoot = document.createElement('div');
-                archiefNoot.className = 'card-popup-field';
-                archiefNoot.style.fontStyle = 'italic';
-                archiefNoot.style.opacity = '0.7';
-                archiefNoot.style.marginTop = '8px';
-                archiefNoot.innerText = '📦 Gearchiveerde kaart — beperkte momentopname.';
-                popup.appendChild(archiefNoot);
-            }
-            var btn = document.createElement('button');
-            btn.className = 'card-popup-open-btn';
-            btn.type = 'button';
-            btn.innerText = '📇 Volledige kaart openen in Trello';
-            btn.addEventListener('click', function() {
-                document.removeEventListener('keydown', onEsc);
-                sluitKaartPopup();
-                if (info.kanTonen && info.cardId) { t.showCard(info.cardId); }
-                else if (info.url) { t.navigate({ url: info.url }); }
-            });
+            var overlay=document.createElement('div');overlay.className='card-popup-overlay';overlay.id='card-popup-overlay';
+            overlay.addEventListener('click',function(e){if(e.target===overlay)sluitKaartPopup();});
+            function onEsc(ev){if(ev.key==='Escape'){sluitKaartPopup();document.removeEventListener('keydown',onEsc);}}
+            document.addEventListener('keydown',onEsc);
+            var popup=document.createElement('div');popup.className='card-popup';
+            var sluit=document.createElement('span');sluit.className='card-popup-close';sluit.innerHTML='&times;';sluit.title='Sluiten';sluit.addEventListener('click',sluitKaartPopup);popup.appendChild(sluit);
+            var stijl=bepaalTrelloKaartStijl(kaartData.members);
+            var bar=document.createElement('div');bar.className='card-popup-color-bar';bar.style.backgroundColor=stijl.bg;popup.appendChild(bar);
+            var titel=document.createElement('div');titel.className='card-popup-title';titel.innerText=kaartData.name||'(naam onbekend)';popup.appendChild(titel);
+            var ledenNamen=(kaartData.members||[]).map(function(m){return m.fullName||m.username||m.initials||'';}).filter(function(n){return n;});
+            if(ledenNamen.length){var leden=document.createElement('div');leden.className='card-popup-field';leden.innerText='👥 '+ledenNamen.join(', ');popup.appendChild(leden);}
+            if(kaartData.labels&&kaartData.labels.length){var labelWrap=document.createElement('div');labelWrap.className='card-popup-labels';kaartData.labels.forEach(function(lbl){var chip=document.createElement('span');chip.className='card-popup-label';chip.style.backgroundColor=labelKleur(lbl.color);chip.innerText=lbl.name||(lbl.color||'label');labelWrap.appendChild(chip);});popup.appendChild(labelWrap);}
+            if(kaartData.due){var due=document.createElement('div');due.className='card-popup-field';due.innerText='📅 Vervaldatum: '+formatteerDatum(kaartData.due)+(kaartData.dueComplete?' ✓ voltooid':'');popup.appendChild(due);}
+            if(kaartData.address){var adr=document.createElement('div');adr.className='card-popup-field';adr.innerText='📍 '+kaartData.address;popup.appendChild(adr);}
+            if(kaartData.desc&&kaartData.desc.trim()){var descLabel=document.createElement('div');descLabel.className='card-popup-section-label';descLabel.innerText='📝 Omschrijving';popup.appendChild(descLabel);var descBlok=document.createElement('div');descBlok.className='card-popup-desc';descBlok.innerText=kaartData.desc;popup.appendChild(descBlok);}
+            else if(!kaartData.address&&!ledenNamen.length){var leeg=document.createElement('div');leeg.className='card-popup-field';leeg.style.fontStyle='italic';leeg.style.opacity='0.7';leeg.innerText='Geen extra info beschikbaar.';popup.appendChild(leeg);}
+            if(!info.kanTonen){var an=document.createElement('div');an.className='card-popup-field';an.style.fontStyle='italic';an.style.opacity='0.7';an.style.marginTop='8px';an.innerText='📦 Gearchiveerde kaart — beperkte momentopname.';popup.appendChild(an);}
+            var btn=document.createElement('button');btn.className='card-popup-open-btn';btn.type='button';btn.innerText='📇 Volledige kaart openen in Trello';
+            btn.addEventListener('click',function(){document.removeEventListener('keydown',onEsc);sluitKaartPopup();if(info.kanTonen&&info.cardId){t.showCard(info.cardId);}else if(info.url){t.navigate({url:info.url});}});
             popup.appendChild(btn);
-            var hint = document.createElement('div');
-            hint.className = 'card-popup-hint';
-            hint.innerText = 'Sluit deze popup (Esc of ×) om verder te plannen — de planning blijft open.';
-            popup.appendChild(hint);
-            overlay.appendChild(popup);
-            document.body.appendChild(overlay);
+            var hint=document.createElement('div');hint.className='card-popup-hint';hint.innerText='Sluit (Esc of ×) om verder te plannen.';popup.appendChild(hint);
+            overlay.appendChild(popup);document.body.appendChild(overlay);
         }
 
         /* ── BRON-KAART ── */
-        function maakTrelloBronKaart(card, aantalGepland) {
-            var el = document.createElement('div');
-            el.className = 'planning-card';
-            el.id        = card.id;
-            el.draggable = isAdmin;
-            el.dataset.rol = 'bron';
-            var body = document.createElement('div');
-            body.className = 'card-body';
-            vulTrelloBasis(body, card);
-            var badge = document.createElement('span');
-            badge.className = 'plan-badge';
-            body.appendChild(badge);
+        function maakTrelloBronKaart(card,aantalGepland){
+            var el=document.createElement('div');el.className='planning-card';el.id=card.id;el.draggable=isAdmin;el.dataset.rol='bron';
+            var body=document.createElement('div');body.className='card-body';vulTrelloBasis(body,card);
+            var badge=document.createElement('span');badge.className='plan-badge';body.appendChild(badge);
             el.appendChild(body);
-            var stijl = bepaalTrelloKaartStijl(card.members);
-            el.style.backgroundColor = stijl.bg;
-            el.style.color           = stijl.text;
-            el.addEventListener('dragstart', drag);
-            el.addEventListener('dragend',   dragEnd);
-            koppelKaartOpenen(el, { kaartData: card, kanTonen: true, cardId: card.id, url: card.url || '' });
-            zetBronBadge(el, aantalGepland);
+            var stijl=bepaalTrelloKaartStijl(card.members);el.style.backgroundColor=stijl.bg;el.style.color=stijl.text;
+            el.addEventListener('dragstart',drag);el.addEventListener('dragend',dragEnd);
+            koppelKaartOpenen(el,{kaartData:card,kanTonen:true,cardId:card.id,url:card.url||''});
+            zetBronBadge(el,aantalGepland);
             return el;
         }
-        function zetBronBadge(el, count) {
-            if (!el) return;
-            var badge = el.querySelector('.plan-badge');
-            if (!badge) return;
-            if (count > 0) { badge.innerText = '📌 ' + count + '× ingepland'; badge.style.display = 'inline-block'; }
-            else { badge.style.display = 'none'; }
-        }
-        function updateBronBadgeById(cardId, count) {
-            zetBronBadge(document.getElementById(cardId), count);
-        }
+        function zetBronBadge(el,count){if(!el)return;var badge=el.querySelector('.plan-badge');if(!badge)return;if(count>0){badge.innerText='📌 '+count+'× ingepland';badge.style.display='inline-block';}else{badge.style.display='none';}}
+        function updateBronBadgeById(cardId,count){zetBronBadge(document.getElementById(cardId),count);}
 
         /* ── INSTANTIE-KAART ── */
-        function maakTrelloInstantieKaart(card, placement, opts) {
-            opts = opts || {};
-            var el = document.createElement('div');
-            el.className = 'planning-card';
-            if (placement.zwevend) el.classList.add('zwevend');
-            el.id        = placement.instanceId;
-            el.dataset.instanceId = placement.instanceId;
-            el.draggable = isAdmin;
-            el.dataset.rol = 'instantie';
-            var body = document.createElement('div');
-            body.className = 'card-body';
-            vulTrelloBasis(body, card);
-            if (opts.isArchief) {
-                var tag = document.createElement('span');
-                tag.className = 'archief-tag';
-                tag.innerText = '📦 Archief';
-                body.appendChild(tag);
+        function maakTrelloInstantieKaart(card,placement,opts){
+            opts=opts||{};
+            var el=document.createElement('div');el.className='planning-card';if(placement.zwevend)el.classList.add('zwevend');
+            el.id=placement.instanceId;el.dataset.instanceId=placement.instanceId;el.draggable=isAdmin;el.dataset.rol='instantie';
+            var body=document.createElement('div');body.className='card-body';vulTrelloBasis(body,card);
+            if(opts.isArchief){var tag=document.createElement('span');tag.className='archief-tag';tag.innerText='📦 Archief';body.appendChild(tag);}
+            if(placement.zwevend){var zbadge=document.createElement('span');zbadge.className='zwevend-badge';zbadge.innerText='☁ Onzeker';body.appendChild(zbadge);}
+            var infoEl=document.createElement('div');infoEl.className='card-info-placement';infoEl.innerText=placement.infoPlaatsing||'';
+            maakBewerkbaarVeld(infoEl,function(txt){updateInstantieInfo(cardIdVanInstantie(placement.instanceId),placement.instanceId,txt);});
+            body.appendChild(infoEl);el.appendChild(body);
+            var stijl=bepaalTrelloKaartStijl(card.members);el.style.backgroundColor=stijl.bg;el.style.color=stijl.text;
+            el.addEventListener('dragstart',drag);el.addEventListener('dragend',dragEnd);
+            if(opts.metResize&&isAdmin&&opts.ctx){el.appendChild(maakResizeHandle(function(e){startPlacementResize(e,placement,opts.ctx);}));}
+            if(isAdmin&&opts.ctx){
+                var zwBtn=document.createElement('span');zwBtn.className='zwevend-toggle-btn'+(placement.zwevend?' actief':'');
+                zwBtn.title=placement.zwevend?'Markeer als zeker ingepland':'Markeer als onzeker (zwevend)';zwBtn.innerHTML='☁';
+                (function(p,ctx){zwBtn.addEventListener('click',function(e){e.stopPropagation();toggleZwevend(p,ctx);});})(placement,opts.ctx);
+                var controls=document.createElement('div');controls.className='card-controls';controls.appendChild(zwBtn);el.appendChild(controls);
             }
-            if (placement.zwevend) {
-                var zbadge = document.createElement('span');
-                zbadge.className = 'zwevend-badge';
-                zbadge.innerText = '☁ Onzeker';
-                body.appendChild(zbadge);
-            }
-            var infoEl = document.createElement('div');
-            infoEl.className = 'card-info-placement';
-            infoEl.innerText = placement.infoPlaatsing || '';
-            maakBewerkbaarVeld(infoEl, function(txt) {
-                updateInstantieInfo(cardIdVanInstantie(placement.instanceId), placement.instanceId, txt);
-            });
-            body.appendChild(infoEl);
-            el.appendChild(body);
-            var stijl = bepaalTrelloKaartStijl(card.members);
-            el.style.backgroundColor = stijl.bg;
-            el.style.color           = stijl.text;
-            el.addEventListener('dragstart', drag);
-            el.addEventListener('dragend',   dragEnd);
-            if (opts.metResize && isAdmin && opts.ctx) {
-                var handle = maakResizeHandle(function(e) { startPlacementResize(e, placement, opts.ctx); });
-                el.appendChild(handle);
-            }
-            if (isAdmin && opts.ctx) {
-                var zwBtn = document.createElement('span');
-                zwBtn.className = 'zwevend-toggle-btn' + (placement.zwevend ? ' actief' : '');
-                zwBtn.title = placement.zwevend ? 'Markeer als zeker ingepland' : 'Markeer als onzeker (zwevend)';
-                zwBtn.innerHTML = '☁';
-                (function(p, ctx) {
-                    zwBtn.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        toggleZwevend(p, ctx);
-                    });
-                })(placement, opts.ctx);
-                var controls = document.createElement('div');
-                controls.className = 'card-controls';
-                controls.appendChild(zwBtn);
-                el.appendChild(controls);
-            }
-            koppelKaartOpenen(el, {
-                kaartData: card, kanTonen: !!opts.kanTonen,
-                cardId: cardIdVanInstantie(placement.instanceId), url: opts.url || ''
-            });
+            koppelKaartOpenen(el,{kaartData:card,kanTonen:!!opts.kanTonen,cardId:cardIdVanInstantie(placement.instanceId),url:opts.url||''});
             return el;
         }
 
         /* ── INTERVENTIE-KAART ── */
-        function maakInterventieKaart(int, opts) {
-            opts = opts || {};
-            var id = int.id;
-            var el = document.createElement('div');
-            el.className = 'planning-card';
-            if (int.zwevend) el.classList.add('zwevend');
-            el.id        = id;
-            el.dataset.intId = id;
-            el.draggable = isAdmin;
-            el.dataset.rol = 'interventie';
-            var body = document.createElement('div');
-            body.className = 'card-body';
-            var titleEl = document.createElement('div');
-            titleEl.className = 'card-title';
-            titleEl.innerText = int.name;
-            maakBewerkbaarVeld(titleEl, function(txt) { updateInterventionText(id, txt); });
-            body.appendChild(titleEl);
-            var addressEl = document.createElement('div');
-            addressEl.className = 'card-address card-address-editable';
-            addressEl.innerText = int.address || '';
-            maakBewerkbaarVeld(addressEl, function(txt) { updateInterventionAddress(id, txt); });
-            body.appendChild(addressEl);
-            var infoEl = document.createElement('div');
-            infoEl.className = 'card-info-placement';
-            infoEl.innerText = int.infoPlaatsing || '';
-            maakBewerkbaarVeld(infoEl, function(txt) { updateInterventionInfo(id, txt); });
-            body.appendChild(infoEl);
-            if (int.zwevend) {
-                var izbadge = document.createElement('span');
-                izbadge.className = 'zwevend-badge';
-                izbadge.innerText = '☁ Onzeker';
-                body.appendChild(izbadge);
-            }
+        function maakInterventieKaart(int,opts){
+            opts=opts||{};
+            var id=int.id;
+            var el=document.createElement('div');el.className='planning-card';if(int.zwevend)el.classList.add('zwevend');
+            el.id=id;el.dataset.intId=id;el.draggable=isAdmin;el.dataset.rol='interventie';
+            var body=document.createElement('div');body.className='card-body';
+            var titleEl=document.createElement('div');titleEl.className='card-title';titleEl.innerText=int.name;
+            maakBewerkbaarVeld(titleEl,function(txt){updateInterventionText(id,txt);});body.appendChild(titleEl);
+            var addressEl=document.createElement('div');addressEl.className='card-address card-address-editable';addressEl.innerText=int.address||'';
+            maakBewerkbaarVeld(addressEl,function(txt){updateInterventionAddress(id,txt);});body.appendChild(addressEl);
+            var infoEl=document.createElement('div');infoEl.className='card-info-placement';infoEl.innerText=int.infoPlaatsing||'';
+            maakBewerkbaarVeld(infoEl,function(txt){updateInterventionInfo(id,txt);});body.appendChild(infoEl);
+            if(int.zwevend){var izbadge=document.createElement('span');izbadge.className='zwevend-badge';izbadge.innerText='☁ Onzeker';body.appendChild(izbadge);}
             el.appendChild(body);
-            var stijl = int.colorObj || CUSTOM_COLORS[0];
-            el.style.backgroundColor = stijl.bg;
-            el.style.color           = stijl.text;
-            if (isAdmin) {
-                var controls = document.createElement('div');
-                controls.className = 'card-controls';
-                var izwBtn = document.createElement('span');
-                izwBtn.className = 'zwevend-toggle-btn' + (int.zwevend ? ' actief' : '');
-                izwBtn.title = int.zwevend ? 'Markeer als zeker ingepland' : 'Markeer als onzeker (zwevend)';
-                izwBtn.innerHTML = '☁';
-                izwBtn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    toggleZwevendInterventie(id);
-                });
-                controls.appendChild(izwBtn);
-                var colorBtn = document.createElement('span');
-                colorBtn.className = 'color-btn';
-                colorBtn.innerHTML = '🎨';
-                colorBtn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    document.querySelectorAll('.color-picker-menu').forEach(function(m) { m.remove(); });
-                    var pickerMenu = document.createElement('div');
-                    pickerMenu.className = 'color-picker-menu';
-                    CUSTOM_COLORS.forEach(function(kleur) {
-                        var swatch = document.createElement('div');
-                        swatch.className = 'color-swatch';
-                        swatch.style.backgroundColor = kleur.bg;
-                        swatch.addEventListener('click', function(e2) {
-                            e2.stopPropagation();
-                            setInterventionColor(id, el, kleur);
-                            pickerMenu.remove();
-                        });
-                        pickerMenu.appendChild(swatch);
-                    });
-                    controls.appendChild(pickerMenu);
+            var stijl=int.colorObj||CUSTOM_COLORS[0];el.style.backgroundColor=stijl.bg;el.style.color=stijl.text;
+            if(isAdmin){
+                var controls=document.createElement('div');controls.className='card-controls';
+                var izwBtn=document.createElement('span');izwBtn.className='zwevend-toggle-btn'+(int.zwevend?' actief':'');
+                izwBtn.title=int.zwevend?'Markeer als zeker ingepland':'Markeer als onzeker (zwevend)';izwBtn.innerHTML='☁';
+                izwBtn.addEventListener('click',function(e){e.stopPropagation();toggleZwevendInterventie(id);});controls.appendChild(izwBtn);
+                var colorBtn=document.createElement('span');colorBtn.className='color-btn';colorBtn.innerHTML='🎨';
+                colorBtn.addEventListener('click',function(e){
+                    e.stopPropagation();document.querySelectorAll('.color-picker-menu').forEach(function(m){m.remove();});
+                    var pm=document.createElement('div');pm.className='color-picker-menu';
+                    CUSTOM_COLORS.forEach(function(kleur){var sw=document.createElement('div');sw.className='color-swatch';sw.style.backgroundColor=kleur.bg;sw.addEventListener('click',function(e2){e2.stopPropagation();setInterventionColor(id,el,kleur);pm.remove();});pm.appendChild(sw);});
+                    controls.appendChild(pm);
                 });
                 controls.appendChild(colorBtn);
-                var delBtn = document.createElement('span');
-                delBtn.className = 'delete-btn';
-                delBtn.innerHTML = '&times;';
-                delBtn.addEventListener('click', function(e) { e.stopPropagation(); verwijderInterventie(id); });
-                controls.appendChild(delBtn);
-                el.appendChild(controls);
+                var delBtn=document.createElement('span');delBtn.className='delete-btn';delBtn.innerHTML='&times;';
+                delBtn.addEventListener('click',function(e){e.stopPropagation();verwijderInterventie(id);});controls.appendChild(delBtn);el.appendChild(controls);
             }
-            el.addEventListener('dragstart', drag);
-            el.addEventListener('dragend',   dragEnd);
-            if (opts.metResize && isAdmin) {
-                var handle = maakResizeHandle(function(e) { startInterventieResize(e, int); });
-                el.appendChild(handle);
-            }
+            el.addEventListener('dragstart',drag);el.addEventListener('dragend',dragEnd);
+            if(opts.metResize&&isAdmin){el.appendChild(maakResizeHandle(function(e){startInterventieResize(e,int);}));}
             return el;
         }
 
         /* ── DATA OPSLAG ── */
-        function updateInstantieInfo(cardId, instanceId, tekst) {
-            t.get(cardId, 'shared', 'placements', []).then(function(lijst) {
-                var arr = Array.isArray(lijst) ? lijst : [];
-                return t.set(cardId, 'shared', 'placements',
-                    arr.map(function(p) { if (p.instanceId === instanceId) p.infoPlaatsing = tekst; return p; })
-                );
-            });
-        }
-        function updateInterventionText(id, tekst) {
-            t.get('board', 'shared', 'interventions', []).then(function(lijst) {
-                return t.set('board', 'shared', 'interventions',
-                    lijst.map(function(i) { if (i.id === id) i.name = tekst; return i; })
-                );
-            });
-        }
-        function updateInterventionAddress(id, adres) {
-            t.get('board', 'shared', 'interventions', []).then(function(lijst) {
-                return t.set('board', 'shared', 'interventions',
-                    lijst.map(function(i) { if (i.id === id) i.address = adres; return i; })
-                );
-            });
-        }
-        function updateInterventionInfo(id, tekst) {
-            t.get('board', 'shared', 'interventions', []).then(function(lijst) {
-                return t.set('board', 'shared', 'interventions',
-                    lijst.map(function(i) { if (i.id === id) i.infoPlaatsing = tekst; return i; })
-                );
-            });
-        }
-        function setInterventionColor(id, kaartEl, gekozenKleurObj) {
-            t.get('board', 'shared', 'interventions', []).then(function(lijst) {
-                var geupdatet = lijst.map(function(item) {
-                    if (item.id === id) { item.colorObj = gekozenKleurObj; }
-                    return item;
+        function updateInstantieInfo(cardId,instanceId,tekst){t.get(cardId,'shared','placements',[]).then(function(lijst){return t.set(cardId,'shared','placements',(Array.isArray(lijst)?lijst:[]).map(function(p){if(p.instanceId===instanceId)p.infoPlaatsing=tekst;return p;}));});}
+        function updateInterventionText(id,tekst){t.get('board','shared','interventions',[]).then(function(lijst){return t.set('board','shared','interventions',lijst.map(function(i){if(i.id===id)i.name=tekst;return i;}));});}
+        function updateInterventionAddress(id,adres){t.get('board','shared','interventions',[]).then(function(lijst){return t.set('board','shared','interventions',lijst.map(function(i){if(i.id===id)i.address=adres;return i;}));});}
+        function updateInterventionInfo(id,tekst){t.get('board','shared','interventions',[]).then(function(lijst){return t.set('board','shared','interventions',lijst.map(function(i){if(i.id===id)i.infoPlaatsing=tekst;return i;}));});}
+        function setInterventionColor(id,kaartEl,gekozenKleurObj){
+            t.get('board','shared','interventions',[]).then(function(lijst){
+                return t.set('board','shared','interventions',lijst.map(function(item){if(item.id===id)item.colorObj=gekozenKleurObj;return item;})).then(function(){
+                    if(kaartEl){kaartEl.style.backgroundColor=gekozenKleurObj.bg;kaartEl.style.color=gekozenKleurObj.text;}
+                    else{document.querySelectorAll('[data-int-id="'+id+'"]').forEach(function(seg){seg.style.backgroundColor=gekozenKleurObj.bg;seg.style.color=gekozenKleurObj.text;});}
                 });
-                return t.set('board', 'shared', 'interventions', geupdatet).then(function() {
-                    if (kaartEl) {
-                        kaartEl.style.backgroundColor = gekozenKleurObj.bg;
-                        kaartEl.style.color           = gekozenKleurObj.text;
-                    } else {
-                        document.querySelectorAll('[data-int-id="' + id + '"]').forEach(function(seg) {
-                            seg.style.backgroundColor = gekozenKleurObj.bg;
-                            seg.style.color           = gekozenKleurObj.text;
-                        });
-                    }
-                });
+            });
+        }
+        function toggleZwevendInterventie(id){
+            if(!isAdmin)return;
+            t.get('board','shared','interventions',[]).then(function(lijst){
+                var arr=Array.isArray(lijst)?lijst:[],gewijzigd=null;
+                arr=arr.map(function(i){if(i.id===id){i.zwevend=!i.zwevend;gewijzigd=i;}return i;});
+                return t.set('board','shared','interventions',arr).then(function(){return gewijzigd;});
+            }).then(function(int){if(!int)return;hertekenEnkeleInterventie(int);});
+        }
+
+        function voegDirecteInterventieToe(ploeg,datum){
+            if(!isAdmin)return;
+            var nieuw={id:'int-'+Date.now(),name:'Nieuwe interventie',ploeg:ploeg,datum:datum,members:[],address:'',infoPlaatsing:'',colorObj:CUSTOM_COLORS[0]};
+            t.get('board','shared','interventions',[]).then(function(lijst){var arr=Array.isArray(lijst)?lijst:[];arr.push(nieuw);return t.set('board','shared','interventions',arr);})
+            .then(function(){
+                tekenInterventie(nieuw);herlayoutPloegRijen();
+                var cardEl=document.getElementById(nieuw.id)||document.querySelector('[data-int-id="'+nieuw.id+'"]');
+                if(cardEl){var titleEl=cardEl.querySelector('.card-title');if(titleEl){titleEl.contentEditable=true;titleEl.focus();var range=document.createRange();range.selectNodeContents(titleEl);var sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);}}
             });
         }
 
-        /* ── ZWEVEND TOGGLE voor interventies ── */
-        function toggleZwevendInterventie(id) {
-            if (!isAdmin) return;
-            t.get('board', 'shared', 'interventions', []).then(function(lijst) {
-                var arr = Array.isArray(lijst) ? lijst : [];
-                var gewijzigd = null;
-                arr = arr.map(function(i) {
-                    if (i.id === id) { i.zwevend = !i.zwevend; gewijzigd = i; }
-                    return i;
-                });
-                return t.set('board', 'shared', 'interventions', arr).then(function() { return gewijzigd; });
-            }).then(function(int) {
-                if (!int) return;
-                hertekenEnkeleInterventie(int);
-            });
-        }
-
-        function voegDirecteInterventieToe(ploeg, datum) {
-            if (!isAdmin) return;
-            var nieuw = {
-                id: 'int-' + Date.now(), name: 'Nieuwe interventie',
-                ploeg: ploeg, datum: datum, members: [],
-                address: '', infoPlaatsing: '', colorObj: CUSTOM_COLORS[0]
-            };
-            t.get('board', 'shared', 'interventions', [])
-            .then(function(lijst) {
-                var arr = Array.isArray(lijst) ? lijst : [];
-                arr.push(nieuw);
-                return t.set('board', 'shared', 'interventions', arr);
-            })
-            .then(function() {
-                tekenInterventie(nieuw);
-                herlayoutPloegRijen();
-                var cardEl = document.getElementById(nieuw.id)
-                    || document.querySelector('[data-int-id="' + nieuw.id + '"]');
-                if (cardEl) {
-                    var titleEl = cardEl.querySelector('.card-title');
-                    if (titleEl) {
-                        titleEl.contentEditable = true;
-                        titleEl.focus();
-                        var range = document.createRange();
-                        range.selectNodeContents(titleEl);
-                        var sel = window.getSelection();
-                        sel.removeAllRanges();
-                        sel.addRange(range);
-                    }
-                }
-            });
-        }
-
-        function verwijderInterventie(id) {
-            if (!isAdmin) return;
-            t.get('board', 'shared', 'interventions', []).then(function(lijst) {
-                var gefilterd = lijst.filter(function(i) { return i.id !== id; });
-                return t.set('board', 'shared', 'interventions', gefilterd);
-            }).then(function() {
-                document.querySelectorAll('[data-int-id="' + id + '"]').forEach(function(el) {
-                    if (el.parentNode) el.parentNode.removeChild(el);
-                });
-                var los = document.getElementById(id);
-                if (los && los.parentNode) los.parentNode.removeChild(los);
-                stapelVrijgeven(id);
-                herlayoutPloegRijen();
+        function verwijderInterventie(id){
+            if(!isAdmin)return;
+            t.get('board','shared','interventions',[]).then(function(lijst){return t.set('board','shared','interventions',lijst.filter(function(i){return i.id!==id;}));})
+            .then(function(){
+                document.querySelectorAll('[data-int-id="'+id+'"]').forEach(function(el){if(el.parentNode)el.parentNode.removeChild(el);});
+                var los=document.getElementById(id);if(los&&los.parentNode)los.parentNode.removeChild(los);
+                stapelVrijgeven(id);herlayoutPloegRijen();
             });
         }
 
         /* ── DRAG AND DROP ── */
-        function allowDrop(e) {
-            if (!isAdmin) return;
-            var dragType = document.body.dataset.dragType || '';
-            var zoneIsVerlof = (this.dataset.rowType === 'verlof');
-            if (dragType === 'verlof' && !zoneIsVerlof) return;
-            if (dragType && dragType !== 'verlof' && zoneIsVerlof) return;
-            e.preventDefault();
-            this.classList.add('dragover');
+        function allowDrop(e){
+            if(!isAdmin)return;
+            var dragType=document.body.dataset.dragType||'';
+            var zoneIsVerlof=(this.dataset.rowType==='verlof');
+            if(dragType==='verlof'&&!zoneIsVerlof)return;
+            if(dragType&&dragType!=='verlof'&&zoneIsVerlof)return;
+            e.preventDefault();this.classList.add('dragover');
         }
-        function dragLeave(e) { this.classList.remove('dragover'); }
-        function drag(e) {
-            if (!isAdmin) { e.preventDefault(); return; }
-            var rol = e.currentTarget.dataset.rol || '';
-            document.body.dataset.dragType = rol;
+        function dragLeave(e){this.classList.remove('dragover');}
+        function drag(e){
+            if(!isAdmin){e.preventDefault();return;}
+            var rol=e.currentTarget.dataset.rol||'';
+            document.body.dataset.dragType=rol;
             var transferId;
-            if (rol === 'verlof' && e.currentTarget.dataset.verlofId) {
-                transferId = e.currentTarget.dataset.verlofId;
-            } else if (rol === 'instantie' && e.currentTarget.dataset.instanceId) {
-                transferId = e.currentTarget.dataset.instanceId;
-            } else if (rol === 'interventie' && e.currentTarget.dataset.intId) {
-                transferId = e.currentTarget.dataset.intId;
-            } else {
-                transferId = e.currentTarget.id;
-            }
-            e.dataTransfer.setData("text", transferId);
+            if(rol==='verlof'&&e.currentTarget.dataset.verlofId)transferId=e.currentTarget.dataset.verlofId;
+            else if(rol==='instantie'&&e.currentTarget.dataset.instanceId)transferId=e.currentTarget.dataset.instanceId;
+            else if(rol==='interventie'&&e.currentTarget.dataset.intId)transferId=e.currentTarget.dataset.intId;
+            else transferId=e.currentTarget.id;
+            e.dataTransfer.setData("text",transferId);
         }
-        function dragEnd(e) { delete document.body.dataset.dragType; }
+        function dragEnd(e){delete document.body.dataset.dragType;}
 
-        function drop(e) {
-            if (!isAdmin) return;
-            e.preventDefault();
-            this.classList.remove('dragover');
-            delete document.body.dataset.dragType;
-            var doelZone = this;
-            var id       = e.dataTransfer.getData("text");
-            if (!id) return;
-            var doelPloeg    = doelZone.dataset.ploeg;
-            var doelDatum    = doelZone.dataset.datum;
-            var doelRowType  = doelZone.dataset.rowType || '';
-            var naarZijbalk  = !doelPloeg;
+        function drop(e){
+            if(!isAdmin)return;
+            e.preventDefault();this.classList.remove('dragover');delete document.body.dataset.dragType;
+            var doelZone=this,id=e.dataTransfer.getData("text");
+            if(!id)return;
+            var doelPloeg=doelZone.dataset.ploeg,doelDatum=doelZone.dataset.datum,doelRowType=doelZone.dataset.rowType||'';
+            var naarZijbalk=!doelPloeg;
             var soort;
-            if (id.indexOf('verlof-') === 0)   soort = 'verlof';
-            else if (id.indexOf('int-') === 0) soort = 'interventie';
-            else if (id.indexOf('::') !== -1)  soort = 'instantie';
-            else                               soort = 'bron';
+            if(id.indexOf('verlof-')===0)soort='verlof';
+            else if(id.indexOf('int-')===0)soort='interventie';
+            else if(id.indexOf('::')!==-1)soort='instantie';
+            else soort='bron';
 
-            /* ── VERLOF ── */
-            if (soort === 'verlof') {
-                if (naarZijbalk || doelRowType !== 'verlof') return;
-                t.get('board', 'shared', 'verlofItems', []).then(function(lijst) {
-                    var arr = Array.isArray(lijst) ? lijst : [];
-                    var item = null;
-                    arr.forEach(function(v) { if (v.id === id) item = v; });
-                    if (!item) return;
-                    var oudeStart = item.startDatum || item.datum;
-                    var oudeEind  = item.eindDatum  || oudeStart;
-                    if (oudeStart === doelDatum) return;
-                    var rangeLengte = aantalDagenTussen(oudeStart, oudeEind);
-                    item.startDatum = doelDatum;
-                    item.eindDatum  = voegDagenToe(doelDatum, rangeLengte);
-                    delete item.datum;
-                    return t.set('board', 'shared', 'verlofItems', arr).then(function() {
-                        hertekenEnkelVerlofItem(item);
-                    });
+            if(soort==='verlof'){
+                if(naarZijbalk||doelRowType!=='verlof')return;
+                t.get('board','shared','verlofItems',[]).then(function(lijst){
+                    var arr=Array.isArray(lijst)?lijst:[],item=null;
+                    arr.forEach(function(v){if(v.id===id)item=v;});
+                    if(!item)return;
+                    var oudeStart=item.startDatum||item.datum,oudeEind=item.eindDatum||oudeStart;
+                    if(oudeStart===doelDatum)return;
+                    var rangeLengte=aantalDagenTussen(oudeStart,oudeEind);
+                    item.startDatum=doelDatum;item.eindDatum=voegDagenToe(doelDatum,rangeLengte);delete item.datum;
+                    return t.set('board','shared','verlofItems',arr).then(function(){hertekenEnkelVerlofItem(item);});
                 });
                 return;
             }
-            if (doelRowType === 'verlof' && soort !== 'verlof') return;
+            if(doelRowType==='verlof'&&soort!=='verlof')return;
 
-            /* ── TRELLO-INSTANTIE ── */
-            if (soort === 'instantie') {
-                var cardId = cardIdVanInstantie(id);
-                var ctx = placementCtx[id];
-                if (naarZijbalk) {
-                    document.querySelectorAll('[data-instance-id="' + id + '"]').forEach(function(el) {
-                        if (el.parentNode) el.parentNode.removeChild(el);
-                    });
+            if(soort==='instantie'){
+                var cardId=cardIdVanInstantie(id),ctx=placementCtx[id];
+                if(naarZijbalk){
+                    document.querySelectorAll('[data-instance-id="'+id+'"]').forEach(function(el){if(el.parentNode)el.parentNode.removeChild(el);});
                     stapelVrijgeven(id);
-                    t.get(cardId, 'shared', 'placements', []).then(function(lijst) {
-                        var arr = (Array.isArray(lijst) ? lijst : []).filter(function(p) { return p.instanceId !== id; });
-                        return t.set(cardId, 'shared', 'placements', arr).then(function() { return arr.length; });
-                    }).then(function(aantal) {
-                        updateBronBadgeById(cardId, aantal);
-                        if (aantal === 0) verwijderCardUitIndex(cardId);
-                    });
+                    t.get(cardId,'shared','placements',[]).then(function(lijst){
+                        var arr=(Array.isArray(lijst)?lijst:[]).filter(function(p){return p.instanceId!==id;});
+                        return t.set(cardId,'shared','placements',arr).then(function(){return arr.length;});
+                    }).then(function(aantal){updateBronBadgeById(cardId,aantal);if(aantal===0)verwijderCardUitIndex(cardId);});
                     return;
                 }
-                t.get(cardId, 'shared', 'placements', []).then(function(lijst) {
-                    var arr = Array.isArray(lijst) ? lijst : [];
-                    var doelP = null;
-                    arr = arr.map(function(p) {
-                        if (p.instanceId === id) {
-                            var oudStart = p.datum;
-                            var oudEind  = p.eindDatum || p.datum;
-                            var len = aantalDagenTussen(oudStart, oudEind);
-                            p.ploeg = doelPloeg;
-                            p.datum = doelDatum;
-                            if (len > 0) { p.eindDatum = voegDagenToe(doelDatum, len); }
-                            else { delete p.eindDatum; }
-                            doelP = p;
-                        }
-                        return p;
+                t.get(cardId,'shared','placements',[]).then(function(lijst){
+                    var arr=Array.isArray(lijst)?lijst:[],doelP=null;
+                    arr=arr.map(function(p){
+                        if(p.instanceId===id){
+                            var oudStart=p.datum,oudEind=p.eindDatum||p.datum,len=aantalDagenTussen(oudStart,oudEind);
+                            p.ploeg=doelPloeg;p.datum=doelDatum;
+                            if(len>0){p.eindDatum=voegDagenToe(doelDatum,len);}else{delete p.eindDatum;}
+                            doelP=p;
+                        }return p;
                     });
-                    return t.set(cardId, 'shared', 'placements', arr).then(function() { return doelP; });
-                }).then(function(doelP) {
-                    if (!doelP) return;
-                    if (ctx) { ctx.ploeg = doelPloeg; }
-                    else {
-                        var liveCard = trelloKaartCache[cardId];
-                        if (liveCard) {
-                            ctx = {
-                                card: liveCard, kanTonen: true, url: liveCard.url || '',
-                                isArchief: false, ploeg: doelPloeg
-                            };
-                            hertekenEnkelPlacement(doelP, ctx);
-                        } else {
-                            t.get(cardId, 'shared', 'cardSnapshot', null).then(function(snap) {
-                                ctx = {
-                                    card: snapshotNaarKaart(snap || {}), kanTonen: false,
-                                    url: (snap && (snap.u || snap.url)) || '',
-                                    isArchief: true, ploeg: doelPloeg
-                                };
-                                hertekenEnkelPlacement(doelP, ctx);
-                            });
-                        }
+                    return t.set(cardId,'shared','placements',arr).then(function(){return doelP;});
+                }).then(function(doelP){
+                    if(!doelP)return;
+                    if(ctx){ctx.ploeg=doelPloeg;}
+                    else{
+                        var liveCard=trelloKaartCache[cardId];
+                        if(liveCard){ctx={card:liveCard,kanTonen:true,url:liveCard.url||'',isArchief:false,ploeg:doelPloeg};hertekenEnkelPlacement(doelP,ctx);}
+                        else{t.get(cardId,'shared','cardSnapshot',null).then(function(snap){ctx={card:snapshotNaarKaart(snap||{}),kanTonen:false,url:(snap&&(snap.u||snap.url))||'',isArchief:true,ploeg:doelPloeg};hertekenEnkelPlacement(doelP,ctx);});}
                         return;
                     }
-                    hertekenEnkelPlacement(doelP, ctx);
+                    hertekenEnkelPlacement(doelP,ctx);
                 });
                 return;
             }
 
-            /* ── BRON-KAART → nieuwe instantie ── */
-            if (soort === 'bron') {
-                if (naarZijbalk) return;
-                var card = trelloKaartCache[id];
-                if (!card) return;
-                var nieuwePlacement = {
-                    instanceId:    genInstanceId(id),
-                    ploeg:         doelPloeg,
-                    datum:         doelDatum,
-                    infoPlaatsing: ''
-                };
-                t.set(id, 'shared', 'cardSnapshot', maakKaartSnapshot(card));
-                t.get(id, 'shared', 'placements', []).then(function(lijst) {
-                    var arr = Array.isArray(lijst) ? lijst : [];
-                    arr.push(nieuwePlacement);
-                    return t.set(id, 'shared', 'placements', arr).then(function() { return arr.length; });
-                }).then(function(aantal) {
-                    var ctx = { card: card, kanTonen: true, url: card.url || '', isArchief: false, ploeg: doelPloeg };
-                    tekenPlacement(nieuwePlacement, ctx);
-                    herlayoutPloegRijen();
-                    updateBronBadgeById(id, aantal);
-                    voegCardToeAanIndex(id);
+            if(soort==='bron'){
+                if(naarZijbalk)return;
+                var card=trelloKaartCache[id];if(!card)return;
+                var nieuwePlacement={instanceId:genInstanceId(id),ploeg:doelPloeg,datum:doelDatum,infoPlaatsing:''};
+                t.set(id,'shared','cardSnapshot',maakKaartSnapshot(card));
+                t.get(id,'shared','placements',[]).then(function(lijst){
+                    var arr=Array.isArray(lijst)?lijst:[];arr.push(nieuwePlacement);
+                    return t.set(id,'shared','placements',arr).then(function(){return arr.length;});
+                }).then(function(aantal){
+                    var ctx={card:card,kanTonen:true,url:card.url||'',isArchief:false,ploeg:doelPloeg};
+                    tekenPlacement(nieuwePlacement,ctx);herlayoutPloegRijen();updateBronBadgeById(id,aantal);voegCardToeAanIndex(id);
                 });
                 return;
             }
 
-            /* ── INTERVENTIE ── */
-            if (soort === 'interventie') {
-                if (naarZijbalk) {
-                    document.querySelectorAll('[data-int-id="' + id + '"]').forEach(function(el) {
-                        if (el.parentNode) el.parentNode.removeChild(el);
-                    });
-                    var losEl = document.getElementById(id);
-                    if (losEl && losEl.parentNode) losEl.parentNode.removeChild(losEl);
+            if(soort==='interventie'){
+                if(naarZijbalk){
+                    document.querySelectorAll('[data-int-id="'+id+'"]').forEach(function(el){if(el.parentNode)el.parentNode.removeChild(el);});
+                    var losEl=document.getElementById(id);if(losEl&&losEl.parentNode)losEl.parentNode.removeChild(losEl);
                     stapelVrijgeven(id);
-                    t.get('board', 'shared', 'interventions', []).then(function(lijst) {
-                        var arr = Array.isArray(lijst) ? lijst : [];
-                        var doelInt = null;
-                        arr = arr.map(function(item) {
-                            if (item.id === id) { item.ploeg = null; item.datum = null; delete item.eindDatum; doelInt = item; }
-                            return item;
-                        });
-                        return t.set('board', 'shared', 'interventions', arr).then(function() { return doelInt; });
-                    }).then(function(doelInt) {
-                        if (doelInt) tekenInterventie(doelInt);
-                        herlayoutPloegRijen();
-                        var zoekVeldA = document.getElementById('sidebar-search');
-                        if (zoekVeldA) filterZijbalk(zoekVeldA.value);
+                    t.get('board','shared','interventions',[]).then(function(lijst){
+                        var arr=Array.isArray(lijst)?lijst:[],doelInt=null;
+                        arr=arr.map(function(item){if(item.id===id){item.ploeg=null;item.datum=null;delete item.eindDatum;doelInt=item;}return item;});
+                        return t.set('board','shared','interventions',arr).then(function(){return doelInt;});
+                    }).then(function(doelInt){
+                        if(doelInt)tekenInterventie(doelInt);herlayoutPloegRijen();
+                        var z=document.getElementById('sidebar-search');if(z)filterZijbalk(z.value);
                     });
                     return;
                 }
-                t.get('board', 'shared', 'interventions', []).then(function(lijst) {
-                    var arr = Array.isArray(lijst) ? lijst : [];
-                    var doelInt = null;
-                    arr = arr.map(function(item) {
-                        if (item.id === id) {
-                            var oudStart = item.datum;
-                            var oudEind  = item.eindDatum || item.datum;
-                            var len = (oudStart ? aantalDagenTussen(oudStart, oudEind) : 0);
-                            item.ploeg = doelPloeg;
-                            item.datum = doelDatum;
-                            if (len > 0) { item.eindDatum = voegDagenToe(doelDatum, len); }
-                            else { delete item.eindDatum; }
-                            doelInt = item;
-                        }
-                        return item;
+                t.get('board','shared','interventions',[]).then(function(lijst){
+                    var arr=Array.isArray(lijst)?lijst:[],doelInt=null;
+                    arr=arr.map(function(item){
+                        if(item.id===id){
+                            var oudStart=item.datum,oudEind=item.eindDatum||item.datum,len=(oudStart?aantalDagenTussen(oudStart,oudEind):0);
+                            item.ploeg=doelPloeg;item.datum=doelDatum;
+                            if(len>0){item.eindDatum=voegDagenToe(doelDatum,len);}else{delete item.eindDatum;}
+                            doelInt=item;
+                        }return item;
                     });
-                    return t.set('board', 'shared', 'interventions', arr).then(function() { return doelInt; });
-                }).then(function(doelInt) {
-                    if (doelInt) hertekenEnkeleInterventie(doelInt);
-                });
+                    return t.set('board','shared','interventions',arr).then(function(){return doelInt;});
+                }).then(function(doelInt){if(doelInt)hertekenEnkeleInterventie(doelInt);});
                 return;
             }
         }
 
-        var poolEl = document.getElementById('sidebar-pool');
-        poolEl.addEventListener('dragover', function(e) {
-            if (!isAdmin) return;
-            var dragType = document.body.dataset.dragType || '';
-            if (dragType === 'verlof') return;
-            e.preventDefault();
-            poolEl.classList.add('dragover');
-        });
-        poolEl.addEventListener('dragleave', function() { poolEl.classList.remove('dragover'); });
-        poolEl.addEventListener('drop', function(e) {
-            if (!isAdmin) return;
-            var dragType = document.body.dataset.dragType || '';
-            if (dragType === 'verlof') {
-                poolEl.classList.remove('dragover');
-                delete document.body.dataset.dragType;
-                return;
-            }
-            drop.call(poolEl, e);
+        var poolEl=document.getElementById('sidebar-pool');
+        poolEl.addEventListener('dragover',function(e){if(!isAdmin)return;if((document.body.dataset.dragType||'')==='verlof')return;e.preventDefault();poolEl.classList.add('dragover');});
+        poolEl.addEventListener('dragleave',function(){poolEl.classList.remove('dragover');});
+        poolEl.addEventListener('drop',function(e){
+            if(!isAdmin)return;
+            if((document.body.dataset.dragType||'')==='verlof'){poolEl.classList.remove('dragover');delete document.body.dataset.dragType;return;}
+            drop.call(poolEl,e);
         });
 
-        var searchInput = document.getElementById('sidebar-search');
-        if (searchInput) {
-            searchInput.addEventListener('input', function() { filterZijbalk(this.value); });
-        }
-        document.addEventListener('focusout', function(e) {
-            var t2 = e.target;
-            if (t2 && t2.closest && t2.closest('.dropzone[data-row-type="ploeg"]')) {
-                setTimeout(herlayoutPloegRijen, 0);
-            }
-        });
+        var searchInput=document.getElementById('sidebar-search');
+        if(searchInput)searchInput.addEventListener('input',function(){filterZijbalk(this.value);});
+        document.addEventListener('focusout',function(e){var t2=e.target;if(t2&&t2.closest&&t2.closest('.dropzone[data-row-type="ploeg"]'))setTimeout(herlayoutPloegRijen,0);});
     </script>
 </body>
 </html>
