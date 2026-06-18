@@ -801,7 +801,7 @@
                 </div>
                 <div class="view-switcher" id="view-switcher">
                     <button type="button" class="view-switch-btn" data-view-mode="week">Week</button>
-                    <button type="button" class="view-switch-btn" data-view-mode="multi">2-3 weken</button>
+                    <button type="button" class="view-switch-btn" data-view-mode="multi">2 weken</button>
                     <button type="button" class="view-switch-btn" data-view-mode="month">Maand</button>
                 </div>
                 <div class="print-btn-group" id="print-btn-group" title="Afdrukken">
@@ -1051,7 +1051,7 @@
                 d.setMonth(d.getMonth() + richting);
                 d = new Date(d.getFullYear(), d.getMonth(), 1);
             } else {
-                var stap = (VIEW_MODUS === 'multi') ? 21 : 7;
+                var stap = (VIEW_MODUS === 'multi') ? 14 : 7;
                 d.setDate(d.getDate() + richting * stap);
             }
             d.setHours(0, 0, 0, 0);
@@ -1220,7 +1220,7 @@
             if (VIEW_MODUS === 'month') {
                 aantalDagen = new Date(startDatum.getFullYear(), startDatum.getMonth() + 1, 0).getDate();
             } else {
-                aantalDagen = (VIEW_MODUS === 'multi') ? 21 : 7;
+                aantalDagen = (VIEW_MODUS === 'multi') ? 14 : 7;
             }
             for (var i = 0; i < aantalDagen; i++) {
                 var d = new Date(startDatum);
@@ -1364,7 +1364,7 @@
                     delPloegBtn.addEventListener('click', function(e) {
                         e.stopPropagation(); if (!isAdmin) return; verwijderPloeg(naam, rijElement);
                     });
-                })(ploeg, tr);
+                })(ploeg, tdPloeg);
                 wrap.appendChild(delPloegBtn);
                 tdPloeg.appendChild(wrap);
                 tr.appendChild(tdPloeg);
@@ -1519,7 +1519,9 @@
                     toonPloegMelding(rijElement, 'Deze ploeg bevat nog interventies. Verwijder of verplaats ze eerst.'); return;
                 }
                 var ids = Array.isArray(r[1]) ? r[1] : [];
-                return Promise.all(ids.map(function(cid) { return t.get(cid, 'shared', 'placements', []); }))
+                return Promise.all(ids.map(function(cid) {
+                    return t.get(cid, 'shared', 'placements', []).catch(function() { return []; });
+                }))
                 .then(function(allePlacements) {
                     if (allePlacements.some(function(plist) {
                         return (Array.isArray(plist)?plist:[]).some(function(p) { return p.ploeg === naam; });
@@ -1528,6 +1530,9 @@
                     ploegen = ploegen.filter(function(p) { return p !== naam; });
                     return t.set('board', 'shared', 'ploegen', ploegen).then(laadEnRenderAlles);
                 });
+            }).catch(function(err) {
+                toonPloegMelding(rijElement, 'Kon ploeg niet verwijderen — probeer opnieuw.');
+                console.error('verwijderPloeg fout:', err);
             });
         }
 
@@ -2410,9 +2415,9 @@
 
         /* Standaardwaarden per view */
         var INST_DEFAULTS = {
-            week:  { weekdag: 150, weekend: 100, ploegKol: 130 },
-            multi: { weekdag: 120, weekend:  80, ploegKol: 130 },
-            month: { weekdag: 100, weekend:  67, ploegKol: 130 }
+            week:  { weekdag: 150, weekend: 100, ploegKol: 130, tekstGrootte: 13 },
+            multi: { weekdag: 120, weekend:  80, ploegKol: 130, tekstGrootte: 12 },
+            month: { weekdag: 100, weekend:  67, ploegKol: 130, tekstGrootte: 10 }
         };
 
         /* Huidige instellingen (gevuld bij laden) */
@@ -2436,6 +2441,16 @@
                 css += 'body[data-view="' + v + '"] .col-dag { min-width:' + s.weekdag + 'px; width:' + s.weekdag + 'px; }\n';
                 css += 'body[data-view="' + v + '"] .col-dag.is-weekend { min-width:' + s.weekend + 'px; width:' + s.weekend + 'px; }\n';
                 css += 'body[data-view="' + v + '"] .col-ploeg { width:' + s.ploegKol + 'px; min-width:' + s.ploegKol + 'px; }\n';
+                if (s.tekstGrootte) {
+                    var t0 = s.tekstGrootte;
+                    var t1 = Math.max(7, t0 - 2);
+                    css += 'body[data-view="' + v + '"] .planning-card .card-title,'
+                         + 'body[data-view="' + v + '"] .placement-band .card-title { font-size:' + t0 + 'px; }\n';
+                    css += 'body[data-view="' + v + '"] .planning-card .card-address,'
+                         + 'body[data-view="' + v + '"] .placement-band .card-address,'
+                         + 'body[data-view="' + v + '"] .planning-card .card-info-placement,'
+                         + 'body[data-view="' + v + '"] .placement-band .card-info-placement { font-size:' + t1 + 'px; }\n';
+                }
             });
             colStijlEl.textContent = css;
         }
@@ -2486,7 +2501,7 @@
 
             /* View tabs */
             var tabs = document.createElement('div'); tabs.className = 'settings-view-tabs';
-            [['week','Week'],['multi','2-3 weken'],['month','Maand']].forEach(function(pair) {
+            [['week','Week'],['multi','2 weken'],['month','Maand']].forEach(function(pair) {
                 var tb = document.createElement('button');
                 tb.className = 'settings-view-tab' + (pair[0] === settingsPaneelView ? ' actief' : '');
                 tb.innerText = pair[1]; tb.dataset.tab = pair[0];
@@ -2502,7 +2517,7 @@
 
             /* Invulvelden voor huidige tab-view */
             var sv = instellingen[settingsPaneelView];
-            var vLabels = { week: 'Week', multi: '2-3 weken', month: 'Maand' };
+            var vLabels = { week: 'Week', multi: '2 weken', month: 'Maand' };
 
             function maakNumInput(labelTekst, sleutel, min, max, stap) {
                 var rij = document.createElement('div'); rij.className = 'settings-row';
@@ -2532,6 +2547,11 @@
             body.appendChild(maakNumInput('Weekdag kolom', 'weekdag', 60, 300, 5));
             body.appendChild(maakNumInput('Weekend kolom', 'weekend', 40, 200, 5));
             body.appendChild(maakNumInput('Ploeg kolom (1e kol)', 'ploegKol', 80, 300, 5));
+
+            var secTekst = document.createElement('div'); secTekst.className = 'settings-section-label';
+            secTekst.innerText = 'Tekstgrootte — ' + vLabels[settingsPaneelView];
+            body.appendChild(secTekst);
+            body.appendChild(maakNumInput('Kaarttitel', 'tekstGrootte', 7, 18, 1));
 
             /* Knoppenrij onderaan */
             var btnRij = document.createElement('div'); btnRij.className = 'settings-btn-rij';
