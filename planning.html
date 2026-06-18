@@ -599,7 +599,7 @@
         }
         .settings-panel {
             background: #fff; border-radius: 8px;
-            width: 340px; max-height: calc(100vh - 80px); overflow-y: auto;
+            width: 360px; max-height: calc(100vh - 80px); overflow-y: auto;
             box-shadow: 0 8px 28px rgba(0,0,0,0.25); padding: 0;
         }
         .settings-header {
@@ -615,7 +615,7 @@
         .settings-close:hover { opacity: 1; }
         .settings-body { padding: 12px 16px 16px; }
         .settings-view-tabs {
-            display: flex; gap: 4px; margin-bottom: 14px;
+            display: flex; gap: 4px; margin-bottom: 12px;
             background: #ebecf0; border-radius: 6px; padding: 3px;
         }
         .settings-view-tab {
@@ -627,41 +627,58 @@
         .settings-view-tab.actief { background: #fff; color: #0052cc; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .settings-section-label {
             font-size: 11px; font-weight: 700; text-transform: uppercase;
-            letter-spacing: 0.05em; color: #5e6c84; margin: 14px 0 8px;
+            letter-spacing: 0.05em; color: #5e6c84; margin: 14px 0 6px;
         }
         .settings-section-label:first-child { margin-top: 0; }
+
+        /* Rij met label + invoerveld */
         .settings-row {
-            display: flex; align-items: center; justify-content: space-between;
-            gap: 10px; margin-bottom: 8px;
+            display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
         }
-        .settings-row label { font-size: 13px; color: #172b4d; flex: 1; }
+        .settings-row label { font-size: 13px; color: #172b4d; flex: 1; min-width: 0; }
         .settings-num {
-            width: 68px; padding: 4px 7px; border: 1px solid #dfe1e6; border-radius: 5px;
+            width: 62px; padding: 4px 6px; border: 1px solid #dfe1e6; border-radius: 5px;
             font-family: inherit; font-size: 13px; font-weight: 700; color: #0052cc;
             text-align: right; outline: none; flex-shrink: 0;
             transition: border-color 0.15s, box-shadow 0.15s;
         }
         .settings-num:focus { border-color: #0052cc; box-shadow: 0 0 0 2px rgba(0,82,204,0.18); }
+        .settings-num:disabled { opacity: 0.4; cursor: not-allowed; }
         .settings-num-unit { font-size: 12px; color: #5e6c84; flex-shrink: 0; }
 
-        /* rijhoogte per ploeg */
-        .settings-rij-master {
+        /* Master rijhoogte blok */
+        .settings-master-blok {
             display: flex; align-items: center; gap: 8px;
-            padding: 8px 10px; background: #f4f5f7; border-radius: 6px;
-            margin-bottom: 8px;
+            padding: 8px 10px; background: #f4f5f7; border-radius: 6px; margin-bottom: 8px;
         }
-        .settings-rij-master input[type=checkbox] { accent-color: #0052cc; width: 15px; height: 15px; cursor: pointer; }
-        .settings-rij-master label { font-size: 13px; font-weight: 700; color: #172b4d; cursor: pointer; flex: 1; margin: 0; }
-        .settings-rij-list { display: flex; flex-direction: column; gap: 6px; }
+        .settings-master-blok input[type=checkbox] { accent-color: #0052cc; width: 15px; height: 15px; cursor: pointer; flex-shrink: 0; }
+        .settings-master-blok label { font-size: 13px; font-weight: 700; color: #172b4d; cursor: pointer; flex: 1; margin: 0; }
+
+        /* Per-rij items */
+        .settings-rij-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 4px; }
         .settings-rij-item {
             display: flex; align-items: center; gap: 8px;
-            padding: 4px 6px; border-radius: 4px;
-            transition: background 0.1s;
+            padding: 5px 6px; border-radius: 4px; transition: background 0.1s;
         }
         .settings-rij-item:hover { background: #f4f5f7; }
-        .settings-rij-item label { font-size: 13px; color: #172b4d; flex: 1; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .settings-rij-item > label { font-size: 13px; color: #172b4d; flex: 1; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .settings-rij-item input[type=checkbox] { accent-color: #0052cc; width: 14px; height: 14px; cursor: pointer; flex-shrink: 0; }
-        .settings-rij-item .settings-num { width: 60px; }
+        .settings-rij-item .settings-num { width: 58px; }
+
+        /* Knoppenrij onderaan */
+        .settings-btn-rij {
+            display: flex; gap: 8px; margin-top: 14px;
+        }
+        .settings-action-btn {
+            flex: 1; border: 1px solid #dfe1e6; border-radius: 6px; background: none;
+            font-family: inherit; font-size: 12px; font-weight: 600; color: #5e6c84;
+            padding: 7px 6px; cursor: pointer; text-align: center;
+            transition: background 0.12s, color 0.12s, border-color 0.12s;
+            white-space: nowrap;
+        }
+        .settings-action-btn:hover { background: #ebecf0; color: #172b4d; }
+        .settings-action-btn.primair { background: #0052cc; color: #fff; border-color: #0052cc; }
+        .settings-action-btn.primair:hover { background: #0747a6; border-color: #0747a6; }
         .settings-reset-btn {
             display: block; width: 100%; margin-top: 14px;
             background: none; border: 1px solid #dfe1e6; border-radius: 6px;
