@@ -2,6 +2,7 @@
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title>Ploegen Planning</title>
     <script src="https://p.trellocdn.com/power-up.min.js"></script>
     <style>
@@ -217,6 +218,22 @@
             gap: 12px; margin-bottom: 14px; flex-wrap: wrap;
         }
         .main-content h2 { font-size: 16px; font-weight: 700; margin: 0; }
+
+        /* ── ZOOM-CONTROLS ── */
+        .zoom-controls { display: inline-flex; align-items: center; gap: 3px; }
+        .zoom-indicator {
+            font-size: 11px; font-weight: 700; color: #5e6c84;
+            min-width: 36px; text-align: center; pointer-events: none;
+        }
+        .zoom-fit-btn {
+            border: none; background: #ebecf0; font-family: inherit;
+            font-size: 13px; font-weight: 700; color: #5e6c84;
+            padding: 5px 7px; border-radius: 6px; cursor: pointer;
+            transition: background-color 0.15s, color 0.15s;
+            line-height: 1;
+        }
+        .zoom-fit-btn:hover { background: #dfe1e6; color: #172b4d; }
+        .zoom-fit-btn.actief { background: #0052cc; color: #fff; }
 
         /* ── VIEW-SCHAKELAAR ── */
         .view-switcher {
@@ -805,6 +822,12 @@
                     <button type="button" class="view-switch-btn" data-view-mode="multi">2 weken</button>
                     <button type="button" class="view-switch-btn" data-view-mode="month">Maand</button>
                 </div>
+                <div class="zoom-controls" id="zoom-controls">
+                    <button type="button" class="nav-btn" id="zoom-out-btn" title="Uitzoomen (Ctrl+Scroll)">−</button>
+                    <span class="zoom-indicator" id="zoom-indicator">100%</span>
+                    <button type="button" class="nav-btn" id="zoom-in-btn" title="Inzoomen (Ctrl+Scroll)">+</button>
+                    <button type="button" class="zoom-fit-btn actief" id="zoom-fit-btn" title="Alles in beeld passen">↕</button>
+                </div>
                 <div class="print-btn-group" id="print-btn-group" title="Afdrukken">
                     <button type="button" class="print-btn" id="print-week-btn" title="Weekplanning afdrukken — A3 staand">
                         <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
@@ -885,6 +908,8 @@
         var DEV_MODE = false;
         var ADMIN_USERNAMES = ['laurenabsillis1', 'davythibau01'];
         var isAdmin = false;
+        var tableZoom = 1.0;
+        var tableZoomAuto = true;
 
         function toepassenAdminStatus() {
             var indicator = document.getElementById('mode-indicator');
@@ -931,6 +956,8 @@
                     mainContent.style.transform = '';
                     mainContent.style.transformOrigin = '';
                     mainContent.style.width = '';
+                    var table = mainContent.querySelector('.planning-table');
+                    if (table) table.style.zoom = '';
                     var contentBreedte = mainContent.scrollWidth;
                     var contentHoogte  = mainContent.scrollHeight;
                     var schaalB = nettoBreedtePx / contentBreedte;
@@ -957,10 +984,31 @@
                         mainContent.style.transform = '';
                         mainContent.style.transformOrigin = '';
                         mainContent.style.width = '';
+                        var tAfter = mainContent.querySelector('.planning-table');
+                        if (tAfter) tAfter.style.zoom = tableZoom;
                     }
                 }, 1500);
             }, 120);
         }
+
+        (function koppelZoomControls() {
+            var wrap = document.querySelector('.table-scroll-wrap');
+            if (wrap) {
+                wrap.addEventListener('wheel', function(e) {
+                    if (!e.ctrlKey) return;
+                    e.preventDefault();
+                    tableZoomAuto = false;
+                    pasZoomToe(tableZoom * (e.deltaY < 0 ? 1.08 : 0.93));
+                }, { passive: false });
+            }
+            var outBtn = document.getElementById('zoom-out-btn');
+            var inBtn  = document.getElementById('zoom-in-btn');
+            var fitBtn = document.getElementById('zoom-fit-btn');
+            if (outBtn) outBtn.addEventListener('click', function() { tableZoomAuto = false; pasZoomToe(tableZoom * 0.85); });
+            if (inBtn)  inBtn.addEventListener('click',  function() { tableZoomAuto = false; pasZoomToe(tableZoom * 1.18); });
+            if (fitBtn) fitBtn.addEventListener('click', function() { tableZoomAuto = true;  autoFitZoom(); });
+            window.addEventListener('resize', function() { if (tableZoomAuto) autoFitZoom(); });
+        })();
 
         (function koppelPrintKnoppen() {
             var weekBtn  = document.getElementById('print-week-btn');
@@ -1017,6 +1065,7 @@
             if (nieuweModus === VIEW_MODUS) return;
             if (['week', 'multi', 'month'].indexOf(nieuweModus) === -1) return;
             VIEW_MODUS = nieuweModus;
+            tableZoomAuto = true;
             document.body.dataset.view = VIEW_MODUS;
             markeerActieveViewKnop();
             snapAnkerNaarPeriode();
@@ -1684,6 +1733,33 @@
             });
         }
 
+        /* ── ZOOMLOGICA ── */
+        function pasZoomToe(factor) {
+            tableZoom = Math.min(2.0, Math.max(0.2, factor));
+            var table = document.querySelector('.planning-table');
+            if (table) table.style.zoom = tableZoom;
+            var indicator = document.getElementById('zoom-indicator');
+            if (indicator) indicator.textContent = Math.round(tableZoom * 100) + '%';
+            var fitBtn = document.getElementById('zoom-fit-btn');
+            if (fitBtn) { if (tableZoomAuto) fitBtn.classList.add('actief'); else fitBtn.classList.remove('actief'); }
+        }
+        function autoFitZoom() {
+            if (!tableZoomAuto) return;
+            var wrap = document.querySelector('.table-scroll-wrap');
+            var table = document.querySelector('.planning-table');
+            if (!wrap || !table) return;
+            var huidig = table.style.zoom;
+            table.style.zoom = '';
+            var beschikbaar = wrap.clientHeight;
+            var tabelHoogte = table.scrollHeight;
+            table.style.zoom = huidig;
+            if (beschikbaar > 0 && tabelHoogte > 0 && tabelHoogte > beschikbaar) {
+                pasZoomToe(beschikbaar / tabelHoogte);
+            } else {
+                pasZoomToe(1.0);
+            }
+        }
+
         /* ── STAPELLOGICA ── */
         var stackMap = {};
         var BAND_HOOGTE = 56, BAND_GAP = 4, BAND_TOP = 6;
@@ -1733,6 +1809,7 @@
                 items.forEach(function(it) { it.el.style.top=tops[it.baan]+'px'; it.el.style.height=baanHoogtes[it.baan]+'px'; it.el.style.bottom='auto'; });
                 cellen.forEach(function(z) { z.style.minHeight=Math.max(80,totaal)+'px'; });
             });
+            autoFitZoom();
         }
         function placementStart(p) { return p.datum; }
         function placementEind(p)  { return p.eindDatum || p.datum; }
@@ -1974,20 +2051,26 @@
             if(loadingMsg)loadingMsg.style.display='block';
             if(errorMsg)errorMsg.style.display='none';
             if(pool)pool.innerHTML='';
-            if(DEV_MODE){isAdmin=true;toepassenAdminStatus();}
-            else{t.member('username').then(function(member){var u=(member&&member.username)?member.username.toLowerCase():'';isAdmin=ADMIN_USERNAMES.indexOf(u)!==-1;toepassenAdminStatus();}).catch(function(){isAdmin=false;toepassenAdminStatus();});}
             return Promise.all([
                 t.cards('id','name','members','address','desc','idList','url','labels','due','dueComplete'),
                 t.lists('id','name'),
                 t.get('board','shared','interventions',[]),
                 t.get('board','shared','plannedCardIds',[]),
                 t.get('board','shared','ploegen',null),
-                t.get('board','shared','verlofItems',[])
+                t.get('board','shared','verlofItems',[]),
+                t.get('board','shared','adminUsernames', null),
+                DEV_MODE ? Promise.resolve(null) : t.member('username').catch(function(){return null;})
             ]).then(function(resultaten){
                 var cards=resultaten[0],lists=resultaten[1],interventions=resultaten[2];
                 var indexIds=Array.isArray(resultaten[3])?resultaten[3]:[];
                 var opgeslagenPloegen=resultaten[4];
                 var verlofItems=Array.isArray(resultaten[5])?resultaten[5]:[];
+                var opgeslagenAdmins=resultaten[6];
+                var memberInfo=resultaten[7];
+                if(Array.isArray(opgeslagenAdmins)&&opgeslagenAdmins.length>0){ADMIN_USERNAMES=opgeslagenAdmins;}
+                if(DEV_MODE){isAdmin=true;}
+                else{var u=(memberInfo&&memberInfo.username)?memberInfo.username.toLowerCase():'';isAdmin=ADMIN_USERNAMES.indexOf(u)!==-1;}
+                toepassenAdminStatus();
                 if(Array.isArray(opgeslagenPloegen)&&opgeslagenPloegen.length>0){ploegen=opgeslagenPloegen.slice();}
                 else{ploegen=DEFAULT_PLOEGEN.slice();t.set('board','shared','ploegen',ploegen);}
                 var verlofMigratieNodig=false;
@@ -2585,6 +2668,73 @@
             btnRij.appendChild(resetBtn);
             btnRij.appendChild(slaStdBtn);
             body.appendChild(btnRij);
+
+            /* ── Admin beheer sectie ── */
+            var hrAdmin = document.createElement('hr');
+            hrAdmin.style.cssText = 'border:none;border-top:1px solid #ebecf0;margin:16px 0 12px;';
+            body.appendChild(hrAdmin);
+
+            var secAdmin = document.createElement('div'); secAdmin.className = 'settings-section-label';
+            secAdmin.style.marginTop = '0'; secAdmin.innerText = 'Admin gebruikers';
+            body.appendChild(secAdmin);
+
+            var adminLijstEl = document.createElement('div');
+            adminLijstEl.style.cssText = 'font-size:12px;color:#5e6c84;font-style:italic;padding:4px 0;';
+            adminLijstEl.innerText = 'Boardleden laden…';
+            body.appendChild(adminLijstEl);
+
+            t.board('members').then(function(board) {
+                var leden = (board && board.members) || [];
+                adminLijstEl.innerHTML = '';
+                adminLijstEl.style.cssText = '';
+                if (leden.length === 0) {
+                    adminLijstEl.style.cssText = 'font-size:12px;color:#5e6c84;font-style:italic;';
+                    adminLijstEl.innerText = 'Geen boardleden gevonden.';
+                    return;
+                }
+                var checkboxes = [];
+                leden.forEach(function(lid) {
+                    var rij = document.createElement('div');
+                    rij.className = 'settings-rij-item';
+                    var cb = document.createElement('input');
+                    cb.type = 'checkbox';
+                    cb.id = 'admin-cb-' + lid.username;
+                    cb.checked = ADMIN_USERNAMES.indexOf(lid.username) !== -1;
+                    var lbl = document.createElement('label');
+                    lbl.htmlFor = cb.id;
+                    lbl.style.cssText = 'font-size:13px;color:#172b4d;flex:1;margin:0;cursor:pointer;';
+                    lbl.innerText = (lid.fullName || lid.username) + ' (@' + lid.username + ')';
+                    checkboxes.push({ cb: cb, username: lid.username });
+                    rij.appendChild(cb); rij.appendChild(lbl);
+                    adminLijstEl.appendChild(rij);
+                });
+                var adminOpslaanBtn = document.createElement('button');
+                adminOpslaanBtn.className = 'settings-action-btn primair';
+                adminOpslaanBtn.style.cssText = 'margin-top:10px;width:100%;';
+                adminOpslaanBtn.innerText = 'Opslaan';
+                adminOpslaanBtn.addEventListener('click', function() {
+                    var nieuweAdmins = checkboxes.filter(function(x) { return x.cb.checked; }).map(function(x) { return x.username; });
+                    if (nieuweAdmins.length === 0) {
+                        alert('Er moet minstens één admin zijn.');
+                        return;
+                    }
+                    ADMIN_USERNAMES = nieuweAdmins;
+                    t.set('board', 'shared', 'adminUsernames', ADMIN_USERNAMES).then(function() {
+                        var origTekst = adminOpslaanBtn.innerText;
+                        adminOpslaanBtn.innerText = '✓ Opgeslagen!';
+                        setTimeout(function() { adminOpslaanBtn.innerText = origTekst; }, 2000);
+                        t.member('username').then(function(member) {
+                            var u = (member && member.username) ? member.username.toLowerCase() : '';
+                            isAdmin = ADMIN_USERNAMES.indexOf(u) !== -1;
+                            toepassenAdminStatus();
+                        }).catch(function() {});
+                    });
+                });
+                adminLijstEl.appendChild(adminOpslaanBtn);
+            }).catch(function() {
+                adminLijstEl.style.cssText = 'font-size:12px;color:#bf2600;font-style:italic;';
+                adminLijstEl.innerText = 'Kon boardleden niet laden.';
+            });
 
             /* ── Backup & Herstel sectie ── */
             var hr = document.createElement('hr');
