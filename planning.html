@@ -2556,6 +2556,23 @@
                     }).then(function(aantal){updateBronBadgeById(cardId,aantal);if(aantal===0)verwijderCardUitIndex(cardId);});
                     return;
                 }
+                // Als de kaart al een segment heeft in de doelcel: geen datumwijziging maar promoveer naar top
+                if(doelPloeg&&doelDatum){
+                    var doelCelEl=document.querySelector('.dropzone[data-ploeg="'+doelPloeg+'"][data-datum="'+doelDatum+'"]');
+                    if(doelCelEl&&doelCelEl.querySelector('[data-instance-id="'+id+'"]')){
+                        var eigLanEl=doelCelEl.querySelector('[data-instance-id="'+id+'"]');
+                        var eigLane=parseInt((eigLanEl&&eigLanEl.dataset.lane)||'0',10);
+                        var topId=null,minLane=Infinity;
+                        doelCelEl.querySelectorAll('.planning-card,.placement-band').forEach(function(el){
+                            var elId=el.dataset.instanceId||el.dataset.intId;
+                            if(!elId||elId===id)return;
+                            var l=parseInt(el.dataset.lane,10)||0;
+                            if(l<minLane){minLane=l;topId=elId;}
+                        });
+                        if(topId&&eigLane>minLane)wisselKaartBanen(id,topId);
+                        return;
+                    }
+                }
                 t.get(cardId,'shared','placements',[]).then(function(lijst){
                     var arr=Array.isArray(lijst)?lijst:[],doelP=null;
                     arr=arr.map(function(p){
