@@ -1897,18 +1897,20 @@
                         return t.set(cardIdA,'shared','placements',arr);
                     }).catch(function(e){console.error('Wissel placements fout:',e);});
                 } else {
-                    // Twee verschillende Trello-kaarten: A vóór B zetten in plannedCardIds
+                    // Twee verschillende Trello-kaarten: swap tekenvolgorde in plannedCardIds
                     t.get('board','shared','plannedCardIds',[]).then(function(lijst){
                         var arr=Array.isArray(lijst)?lijst:[];
-                        // Voeg ontbrekende kaarten toe — nooit silent falen op posA===-1
-                        if(arr.indexOf(cardIdA)===-1)arr.push(cardIdA);
-                        if(arr.indexOf(cardIdB)===-1)arr.push(cardIdB);
+                        var added=false;
+                        // Voeg ontbrekende kaarten toe i.p.v. silent falen op posA===-1
+                        if(arr.indexOf(cardIdA)===-1){arr.push(cardIdA);added=true;}
+                        if(arr.indexOf(cardIdB)===-1){arr.push(cardIdB);added=true;}
                         var posA=arr.indexOf(cardIdA),posB=arr.indexOf(cardIdB);
                         if(posA===posB)return;
-                        // Zet A direct vóór B: gesleepte kaart altijd boven doelkaart
-                        arr.splice(posA,1);
-                        posB=arr.indexOf(cardIdB); // herbereken na verwijdering
-                        arr.splice(posB,0,cardIdA);
+                        // Alleen t.set als er echt iets veranderd is
+                        if(!added&&posA<posB)return;
+                        if(posA>posB){
+                            var tmp=arr[posA];arr[posA]=arr[posB];arr[posB]=tmp;
+                        }
                         return t.set('board','shared','plannedCardIds',arr);
                     }).catch(function(e){console.error('Wissel plannedCardIds fout:',e);});
                 }
