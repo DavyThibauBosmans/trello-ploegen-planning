@@ -179,7 +179,7 @@
         .card-address-editable:empty, .card-info-placement:empty { display: none; }
         .planning-card:hover .card-address-editable:empty,
         .planning-card:hover .card-info-placement:empty,
-        .placement-band:hover .card-info-placement:empty,
+        .placement-band.band-actief .card-info-placement:empty,
         .card-address-editable:empty:focus,
         .card-info-placement:empty:focus { display: block; }
 
@@ -437,7 +437,7 @@
             transition: background-color 0.15s;
         }
         .verlof-segment:hover .span-resize-handle::after,
-        .placement-band:hover .span-resize-handle::after,
+        .placement-band.band-actief .span-resize-handle::after,
         .planning-card:hover .span-resize-handle::after { background-color: rgba(0,0,0,0.5); }
         body.span-resizing { cursor: ew-resize !important; user-select: none; }
         body.span-resizing * { cursor: ew-resize !important; }
@@ -507,7 +507,7 @@
             z-index: 3;
         }
         .dropzone > .planning-card.zwevend:hover,
-        .placement-band.zwevend:hover { z-index: 5 !important; }
+        .placement-band.zwevend.band-actief { z-index: 5 !important; }
 
         /* ── STAPELLOGICA ── */
         .dropzone { position: relative; padding-bottom: 26px !important; }
@@ -525,9 +525,9 @@
             box-shadow: inset 0 -3px 0 rgba(0,0,0,0.10);
             transition: filter 0.12s;
         }
-        .placement-band:hover { filter: brightness(0.97); z-index: 4 !important; }
+        .placement-band.band-actief { filter: brightness(0.97); z-index: 4 !important; }
         .placement-band.band-not-first {
-            left: -9px;
+            left: -2px;
             border-top-left-radius: 0; border-bottom-left-radius: 0;
         }
         .placement-band.band-not-last {
@@ -1974,6 +1974,7 @@
             if (opts.isLastVisible && isAdmin) el.appendChild(maakResizeHandle(function(e){startPlacementResize(e,p,ctx);}));
             el.addEventListener('dragstart',drag); el.addEventListener('dragend',dragEnd);
             el.addEventListener('dragover',dragOverCard); el.addEventListener('dragleave',dragLeaveCard); el.addEventListener('drop',dropOpKaart);
+            el.addEventListener('mouseenter',bandMouseEnter); el.addEventListener('mouseleave',bandMouseLeave);
             koppelKaartOpenen(el,{kaartData:card,kanTonen:!!ctx.kanTonen,cardId:cardIdVanInstantie(p.instanceId),url:ctx.url||''});
             return el;
         }
@@ -2102,6 +2103,7 @@
             if(opts.isLastVisible&&isAdmin)el.appendChild(maakResizeHandle(function(e){startInterventieResize(e,int);}));
             el.addEventListener('dragstart',drag);el.addEventListener('dragend',dragEnd);
             el.addEventListener('dragover',dragOverCard);el.addEventListener('dragleave',dragLeaveCard);el.addEventListener('drop',dropOpKaart);
+            el.addEventListener('mouseenter',bandMouseEnter);el.addEventListener('mouseleave',bandMouseLeave);
             return el;
         }
 
@@ -2448,6 +2450,9 @@
         function dragOverCard(e){
             if(!isAdmin)return;
             if((document.body.dataset.dragType||'')==='verlof')return;
+            // Eigen segmenten van de gesleepte kaart overslaan
+            var mijnId=this.dataset.instanceId||this.dataset.intId;
+            if(sleepId&&mijnId===sleepId)return;
             e.preventDefault();e.stopPropagation();
             this.classList.add('wissel-doel');
         }
@@ -2456,7 +2461,7 @@
             if(!isAdmin)return;
             this.classList.remove('wissel-doel');
             if((document.body.dataset.dragType||'')==='verlof')return;
-            var id=e.dataTransfer.getData('text');if(!id)return;
+            var id=e.dataTransfer.getData('text')||sleepId;if(!id)return;
             var soort=(id.indexOf('verlof-')===0)?'verlof':(id.indexOf('int-')===0)?'interventie':(id.indexOf('::')!==-1)?'instantie':'bron';
             if(soort==='verlof')return;
             e.preventDefault();e.stopPropagation();
@@ -2485,6 +2490,7 @@
             e.preventDefault();this.classList.add('dragover');
         }
         function dragLeave(e){this.classList.remove('dragover');}
+        var sleepId = null;
         function drag(e){
             if(!isAdmin){e.preventDefault();return;}
             var rol=e.currentTarget.dataset.rol||'';
@@ -2494,9 +2500,21 @@
             else if(rol==='instantie'&&e.currentTarget.dataset.instanceId)transferId=e.currentTarget.dataset.instanceId;
             else if(rol==='interventie'&&e.currentTarget.dataset.intId)transferId=e.currentTarget.dataset.intId;
             else transferId=e.currentTarget.id;
+            sleepId=transferId;
             e.dataTransfer.setData("text",transferId);
         }
-        function dragEnd(e){delete document.body.dataset.dragType;}
+        function dragEnd(e){delete document.body.dataset.dragType; sleepId=null;}
+
+        function bandMouseEnter(){
+            var id=this.dataset.instanceId||this.dataset.intId; if(!id)return;
+            var sel=this.dataset.instanceId?'[data-instance-id="'+id+'"]':'[data-int-id="'+id+'"]';
+            document.querySelectorAll(sel).forEach(function(el){el.classList.add('band-actief');});
+        }
+        function bandMouseLeave(){
+            var id=this.dataset.instanceId||this.dataset.intId; if(!id)return;
+            var sel=this.dataset.instanceId?'[data-instance-id="'+id+'"]':'[data-int-id="'+id+'"]';
+            document.querySelectorAll(sel).forEach(function(el){el.classList.remove('band-actief');});
+        }
 
         function drop(e){
             if(!isAdmin)return;
