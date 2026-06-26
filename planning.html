@@ -460,6 +460,7 @@
                 rgba(255,255,255,0.22) 6px,
                 rgba(255,255,255,0.22) 12px
             );
+            background-attachment: fixed;
         }
         .zwevend-badge {
             display: inline-block; font-size: 10px; font-weight: 700;
@@ -762,7 +763,7 @@
             .main-content-header { margin-bottom: 6px !important; flex-wrap: nowrap !important; }
             .main-content h2 { font-size: 14px !important; }
             .periode-label { font-size: 12px !important; display: inline !important; }
-            .planning-card.zwevend, .placement-band.zwevend { transform: none !important; }
+            .planning-card.zwevend, .placement-band.zwevend { transform: none !important; background-image: none !important; }
             .zwevend-badge { display: inline-block !important; }
         }
 
@@ -1760,6 +1761,31 @@
                 if (tableZoomAuto) fitBtn.classList.add('actief');
                 else fitBtn.classList.remove('actief');
             }
+            pasZoomTekstCompensatie();
+        }
+        function pasZoomTekstCompensatie() {
+            var el = document.getElementById('zoom-tekst-compensatie');
+            if (!el) {
+                el = document.createElement('style');
+                el.id = 'zoom-tekst-compensatie';
+                document.head.appendChild(el);
+            }
+            if (tableZoom >= 0.999 || !instellingen) { el.textContent = ''; return; }
+            var css = '';
+            ['week','multi','month'].forEach(function(v) {
+                var s = instellingen[v]; if (!s || !s.tekstGrootte) return;
+                var sz0 = s.tekstGrootte;
+                var sz1 = Math.max(7, sz0 - 2);
+                var c0 = (sz0 / tableZoom).toFixed(3);
+                var c1 = (sz1 / tableZoom).toFixed(3);
+                css += 'body[data-view="' + v + '"] .planning-card .card-title,'
+                     + 'body[data-view="' + v + '"] .placement-band .card-title { font-size:' + c0 + 'px; }\n';
+                css += 'body[data-view="' + v + '"] .planning-card .card-address,'
+                     + 'body[data-view="' + v + '"] .placement-band .card-address,'
+                     + 'body[data-view="' + v + '"] .planning-card .card-info-placement,'
+                     + 'body[data-view="' + v + '"] .placement-band .card-info-placement { font-size:' + c1 + 'px; }\n';
+            });
+            el.textContent = css;
         }
         function autoFitZoom() {
             if (!tableZoomAuto) return;
@@ -1831,6 +1857,10 @@
                 items.forEach(function(it) { it.el.style.top=tops[it.baan]+'px'; it.el.style.height=baanHoogtes[it.baan]+'px'; it.el.style.bottom='auto'; });
                 cellen.forEach(function(z) { z.style.minHeight=Math.max(80,totaal)+'px'; });
             });
+            var alleZonesNorm = document.querySelectorAll('.dropzone[data-row-type="ploeg"]');
+            var maxRijHoogte = 80;
+            alleZonesNorm.forEach(function(z) { var h = parseFloat(z.style.minHeight) || 80; if (h > maxRijHoogte) maxRijHoogte = h; });
+            alleZonesNorm.forEach(function(z) { z.style.minHeight = maxRijHoogte + 'px'; });
             autoFitZoom();
         }
         function placementStart(p) { return p.datum; }
@@ -2560,6 +2590,7 @@
                 }
             });
             colStijlEl.textContent = css;
+            pasZoomTekstCompensatie();
         }
 
         function slaInstellingenOp() {
