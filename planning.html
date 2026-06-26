@@ -2739,7 +2739,7 @@
         function drop(e){
             if(!isAdmin)return;
             e.preventDefault();this.classList.remove('dragover');delete document.body.dataset.dragType;
-            var doelZone=this,id=e.dataTransfer.getData("text");
+            var doelZone=this,id=e.dataTransfer.getData("text")||sleepId;
             if(!id)return;
             var doelPloeg=doelZone.dataset.ploeg,doelDatum=doelZone.dataset.datum,doelRowType=doelZone.dataset.rowType||'';
             var naarZijbalk=!doelPloeg;
