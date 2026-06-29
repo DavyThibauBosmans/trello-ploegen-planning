@@ -1924,6 +1924,7 @@
                 if (tableZoomAuto) fitBtn.classList.add('actief');
                 else fitBtn.classList.remove('actief');
             }
+            herstelBandSpreiding();
         }
         function autoFitZoom() {
             if (!tableZoomAuto) return;
@@ -1988,6 +1989,8 @@
                     z.querySelectorAll('.planning-card, .placement-band').forEach(function(el) {
                         if (el.dataset.lane === undefined || el.dataset.lane === '') return;
                         var baan = parseInt(el.dataset.lane, 10); if (isNaN(baan)) return;
+                        /* Verborgen vervolgsegmenten (herstelBandSpreiding) niet meenemen in hoogtebepaling */
+                        if (el.style.display === 'none') return;
                         el.style.height = 'auto'; var h = el.offsetHeight;
                         if (!baanHoogtes[baan] || h > baanHoogtes[baan]) baanHoogtes[baan] = h;
                         items.push({ el: el, baan: baan });
@@ -2024,7 +2027,52 @@
             /* Herstel zoom na meting */
             if (tableEl) tableEl.style.zoom = tableZoom;
             autoFitZoom();
+            herstelBandSpreiding();
         }
+
+        /* ── MEERDAAGSE BANDEN: één doorlopend blok (Google Agenda-stijl) ── */
+        function herstelBandSpreiding() {
+            var table = document.querySelector('.planning-table');
+            if (!table) return;
+            var zoom = tableZoom || 1;
+            var behandeld = {};
+            table.querySelectorAll('.placement-band').forEach(function(seg) {
+                var id = seg.dataset.instanceId || seg.dataset.intId;
+                if (!id || behandeld[id]) return;
+                behandeld[id] = true;
+                var selector = seg.dataset.instanceId ?
+                    '[data-instance-id="' + id + '"]' :
+                    '[data-int-id="' + id + '"]';
+                var alleSegs = Array.from(table.querySelectorAll(selector));
+                if (alleSegs.length <= 1) {
+                    var s = alleSegs[0];
+                    if (s) { s.style.display = ''; s.style.left = ''; s.style.right = ''; s.style.width = '';
+                             s.style.borderTopLeftRadius = ''; s.style.borderBottomLeftRadius = '';
+                             s.style.borderTopRightRadius = ''; s.style.borderBottomRightRadius = ''; }
+                    return;
+                }
+                var eerste = alleSegs[0];
+                var laatste = alleSegs[alleSegs.length - 1];
+                var eersteCell = eerste.closest('td');
+                var laatssteCell = laatste.closest('td');
+                if (!eersteCell || !laatssteCell) return;
+                var r1 = eersteCell.getBoundingClientRect();
+                var r2 = laatssteCell.getBoundingClientRect();
+                if (!r1.width || !r2.width) return;
+                var breedte = (r2.right - r1.left) / zoom;
+                alleSegs.forEach(function(s) { s.style.display = (s === eerste) ? '' : 'none'; });
+                eerste.style.left = '0';
+                eerste.style.right = 'auto';
+                eerste.style.width = breedte + 'px';
+                var isEchtBegin = !eerste.classList.contains('band-not-first');
+                var isEchtEinde = !laatste.classList.contains('band-not-last');
+                eerste.style.borderTopLeftRadius    = isEchtBegin ? '6px' : '0';
+                eerste.style.borderBottomLeftRadius = isEchtBegin ? '6px' : '0';
+                eerste.style.borderTopRightRadius    = isEchtEinde ? '6px' : '0';
+                eerste.style.borderBottomRightRadius = isEchtEinde ? '6px' : '0';
+            });
+        }
+
         function placementStart(p) { return p.datum; }
         function placementEind(p)  { return p.eindDatum || p.datum; }
 
