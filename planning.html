@@ -1997,6 +1997,7 @@
         var _reorderLastIdx = 0;  // bewaar laatste insert-index voor drop
         var _dragCurrentId = '';    // id van de kaart die gesleept wordt
         var _dragCurrentPloeg = ''; // ploeg van die kaart
+        var _dragCurrentDatum = ''; // datum van de cel waar de drag begon
         function rijNaarTop(rij) { return BAND_TOP + rij * (BAND_HOOGTE + BAND_GAP); }
         function stapelReserveer(zoneIds, instanceId) {
             zoneIds.forEach(function(zid) { if (!stackMap[zid]) stackMap[zid] = {}; });
@@ -2050,7 +2051,8 @@
                 var tops = {}, cursor = BAND_TOP;
                 banen.forEach(function(b) { tops[b]=cursor; cursor+=baanHoogtes[b]+BAND_GAP; });
                 var totaal = (banen.length ? (cursor-BAND_GAP) : BAND_TOP) + 30;
-                items.forEach(function(it) { it.el.style.top=tops[it.baan]+'px'; it.el.style.height=baanHoogtes[it.baan]+'px'; it.el.style.bottom='auto'; });
+                /* Hoogte-egalisatie volgt in tweede pass, ná herstelBandSpreiding */
+                items.forEach(function(it) { it.el.style.top=tops[it.baan]+'px'; it.el.style.height='auto'; it.el.style.bottom='auto'; });
                 contentHoogtes[pl] = Math.max(80, totaal);
             });
             /* Tweede pas: bepaal uiteindelijke hoogte per rij op basis van instellingen */
@@ -2078,6 +2080,27 @@
             if (tableEl) tableEl.style.zoom = tableZoom;
             autoFitZoom();
             herstelBandSpreiding();
+            /* Tweede pass: egaliseer hoogten per top-groep (na band-spreiding) */
+            (function(){
+                var topGroepen={};
+                Object.keys(perPloeg).forEach(function(pl){
+                    perPloeg[pl].forEach(function(z){
+                        z.querySelectorAll('.planning-card,.placement-band').forEach(function(el){
+                            if(el.style.display==='none')return;
+                            var t=el.style.top; if(!t)return;
+                            var key=pl+'|'+t;
+                            if(!topGroepen[key])topGroepen[key]=[];
+                            el.style.height='auto';
+                            topGroepen[key].push({el:el,h:el.offsetHeight});
+                        });
+                    });
+                });
+                Object.keys(topGroepen).forEach(function(key){
+                    var groep=topGroepen[key];
+                    var maxH=groep.reduce(function(m,g){return Math.max(m,g.h);},0);
+                    if(maxH>0)groep.forEach(function(g){g.el.style.height=maxH+'px';});
+                });
+            })();
         }
 
         /* ── MEERDAAGSE BANDEN: één doorlopend blok (Google Agenda-stijl) ── */
@@ -2736,7 +2759,7 @@
                     for(var i=0;i<alleInterventies.length;i++){if(alleInterventies[i].id===_dragCurrentId){int0=alleInterventies[i];break;}}
                     if(int0){sD=ddMMNaarDate(intStart(int0));eD=ddMMNaarDate(intEind(int0));}
                 }
-                if(sD&&eD){var zD=ddMMNaarDate(this.dataset.datum);if(zD>=sD&&zD<=eD)toonReorderIndicator(this,e);}
+                if(sD&&eD){if(this.dataset.datum===_dragCurrentDatum)toonReorderIndicator(this,e);}
             }
         }
         function toonReorderIndicator(zone, e){
@@ -2816,6 +2839,7 @@
             e.dataTransfer.setData("text",transferId);
             _dragCurrentId=transferId;
             _dragCurrentPloeg=e.currentTarget.dataset.ploegRow||'';
+            _dragCurrentDatum=e.currentTarget.dataset.datum||'';
         }
         function dragEnd(e){
             delete document.body.dataset.dragType;
@@ -2824,7 +2848,7 @@
                 var rol=e.currentTarget.dataset.rol;
                 if(rol==='instantie'||rol==='interventie') e.currentTarget.draggable=false;
             }
-            _dragCurrentId='';_dragCurrentPloeg='';
+            _dragCurrentId='';_dragCurrentPloeg='';_dragCurrentDatum='';
             verwijderReorderIndicator();
         }
 
@@ -2863,7 +2887,7 @@
                 var p0=plaatsingsData[id];
                 if(p0&&doelPloeg===p0.ploeg){
                     var sD0=ddMMNaarDate(placementStart(p0)),eD0=ddMMNaarDate(placementEind(p0)),dD0=ddMMNaarDate(doelDatum);
-                    if(dD0>=sD0&&dD0<=eD0){
+                    if(doelDatum===_dragCurrentDatum){
                         var insertIdx0=parseInt(doelZone.dataset.reorderInsertIdx,10);
                         if(isNaN(insertIdx0))insertIdx0=_reorderLastIdx;
                         verwijderReorderIndicator();
@@ -2927,7 +2951,7 @@
                 for(var ii=0;ii<alleInterventies.length;ii++){if(alleInterventies[ii].id===id){int0r=alleInterventies[ii];break;}}
                 if(int0r&&doelPloeg&&doelPloeg===int0r.ploeg){
                     var siD=ddMMNaarDate(intStart(int0r)),eiD=ddMMNaarDate(intEind(int0r)),diD=ddMMNaarDate(doelDatum);
-                    if(diD>=siD&&diD<=eiD){
+                    if(doelDatum===_dragCurrentDatum){
                         var insertIdxI=parseInt(doelZone.dataset.reorderInsertIdx,10);
                         if(isNaN(insertIdxI))insertIdxI=_reorderLastIdx;
                         verwijderReorderIndicator();
