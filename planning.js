@@ -1838,26 +1838,35 @@ function allowDrop(e){
             for(var i=0;i<alleInterventies.length;i++){if(alleInterventies[i].id===_dragCurrentId){int0=alleInterventies[i];break;}}
             if(int0){sD=ddMMNaarDate(intStart(int0));eD=ddMMNaarDate(intEind(int0));}
         }
-        if(sD&&eD){if(this.dataset.datum===_dragCurrentDatum)toonReorderIndicator(this,e);}
+        if(sD&&eD){
+            var hoverDatum=ddMMNaarDate(this.dataset.datum);
+            if(hoverDatum&&hoverDatum>=sD&&hoverDatum<=eD){toonReorderIndicator(this,e);}
+        }
     }
 }
 function toonReorderIndicator(zone, e){
     var ploeg=zone.dataset.ploeg; if(!ploeg)return;
-    /* Verzamel alle zichtbare kaarten in dezelfde ploeg-rij, gesorteerd op top */
+    var zoneDatum=zone.dataset.datum;
+    /* Verzamel zichtbare kaarten in dezelfde ploeg-rij die visueel in deze cel staan,
+       gesorteerd op topY. Meerdaagse bands staan fysiek in hun startdatum-cel: gebruik
+       getBoundingClientRect om ongeacht datum de juiste schermposities te vergelijken. */
     var kaarten=[];
     document.querySelectorAll('.dropzone[data-ploeg="'+ploeg+'"] > .planning-card, .dropzone[data-ploeg="'+ploeg+'"] > .placement-band').forEach(function(el){
         if(el.style.display==='none')return;
         var rect=el.getBoundingClientRect();
-        kaarten.push({el:el,midY:(rect.top+rect.bottom)/2,topY:rect.top});
+        kaarten.push({el:el,midY:(rect.top+rect.bottom)/2,topY:rect.top,bottomY:rect.bottom});
     });
-    kaarten.sort(function(a,b){return a.topY-b.topY;});
+    /* Verwijder dubbels (meerdaagse band heeft één zichtbaar segment, maar kan via
+       meerdere datums gevonden worden — dedup op element-referentie is al geborgd door
+       de 'display:none' filter, dus sorteer en dedup op topY+hoogte combo niet nodig). */
+    kaarten.sort(function(a,b){return a.topY-b.topY||a.el.dataset.lane-b.el.dataset.lane;});
     /* Bepaal insert-positie op basis van muisY */
     var insertIdx=kaarten.length;
     for(var i=0;i<kaarten.length;i++){if(e.clientY<kaarten[i].midY){insertIdx=i;break;}}
-    zone.dataset.reorderInsertIdx=insertIdx;
     _reorderLastIdx=insertIdx;
     /* Teken indicator lijn */
     verwijderReorderIndicator();
+    zone.dataset.reorderInsertIdx=insertIdx;
     var zoneRect=zone.getBoundingClientRect();
     var indicatorY;
     if(kaarten.length===0){
@@ -1962,10 +1971,12 @@ function drop(e){
     if(doelRowType==='verlof'&&soort!=='verlof')return;
 
     if(soort==='instantie'){
-        /* Zelfde ploeg + valt binnen huidige datumspanne → herschikken */
+        /* Zelfde ploeg + drop valt binnen huidige datumspanne → herschikken (niet verplaatsen) */
         var p0=plaatsingsData[id];
         if(p0&&doelPloeg===p0.ploeg){
-            if(doelDatum===_dragCurrentDatum){
+            var p0sD=ddMMNaarDate(placementStart(p0)),p0eD=ddMMNaarDate(placementEind(p0));
+            var dropD=ddMMNaarDate(doelDatum);
+            if(doelDatum===_dragCurrentDatum||(dropD&&p0sD&&p0eD&&dropD>=p0sD&&dropD<=p0eD)){
                 var insertIdx0=parseInt(doelZone.dataset.reorderInsertIdx,10);
                 if(isNaN(insertIdx0))insertIdx0=_reorderLastIdx;
                 verwijderReorderIndicator();
@@ -2028,7 +2039,9 @@ function drop(e){
         var int0r=null;
         for(var ii=0;ii<alleInterventies.length;ii++){if(alleInterventies[ii].id===id){int0r=alleInterventies[ii];break;}}
         if(int0r&&doelPloeg&&doelPloeg===int0r.ploeg){
-            if(doelDatum===_dragCurrentDatum){
+            var intS=ddMMNaarDate(intStart(int0r)),intE=ddMMNaarDate(intEind(int0r));
+            var dropDI=ddMMNaarDate(doelDatum);
+            if(doelDatum===_dragCurrentDatum||(dropDI&&intS&&intE&&dropDI>=intS&&dropDI<=intE)){
                 var insertIdxI=parseInt(doelZone.dataset.reorderInsertIdx,10);
                 if(isNaN(insertIdxI))insertIdxI=_reorderLastIdx;
                 verwijderReorderIndicator();
