@@ -511,11 +511,12 @@
             letter-spacing: 0.02em;
         }
         .zwevend-toggle-btn {
-            cursor: pointer; font-size: 13px; opacity: 0.4;
+            cursor: pointer; font-size: 13px; opacity: 0;
             transition: opacity 0.15s; user-select: none;
         }
+        .planning-card:hover .zwevend-toggle-btn,
+        .placement-band:hover .zwevend-toggle-btn { opacity: 1; }
         .zwevend-toggle-btn:hover { opacity: 1; }
-        .zwevend-toggle-btn.actief { opacity: 0.9; }
 
         .dropzone > .planning-card.zwevend,
         .placement-band.zwevend {
@@ -2049,7 +2050,7 @@
                 var tops = {}, cursor = BAND_TOP;
                 banen.forEach(function(b) { tops[b]=cursor; cursor+=baanHoogtes[b]+BAND_GAP; });
                 var totaal = (banen.length ? (cursor-BAND_GAP) : BAND_TOP) + 30;
-                items.forEach(function(it) { it.el.style.top=tops[it.baan]+'px'; it.el.style.height='auto'; it.el.style.bottom='auto'; });
+                items.forEach(function(it) { it.el.style.top=tops[it.baan]+'px'; it.el.style.height=baanHoogtes[it.baan]+'px'; it.el.style.bottom='auto'; });
                 contentHoogtes[pl] = Math.max(80, totaal);
             });
             /* Tweede pas: bepaal uiteindelijke hoogte per rij op basis van instellingen */
