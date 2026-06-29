@@ -75,7 +75,7 @@
         }
         .card-body {
             flex-grow: 1; display: flex; flex-direction: column;
-            gap: 2px; width: 100%;
+            gap: 2px; width: 100%; overflow: hidden;
         }
         .card-title { font-size: 13px; font-weight: 700; line-height: 1.3; }
         .card-address {
@@ -2081,7 +2081,9 @@
             autoFitZoom();
             herstelBandSpreiding();
             /* Tweede pass: egaliseer hoogten per top-groep (na band-spreiding) */
+            /* Reset zoom zodat offsetHeight niet door CSS zoom wordt beïnvloed */
             (function(){
+                if(tableEl)tableEl.style.zoom='';
                 var topGroepen={};
                 Object.keys(perPloeg).forEach(function(pl){
                     perPloeg[pl].forEach(function(z){
@@ -2100,6 +2102,7 @@
                     var maxH=groep.reduce(function(m,g){return Math.max(m,g.h);},0);
                     if(maxH>0)groep.forEach(function(g){g.el.style.height=maxH+'px';});
                 });
+                if(tableEl)tableEl.style.zoom=tableZoom;
             })();
         }
 
@@ -2263,7 +2266,7 @@
                     voegReorderHandleToe(el);
                 }
             }
-            if (opts.isLastVisible && isAdmin) el.appendChild(maakResizeHandle(function(e){startPlacementResize(e,p,ctx);}));
+            if ((opts.isFirstVisible || opts.isLastVisible) && isAdmin) el.appendChild(maakResizeHandle(function(e){startPlacementResize(e,p,ctx);}));
             el.addEventListener('dragstart',drag); el.addEventListener('dragend',dragEnd);
             koppelKaartOpenen(el,{kaartData:card,kanTonen:!!ctx.kanTonen,cardId:cardIdVanInstantie(p.instanceId),url:ctx.url||''});
             return el;
@@ -2391,7 +2394,7 @@
                     voegReorderHandleToe(el);
                 }
             }
-            if(opts.isLastVisible&&isAdmin)el.appendChild(maakResizeHandle(function(e){startInterventieResize(e,int);}));
+            if((opts.isFirstVisible||opts.isLastVisible)&&isAdmin)el.appendChild(maakResizeHandle(function(e){startInterventieResize(e,int);}));
             el.addEventListener('dragstart',drag);el.addEventListener('dragend',dragEnd);
             return el;
         }
