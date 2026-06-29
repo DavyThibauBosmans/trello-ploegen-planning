@@ -1,0 +1,860 @@
+* { box-sizing: border-box; }
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f4f5f7;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    height: 100vh;
+    color: #172b4d;
+    overflow: hidden;
+}
+
+/* ── ZIJBALK ── */
+.sidebar {
+    width: 260px; min-width: 260px;
+    background-color: #fff;
+    border-right: 1px solid #dfe1e6;
+    display: flex; flex-direction: column;
+    padding: 16px;
+    box-shadow: 2px 0 6px rgba(0,0,0,0.06);
+}
+.sidebar h2 {
+    font-size: 14px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.05em; color: #5e6c84; margin: 0 0 12px 0;
+}
+
+/* ── ZOEKBALK ── */
+.sidebar-search {
+    width: 100%; padding: 8px 10px; margin-bottom: 10px;
+    border: 1px solid #dfe1e6; border-radius: 6px;
+    font-size: 13px; font-family: inherit; color: #172b4d;
+    background-color: #fafbfc; outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+}
+.sidebar-search:focus {
+    border-color: #0052cc; background-color: #fff;
+    box-shadow: 0 0 0 2px rgba(0, 82, 204, 0.18);
+}
+.sidebar-search::placeholder { color: #97a0af; }
+
+#search-empty {
+    display: none; font-size: 12px; color: #5e6c84;
+    font-style: italic; padding: 8px 4px;
+}
+
+#sidebar-pool {
+    flex-grow: 1; overflow-y: auto;
+    background-color: #f4f5f7; border-radius: 6px;
+    padding: 8px; min-height: 200px;
+}
+#sidebar-pool.dragover { background-color: #dce9fc; outline: 2px dashed #0052cc; }
+
+/* ── KAARTEN OPBOUW ── */
+.planning-card {
+    border-radius: 4px; padding: 10px 12px; margin-bottom: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    cursor: grab; user-select: none;
+    display: flex; justify-content: space-between; align-items: flex-start;
+    transition: box-shadow 0.15s, transform 0.1s;
+    position: relative;
+    z-index: 2;
+}
+.planning-card:hover {
+    box-shadow: 0 4px 10px rgba(0,0,0,0.22);
+    transform: translateY(-1px);
+}
+.card-body {
+    flex-grow: 1; display: flex; flex-direction: column;
+    gap: 2px; width: 100%; overflow: hidden;
+}
+.card-title { font-size: 13px; font-weight: 700; line-height: 1.3; }
+.card-address {
+    font-size: 11px; font-style: italic; opacity: 0.85;
+    line-height: 1.2; outline: none; word-break: break-word;
+}
+
+/* ── GEPLAND-BADGE ── */
+.plan-badge {
+    display: none; align-self: flex-start; margin-top: 5px;
+    font-size: 10px; font-weight: 700; line-height: 1.4;
+    background-color: rgba(255, 255, 255, 0.85); color: #172b4d;
+    padding: 1px 7px; border-radius: 10px; letter-spacing: 0.02em;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.12);
+}
+
+/* ── ARCHIEF-TAG ── */
+.archief-tag {
+    display: inline-block; align-self: flex-start; margin-top: 5px;
+    font-size: 10px; font-weight: 700; line-height: 1.4;
+    background-color: rgba(0, 0, 0, 0.18); color: inherit;
+    padding: 1px 7px; border-radius: 10px; letter-spacing: 0.02em;
+}
+
+/* ── KAART-INFO POPUP ── */
+.card-popup-overlay {
+    position: fixed; inset: 0;
+    background: rgba(9, 30, 66, 0.45);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000;
+}
+.card-popup {
+    position: relative; background: #fff; border-radius: 8px;
+    width: min(420px, 92vw); max-height: 86vh; overflow-y: auto;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.30); padding: 18px 20px;
+}
+.card-popup-close {
+    position: absolute; top: 8px; right: 12px;
+    cursor: pointer; font-size: 22px; line-height: 1;
+    color: #5e6c84; opacity: 0.7;
+}
+.card-popup-close:hover { opacity: 1; }
+.card-popup-color-bar { height: 6px; border-radius: 3px; margin-bottom: 12px; }
+.card-popup-title {
+    font-size: 16px; font-weight: 700; line-height: 1.3; margin: 0 26px 8px 0;
+}
+.card-popup-field { font-size: 13px; line-height: 1.4; margin: 4px 0; word-break: break-word; }
+.card-popup-open-btn {
+    display: block; width: 100%; margin-top: 16px;
+    background: #0052cc; color: #fff; border: none;
+    padding: 10px 14px; border-radius: 6px;
+    font-size: 14px; font-weight: 700; font-family: inherit;
+    cursor: pointer; transition: background-color 0.15s;
+}
+.card-popup-open-btn:hover { background: #0747a6; }
+.card-popup-hint {
+    font-size: 11px; color: #5e6c84; font-style: italic;
+    text-align: center; margin-top: 8px;
+}
+.card-popup-section-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.04em; color: #5e6c84;
+    margin-top: 14px; padding-top: 10px; border-top: 1px solid #ebecf0;
+}
+.card-popup-desc {
+    white-space: pre-wrap; word-break: break-word;
+    font-size: 13px; line-height: 1.5; color: #172b4d; margin-top: 6px;
+}
+.card-popup-labels { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px; }
+.card-popup-label {
+    font-size: 11px; font-weight: 600; color: #fff;
+    padding: 2px 8px; border-radius: 4px;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.15);
+}
+
+/* ── INFO PLAATSING STYLING ── */
+.card-info-placement {
+    font-size: 11px; font-weight: 500; margin-top: 5px; padding: 4px 6px;
+    background-color: rgba(255, 255, 255, 0.35);
+    border-left: 3px solid rgba(0, 0, 0, 0.15);
+    border-radius: 2px; outline: none;
+    color: #172b4d !important; word-break: break-word; white-space: pre-wrap;
+}
+.card-info-placement:focus { background-color: #fff; box-shadow: 0 0 0 1px #0052cc; }
+.card-info-placement:empty {
+    background-color: transparent;
+    border-left: 2px dashed rgba(0, 0, 0, 0.15);
+    padding: 2px; min-height: 16px;
+}
+.card-info-placement:empty::before {
+    content: "✏️ Info plaatsing...";
+    opacity: 0.25; font-style: italic; font-weight: normal;
+}
+
+.card-address-editable:empty::before {
+    content: "📍 Adres toevoegen...";
+    opacity: 0.4; font-style: italic;
+}
+.card-address-editable:not(:empty)::before { content: "📍 "; }
+
+.card-address-editable:empty, .card-info-placement:empty { display: none; }
+.planning-card:hover .card-address-editable:empty,
+.planning-card:hover .card-info-placement:empty,
+.placement-band:hover .card-info-placement:empty,
+.card-address-editable:empty:focus,
+.card-info-placement:empty:focus { display: block; }
+
+/* Duidelijk zichtbaar info-plaatsing vak bij hoveren (enkel admin-modus) */
+body:not(.view-only-mode) .planning-card:hover .card-info-placement:empty,
+body:not(.view-only-mode) .placement-band:hover .card-info-placement:empty {
+    background-color: rgba(255,255,255,0.65);
+    border-left: 2px solid rgba(0,82,204,0.45);
+    border-radius: 2px;
+}
+body:not(.view-only-mode) .planning-card:hover .card-info-placement:empty::before,
+body:not(.view-only-mode) .placement-band:hover .card-info-placement:empty::before {
+    opacity: 0.65;
+    color: #0052cc;
+}
+
+/* ── Reorder handle & indicator ── */
+.reorder-handle {
+    position: absolute; left: 0; top: 0; bottom: 0; width: 22px;
+    cursor: grab; opacity: 0; transition: opacity .15s;
+    font-size: 18px; color: rgba(0,0,0,.7); user-select: none;
+    z-index: 10; letter-spacing: -4px;
+    text-shadow: 0 1px 2px rgba(255,255,255,0.8);
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.07); border-radius: 4px 0 0 4px;
+}
+.planning-card:hover .reorder-handle,
+.placement-band:hover .reorder-handle { opacity: 1; }
+.reorder-handle:active { cursor: grabbing; }
+body:not(.view-only-mode) .dropzone > .planning-card,
+body:not(.view-only-mode) .dropzone > .placement-band { padding-left: 26px; }
+.reorder-indicator {
+    position: absolute; left: 2px; right: 2px; height: 3px;
+    background: #0052cc; border-radius: 2px; z-index: 25; pointer-events: none;
+    box-shadow: 0 0 0 2px rgba(0,82,204,0.25);
+}
+.reorder-indicator::before, .reorder-indicator::after {
+    content: ''; position: absolute; top: 50%; transform: translateY(-50%);
+    width: 7px; height: 7px; background: #0052cc; border-radius: 50%;
+}
+.reorder-indicator::before { left: -3px; }
+.reorder-indicator::after  { right: -3px; }
+
+/* Knoppen op de kaart */
+.card-controls {
+    display: flex; gap: 6px; align-items: center;
+    margin-left: 6px; position: relative;
+}
+.color-btn, .delete-btn {
+    cursor: pointer; font-size: 14px; opacity: 0.3; transition: opacity 0.15s;
+}
+.color-btn:hover, .delete-btn:hover { opacity: 1; }
+
+.color-picker-menu {
+    position: absolute; top: 22px; right: 0;
+    background: white; border: 1px solid #dfe1e6;
+    border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    padding: 6px;
+    display: grid; grid-template-columns: repeat(4, 22px); gap: 6px;
+    z-index: 100;
+}
+.color-swatch {
+    width: 22px; height: 22px; border-radius: 3px;
+    cursor: pointer; border: 1px solid rgba(0,0,0,0.1);
+    transition: transform 0.1s;
+}
+.color-swatch:hover { transform: scale(1.15); }
+
+/* ── HOOFDSCHERM & TABEL ── */
+.main-content {
+    flex-grow: 1; padding: 20px; overflow: auto;
+    display: flex; flex-direction: column;
+}
+.main-content-header {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; margin-bottom: 14px; flex-wrap: wrap;
+}
+.main-content h2 { font-size: 16px; font-weight: 700; margin: 0; }
+
+/* ── ZOOM-TOOLBAR (vaste balk boven het raster, scrollt niet mee) ── */
+.zoom-toolbar {
+    display: flex; align-items: center; justify-content: flex-end;
+    gap: 2px; padding: 0 0 4px; flex-shrink: 0;
+}
+.zoom-bar-btn {
+    border: none; background: none; font-family: inherit;
+    font-size: 15px; font-weight: 700; color: #5e6c84; line-height: 1;
+    width: 26px; height: 26px; border-radius: 5px; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: background-color 0.12s, color 0.12s;
+}
+.zoom-bar-btn:hover { background: #ebecf0; color: #0052cc; }
+.zoom-bar-btn.actief { background: #0052cc; color: #fff; }
+.zoom-bar-pct {
+    font-size: 11px; font-weight: 700; color: #5e6c84;
+    min-width: 34px; text-align: center; pointer-events: none;
+}
+
+/* ── VIEW-SCHAKELAAR ── */
+.view-switcher {
+    display: inline-flex; align-items: center;
+    background-color: #ebecf0; border-radius: 8px; padding: 3px; gap: 2px;
+}
+.view-switch-btn {
+    border: none; background: none; font-family: inherit;
+    font-size: 12px; font-weight: 700; color: #5e6c84;
+    padding: 6px 12px; border-radius: 6px; cursor: pointer;
+    white-space: nowrap; transition: background-color 0.15s, color 0.15s, box-shadow 0.15s;
+}
+.view-switch-btn:hover { color: #172b4d; }
+.view-switch-btn.actief {
+    background-color: #fff; color: #0052cc;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
+
+/* ── SCROLL-WRAPPER ── */
+.table-scroll-wrap {
+    flex-grow: 1; overflow-x: auto; overflow-y: visible;
+}
+
+/* ── LEGENDE ── */
+.legenda {
+    background-color: #fff; border: 1px solid #dfe1e6; border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08); font-size: 12px; overflow: hidden;
+}
+.legenda-toggle {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 10px; cursor: pointer; font-weight: 700;
+    color: #5e6c84; user-select: none;
+    background: none; border: none; font-family: inherit; font-size: 12px;
+}
+.legenda-toggle .chev { transition: transform 0.15s; display: inline-block; }
+.legenda.open .legenda-toggle .chev { transform: rotate(90deg); }
+.legenda-items { display: none; flex-wrap: wrap; gap: 6px 12px; padding: 0 10px 10px 10px; }
+.legenda.open .legenda-items { display: flex; }
+.legenda-item { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.legenda-swatch {
+    width: 14px; height: 14px; border-radius: 3px;
+    border: 1px solid rgba(0,0,0,0.1); flex-shrink: 0;
+}
+
+/* ── VIEW-ONLY INDICATOR ── */
+.mode-indicator {
+    font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 12px;
+    white-space: nowrap; letter-spacing: 0.02em;
+}
+.mode-indicator.view-only { background-color: #ebecf0; color: #5e6c84; }
+.mode-indicator.edit-mode { background-color: #e3fcef; color: #006644; }
+body.view-only-mode .planning-card { cursor: default; }
+body.view-only-mode .cell-add-btn,
+body.view-only-mode .card-controls,
+body.view-only-mode .ploeg-delete-btn,
+body.view-only-mode .add-ploeg-row,
+body.view-only-mode .verlof-add-btn,
+body.view-only-mode .span-resize-handle,
+body.view-only-mode .zwevend-toggle-btn { display: none !important; }
+body.view-only-mode .card-info-placement:empty,
+body.view-only-mode .card-address-editable:empty { display: none !important; }
+body.view-only-mode .placement-band { cursor: default; }
+
+.planning-table {
+    width: 100%; border-collapse: collapse;
+    background-color: white; border-radius: 8px;
+    overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    table-layout: fixed;
+}
+.planning-table th,
+.planning-table td { border: 1px solid #dfe1e6; padding: 8px; vertical-align: top; }
+.planning-table th {
+    background-color: #ebecf0; font-weight: 700; font-size: 13px; text-align: left;
+}
+.col-ploeg { width: 130px; }
+
+/* ── KOLOMBREEDTE: ingesteld via JS (col-dag breedte via <style id="col-stijl">) ── */
+.planning-table { table-layout: auto; }
+.planning-table th.is-weekend { background-color: #dcdfe4; color: #6b778c; font-size: 11px; }
+
+.planning-table td.is-weekend { background-color: #f1f2f4; }
+.planning-table td.dropzone.is-weekend.verlof-zone { background-color: #f5f3ea; }
+.is-weekend .placement-band .card-title,
+.is-weekend .planning-card .card-title { font-size: 11px; }
+
+.row-ploeg {
+    font-weight: 700; font-size: 13px; background-color: #fafbfc;
+    vertical-align: middle !important; position: relative;
+}
+
+/* ── PLOEGNAAM INLINE BEWERKEN ── */
+.ploeg-naam-wrap {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 6px; min-height: 24px;
+}
+.ploeg-naam-editable {
+    flex-grow: 1; outline: none; padding: 2px 4px; border-radius: 3px;
+    cursor: text; transition: background-color 0.15s, box-shadow 0.15s;
+    word-break: break-word; white-space: pre-wrap;
+}
+body:not(.view-only-mode) .ploeg-naam-editable:hover { background-color: rgba(0, 82, 204, 0.07); }
+.ploeg-naam-editable:focus { background-color: #fff; box-shadow: 0 0 0 1px #0052cc; cursor: text; }
+body.view-only-mode .ploeg-naam-editable { cursor: default; }
+
+.ploeg-delete-btn {
+    cursor: pointer; font-size: 16px; line-height: 1; color: #5e6c84; opacity: 0;
+    transition: opacity 0.15s, color 0.15s; padding: 2px 6px; border-radius: 3px; user-select: none;
+    pointer-events: auto; position: relative; z-index: 10;
+}
+.row-ploeg:hover .ploeg-delete-btn { opacity: 0.5; pointer-events: auto; }
+.ploeg-delete-btn:hover { opacity: 1 !important; color: #bf2600; background-color: rgba(191, 38, 0, 0.08); }
+
+/* ── + PLOEG TOEVOEGEN RIJ ── */
+.add-ploeg-row td { background-color: #fafbfc; padding: 0; border-top: 2px dashed #dfe1e6; }
+.add-ploeg-btn {
+    display: block; width: 100%; background: none; border: none;
+    padding: 10px; font-family: inherit; font-size: 13px;
+    color: #5e6c84; cursor: pointer; font-weight: 600;
+    transition: background-color 0.15s, color 0.15s;
+}
+.add-ploeg-btn:hover { background-color: #ebecf0; color: #0052cc; }
+
+/* ── INLINE WAARSCHUWING ── */
+.ploeg-warning {
+    position: absolute; top: 100%; left: 10px; right: 10px; margin-top: 4px;
+    background-color: #fff4e5; border: 1px solid #ffab00; color: #6f4e00;
+    font-size: 11px; font-weight: 600; padding: 6px 8px; border-radius: 4px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    z-index: 20; opacity: 0; transform: translateY(-4px);
+    transition: opacity 0.15s, transform 0.15s; pointer-events: none;
+}
+.ploeg-warning.show { opacity: 1; transform: translateY(0); }
+
+/* ── VERLOF-RIJ ── */
+.row-verlof-label {
+    font-weight: 700; font-size: 13px; background-color: #fff8e1;
+    vertical-align: middle !important; color: #6f4e00;
+    border-left: 4px solid #ffab00 !important;
+}
+.verlof-zone {
+    background-color: #fffdf5;
+    padding-bottom: 26px !important; position: relative;
+}
+.verlof-zone.dragover { background-color: #fff4cc; outline: 2px dashed #ffab00; }
+
+/* ── VERLOF-SEGMENTEN ── */
+.verlof-segment {
+    display: block;
+    background-color: #ffe9a8;
+    border: 1px solid #f1c40f;
+    border-radius: 12px;
+    padding: 3px 8px; margin-bottom: 4px;
+    min-height: 22px; font-size: 11px; font-weight: 600; color: #5f4b00;
+    cursor: grab; user-select: none; position: relative;
+    transition: filter 0.12s;
+}
+.verlof-segment:hover { filter: brightness(0.97); }
+.verlof-segment.not-first {
+    border-top-left-radius: 0; border-bottom-left-radius: 0;
+    border-left: 0; margin-left: -9px; padding-left: 10px;
+}
+.verlof-segment.not-last {
+    border-top-right-radius: 0; border-bottom-right-radius: 0;
+    border-right: 0; margin-right: -9px;
+}
+.verlof-segment.continuation { color: transparent; }
+
+.verlof-segment-body { display: flex; align-items: center; gap: 6px; min-height: 16px; }
+.verlof-naam-editable {
+    outline: none; padding: 0 2px; border-radius: 2px; cursor: text;
+    min-width: 20px; word-break: break-word; flex-grow: 1;
+}
+.verlof-naam-editable:focus { background-color: #fff8e1; box-shadow: 0 0 0 1px #ffab00; }
+body.view-only-mode .verlof-naam-editable { cursor: default; }
+.verlof-segment .delete-btn { font-size: 13px; opacity: 0.4; color: #6f4e00; }
+.verlof-segment:hover .delete-btn { opacity: 1; }
+
+.verlof-add-btn {
+    position: absolute; bottom: 4px; right: 4px;
+    background-color: #ffab00; color: #fff; border: none;
+    width: 20px; height: 20px; border-radius: 50%;
+    font-size: 14px; font-weight: bold; line-height: 18px; text-align: center;
+    cursor: pointer; opacity: 0; transition: opacity 0.15s, background-color 0.15s;
+    z-index: 10; padding: 0;
+}
+.verlof-zone:hover .verlof-add-btn { opacity: 0.6; }
+.verlof-add-btn:hover { opacity: 1 !important; background-color: #ff8f00; }
+
+/* ── RESIZE-HANDVAT ── */
+.span-resize-handle {
+    position: absolute; right: -2px; top: 0; bottom: 0;
+    width: 12px; cursor: ew-resize; z-index: 6;
+}
+.span-resize-handle::after {
+    content: ''; position: absolute; right: 3px; top: 50%;
+    transform: translateY(-50%); width: 3px; height: 55%;
+    background-color: rgba(0,0,0,0.20); border-radius: 2px;
+    transition: background-color 0.15s;
+}
+.verlof-segment:hover .span-resize-handle::after,
+.placement-band:hover .span-resize-handle::after,
+.planning-card:hover .span-resize-handle::after { background-color: rgba(0,0,0,0.5); }
+body.span-resizing { cursor: ew-resize !important; user-select: none; }
+body.span-resizing * { cursor: ew-resize !important; }
+
+body[data-drag-type="verlof"] .dropzone:not(.verlof-zone) { cursor: not-allowed; }
+body[data-drag-type="bron"] .verlof-zone,
+body[data-drag-type="instantie"] .verlof-zone,
+body[data-drag-type="interventie"] .verlof-zone { cursor: not-allowed; }
+
+/* ── ZWEVENDE KAARTEN ── */
+.planning-card.zwevend,
+.placement-band.zwevend {
+    opacity: 0.72;
+    outline: 2px dashed rgba(0,0,0,0.30) !important;
+    outline-offset: -2px;
+    background-image: repeating-linear-gradient(
+        -45deg,
+        transparent,
+        transparent 6px,
+        rgba(255,255,255,0.22) 6px,
+        rgba(255,255,255,0.22) 12px
+    );
+}
+.placement-band.zwevend.band-not-first {
+    background-image: none;
+}
+.zwevend-badge {
+    display: inline-block; font-size: 10px; font-weight: 700;
+    background-color: rgba(255,255,255,0.75); color: #5e6c84;
+    padding: 1px 6px; border-radius: 8px; margin-top: 4px;
+    letter-spacing: 0.02em;
+}
+.zwevend-toggle-btn {
+    cursor: pointer; font-size: 13px; opacity: 0;
+    transition: opacity 0.15s; user-select: none;
+}
+.planning-card:hover .zwevend-toggle-btn,
+.placement-band:hover .zwevend-toggle-btn { opacity: 1; }
+.zwevend-toggle-btn:hover { opacity: 1; }
+
+.dropzone > .planning-card.zwevend,
+.placement-band.zwevend {
+    transform: translateX(7px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.20);
+    z-index: 3;
+}
+.dropzone > .planning-card.zwevend:hover,
+.placement-band.zwevend:hover { z-index: 5 !important; }
+
+/* ── STAPELLOGICA ── */
+.dropzone { position: relative; padding-bottom: 26px !important; }
+.dropzone.dragover { background-color: #dce9fc; outline: 2px dashed #0052cc; }
+
+.placement-band {
+    position: absolute;
+    left: 0; right: 0;
+    border-radius: 6px;
+    padding: 6px 10px;
+    cursor: grab; user-select: none;
+    z-index: 1;
+    box-shadow: inset 0 -3px 0 rgba(0,0,0,0.10);
+    transition: filter 0.12s;
+}
+.placement-band:hover { filter: brightness(0.97); z-index: 4 !important; }
+.placement-band.band-not-first {
+    left: -9px;
+    border-top-left-radius: 0; border-bottom-left-radius: 0;
+}
+.placement-band.band-not-last {
+    right: -9px;
+    border-top-right-radius: 0; border-bottom-right-radius: 0;
+}
+.placement-band .card-body { width: 100%; }
+.placement-band .card-title {
+    font-size: 12px; font-weight: 700; line-height: 1.2;
+}
+.placement-band .card-address {
+    font-size: 10px; font-style: italic; opacity: 0.9;
+    white-space: normal; word-break: break-word;
+}
+.placement-band .card-info-placement { font-size: 10px; }
+.placement-band .band-controls {
+    position: absolute; top: 4px; right: 16px;
+    margin-left: 0; z-index: 5;
+}
+
+.dropzone > .planning-card {
+    position: absolute;
+    left: 0; right: 0;
+    z-index: 2;
+}
+
+.cell-add-btn {
+    position: absolute; bottom: 4px; right: 4px;
+    background-color: #0052cc; color: white; border: none;
+    width: 20px; height: 20px; border-radius: 50%;
+    font-size: 14px; font-weight: bold; line-height: 18px; text-align: center;
+    cursor: pointer; opacity: 0; transition: opacity 0.15s, background-color 0.15s;
+    z-index: 10; padding: 0;
+}
+.dropzone:hover .cell-add-btn { opacity: 0.6; }
+.cell-add-btn:hover { opacity: 1 !important; background-color: #0079bf; }
+
+#loading-msg { font-size: 13px; color: #5e6c84; padding: 8px; font-style: italic; }
+#error-msg { font-size: 13px; color: #bf2600; padding: 8px; display: none; }
+
+/* ── TIJDLIJN-NAVIGATIE ── */
+.tijdlijn-nav {
+    display: inline-flex; align-items: center; gap: 4px;
+    background-color: #ebecf0; border-radius: 8px; padding: 3px;
+}
+.nav-btn {
+    border: none; background: none; font-family: inherit;
+    font-size: 16px; font-weight: 700; color: #5e6c84; line-height: 1;
+    width: 30px; height: 30px; border-radius: 6px; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: background-color 0.15s, color 0.15s;
+}
+.nav-btn:hover { background-color: #fff; color: #0052cc; }
+.nav-today-btn {
+    border: none; background: none; font-family: inherit;
+    font-size: 12px; font-weight: 700; color: #5e6c84;
+    padding: 0 12px; height: 30px; border-radius: 6px; cursor: pointer;
+    white-space: nowrap; transition: background-color 0.15s, color 0.15s;
+}
+.nav-today-btn:hover { background-color: #fff; color: #0052cc; }
+.nav-today-btn.op-vandaag { color: #0052cc; }
+.nav-datepicker {
+    border: 1px solid #dfe1e6; border-radius: 6px;
+    font-family: inherit; font-size: 12px; color: #172b4d;
+    padding: 5px 6px; background-color: #fff; outline: none; cursor: pointer;
+    height: 30px;
+}
+.nav-datepicker:focus { border-color: #0052cc; box-shadow: 0 0 0 2px rgba(0,82,204,0.18); }
+
+.periode-label {
+    font-size: 13px; font-weight: 600; color: #5e6c84;
+    white-space: nowrap;
+}
+
+/* ── VERLEDEN & VANDAAG MARKERING ──
+   is-verleden wordt nu ook op de huidige dag toegepast.
+   is-vandaag styling (blauw kader/header) is verwijderd. */
+.planning-table td.is-verleden {
+    background-image:
+        linear-gradient(rgba(255, 214, 0, 0.10), rgba(255, 214, 0, 0.10)),
+        repeating-linear-gradient(
+            -45deg,
+            transparent, transparent 7px,
+            rgba(120, 110, 60, 0.07) 7px, rgba(120, 110, 60, 0.07) 14px
+        );
+}
+.planning-table td.is-verleden.is-weekend {
+    background-image:
+        linear-gradient(rgba(255, 214, 0, 0.10), rgba(255, 214, 0, 0.10)),
+        repeating-linear-gradient(
+            -45deg,
+            rgba(0,0,0,0.02), rgba(0,0,0,0.02) 7px,
+            rgba(120, 110, 60, 0.09) 7px, rgba(120, 110, 60, 0.09) 14px
+        );
+}
+.planning-table th.is-verleden { opacity: 0.6; }
+
+/* ── INSTELLINGEN KNOP ── */
+.settings-btn {
+    border: none; background: none; font-family: inherit;
+    font-size: 18px; color: #5e6c84; width: 32px; height: 32px;
+    border-radius: 6px; cursor: pointer; display: inline-flex;
+    align-items: center; justify-content: center;
+    transition: background-color 0.15s, color 0.15s;
+}
+.settings-btn:hover { background-color: #ebecf0; color: #0052cc; }
+
+/* ── INSTELLINGEN PANEEL ── */
+.settings-overlay {
+    position: fixed; inset: 0;
+    background: rgba(9,30,66,0.35);
+    display: flex; align-items: flex-start; justify-content: flex-end;
+    padding: 60px 20px 0 0; z-index: 500;
+}
+.settings-panel {
+    background: #fff; border-radius: 8px;
+    width: 360px; max-height: calc(100vh - 80px); overflow-y: auto;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.25); padding: 0;
+}
+.settings-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px 10px; border-bottom: 1px solid #ebecf0;
+    position: sticky; top: 0; background: #fff; z-index: 1;
+}
+.settings-header h3 { margin: 0; font-size: 14px; font-weight: 700; color: #172b4d; }
+.settings-close {
+    cursor: pointer; font-size: 20px; color: #5e6c84;
+    line-height: 1; opacity: 0.7; background: none; border: none;
+}
+.settings-close:hover { opacity: 1; }
+.settings-body { padding: 12px 16px 16px; }
+.settings-view-tabs {
+    display: flex; gap: 4px; margin-bottom: 12px;
+    background: #ebecf0; border-radius: 6px; padding: 3px;
+}
+.settings-view-tab {
+    flex: 1; border: none; background: none; font-family: inherit;
+    font-size: 12px; font-weight: 700; color: #5e6c84;
+    padding: 5px 8px; border-radius: 4px; cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+}
+.settings-view-tab.actief { background: #fff; color: #0052cc; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.settings-section-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.05em; color: #5e6c84; margin: 14px 0 6px;
+}
+.settings-section-label:first-child { margin-top: 0; }
+
+/* Rij met label + invoerveld */
+.settings-row {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+}
+.settings-row label { font-size: 13px; color: #172b4d; flex: 1; min-width: 0; }
+.settings-num {
+    width: 62px; padding: 4px 6px; border: 1px solid #dfe1e6; border-radius: 5px;
+    font-family: inherit; font-size: 13px; font-weight: 700; color: #0052cc;
+    text-align: right; outline: none; flex-shrink: 0;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.settings-num:focus { border-color: #0052cc; box-shadow: 0 0 0 2px rgba(0,82,204,0.18); }
+.settings-num:disabled { opacity: 0.4; cursor: not-allowed; }
+.settings-num-unit { font-size: 12px; color: #5e6c84; flex-shrink: 0; }
+
+/* Master rijhoogte blok */
+.settings-master-blok {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; background: #f4f5f7; border-radius: 6px; margin-bottom: 8px;
+}
+.settings-master-blok input[type=checkbox] { accent-color: #0052cc; width: 15px; height: 15px; cursor: pointer; flex-shrink: 0; }
+.settings-master-blok label { font-size: 13px; font-weight: 700; color: #172b4d; cursor: pointer; flex: 1; margin: 0; }
+
+/* Per-rij items */
+.settings-rij-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 4px; }
+.settings-rij-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 6px; border-radius: 4px; transition: background 0.1s;
+}
+.settings-rij-item:hover { background: #f4f5f7; }
+.settings-rij-item > label { font-size: 13px; color: #172b4d; flex: 1; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.settings-rij-item input[type=checkbox] { accent-color: #0052cc; width: 14px; height: 14px; cursor: pointer; flex-shrink: 0; }
+.settings-rij-item .settings-num { width: 58px; }
+
+/* Knoppenrij onderaan */
+.settings-btn-rij {
+    display: flex; gap: 8px; margin-top: 14px;
+}
+.settings-action-btn {
+    flex: 1; border: 1px solid #dfe1e6; border-radius: 6px; background: none;
+    font-family: inherit; font-size: 12px; font-weight: 600; color: #5e6c84;
+    padding: 7px 6px; cursor: pointer; text-align: center;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+    white-space: nowrap;
+}
+.settings-action-btn:hover { background: #ebecf0; color: #172b4d; }
+.settings-action-btn.primair { background: #0052cc; color: #fff; border-color: #0052cc; }
+.settings-action-btn.primair:hover { background: #0747a6; border-color: #0747a6; }
+.settings-reset-btn {
+    display: block; width: 100%; margin-top: 14px;
+    background: none; border: 1px solid #dfe1e6; border-radius: 6px;
+    font-family: inherit; font-size: 12px; font-weight: 600; color: #5e6c84;
+    padding: 7px; cursor: pointer; transition: background 0.12s, color 0.12s;
+}
+.settings-reset-btn:hover { background: #ebecf0; color: #172b4d; }
+
+/* Print-knoppen */
+.print-btn-group {
+    display: inline-flex; align-items: center; gap: 4px;
+    background-color: #ebecf0; border-radius: 8px; padding: 3px;
+}
+.print-btn {
+    border: none; background: none; font-family: inherit;
+    font-size: 12px; font-weight: 700; color: #5e6c84;
+    padding: 6px 10px; border-radius: 6px; cursor: pointer;
+    white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;
+    transition: background-color 0.15s, color 0.15s, box-shadow 0.15s;
+}
+.print-btn:hover {
+    background-color: #fff; color: #0052cc;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
+.print-btn svg { width: 13px; height: 13px; flex-shrink: 0; fill: currentColor; }
+.print-btn-sep { width: 1px; height: 18px; background-color: #c1c7d0; flex-shrink: 0; }
+
+@media print {
+    body { background-color: #fff !important; overflow: visible !important; height: auto !important; }
+    .sidebar { display: none !important; }
+    .main-content { padding: 4mm !important; margin: 0 !important; width: 100% !important; overflow: visible !important; }
+    .table-scroll-wrap { overflow: visible !important; }
+    .view-switcher, .tijdlijn-nav, .print-btn-group, .mode-indicator,
+    .card-controls, .band-controls, .cell-add-btn, .color-picker-menu,
+    .card-popup-overlay, .ploeg-delete-btn, .add-ploeg-row, .verlof-add-btn,
+    .span-resize-handle, .verlof-segment .delete-btn,
+    .zwevend-toggle-btn, .zoom-toolbar { display: none !important; }
+    .card-info-placement:empty { display: none !important; }
+    .card-address-editable:empty { display: none !important; }
+    .card-info-placement {
+        background-color: transparent !important;
+        border-left: 2px solid rgba(0,0,0,0.25) !important;
+        padding: 2px 0 0 4px !important; margin-top: 4px !important;
+        font-size: 10px !important;
+    }
+    .planning-card, .verlof-segment, .placement-band {
+        box-shadow: none !important; border: 1px solid rgba(0,0,0,0.15) !important;
+        -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
+        break-inside: avoid !important;
+    }
+    .planning-table { box-shadow: none !important; border-radius: 0 !important; }
+    .planning-table th, .planning-table td { padding: 4px 5px !important; }
+    .planning-table th.is-weekend, .planning-table td.is-weekend,
+    .planning-table td.is-verleden, .planning-table th.is-verleden,
+    .planning-card, .placement-band, .verlof-segment,
+    .row-verlof-label { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .legenda { border: none !important; box-shadow: none !important; background: transparent !important; }
+    .legenda-items { display: flex !important; flex-wrap: wrap !important; padding: 0 0 6px 0 !important; }
+    .legenda-toggle .chev { display: none !important; }
+    .legenda-swatch { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .main-content-header { margin-bottom: 6px !important; flex-wrap: nowrap !important; }
+    .main-content h2 { font-size: 14px !important; }
+    .periode-label { font-size: 12px !important; display: inline !important; }
+    .planning-card.zwevend, .placement-band.zwevend { transform: none !important; background-image: none !important; }
+    .zwevend-badge { display: inline-block !important; }
+    /* Verwijder overflow-afkapping in print voor alle placement-bands */
+    .placement-band { overflow: visible !important; }
+    .placement-band .card-body { overflow: visible !important; }
+    .placement-band .card-title {
+        display: block !important; -webkit-line-clamp: unset !important;
+        overflow: visible !important; white-space: normal !important;
+    }
+    .placement-band .card-address {
+        overflow: visible !important; white-space: normal !important;
+        text-overflow: unset !important;
+    }
+    /* 2-pagina modus: verberg originele tabel */
+    #print-2page-container { display: none !important; }
+    body.print-2page-modus .table-scroll-wrap > .planning-table { display: none !important; }
+    body.print-2page-modus #print-2page-container { display: block !important; }
+}
+
+@media print {
+    body.print-mode-week .planning-table { font-size: 11px !important; table-layout: auto !important; }
+    body.print-mode-week .col-ploeg { width: 100px !important; }
+    body.print-mode-week .col-dag { min-width: 0 !important; }
+    body.print-mode-week .card-title { font-size: 11px !important; }
+    body.print-mode-week .card-address { font-size: 9px !important; }
+    body.print-mode-week .planning-table th,
+    body.print-mode-week .planning-table td { padding: 3px 4px !important; }
+    body.print-mode-week .table-scroll-wrap { overflow: visible !important; width: 100% !important; }
+}
+
+@media print {
+    body.print-mode-multi .planning-table { font-size: 9px !important; table-layout: auto !important; }
+    body.print-mode-multi .col-ploeg { width: 80px !important; }
+    body.print-mode-multi .col-dag { min-width: 0 !important; }
+    body.print-mode-multi .card-title { font-size: 9px !important; }
+    body.print-mode-multi .card-address { font-size: 7px !important; }
+    body.print-mode-multi .card-info-placement { font-size: 7px !important; }
+    body.print-mode-multi .planning-table th,
+    body.print-mode-multi .planning-table td { padding: 2px 3px !important; }
+    body.print-mode-multi .verlof-segment { font-size: 7px !important; padding: 1px 3px !important; min-height: 16px !important; }
+    body.print-mode-multi .placement-band { padding: 3px 5px !important; }
+    body.print-mode-multi .table-scroll-wrap { overflow: visible !important; width: 100% !important; }
+}
+
+@media print {
+    body.print-mode-month .planning-table { font-size: 8px !important; table-layout: auto !important; }
+    body.print-mode-month .col-ploeg { width: 70px !important; }
+    body.print-mode-month .col-dag { min-width: 0 !important; }
+    body.print-mode-month .card-title { font-size: 8px !important; }
+    body.print-mode-month .card-address { font-size: 7px !important; }
+    body.print-mode-month .card-info-placement { font-size: 7px !important; }
+    body.print-mode-month .planning-table th,
+    body.print-mode-month .planning-table td { padding: 1px 2px !important; font-size: 8px !important; }
+    body.print-mode-month .planning-table th { font-size: 7px !important; }
+    body.print-mode-month .verlof-segment { font-size: 7px !important; padding: 1px 3px !important; min-height: 16px !important; }
+    body.print-mode-month .placement-band { padding: 2px 4px !important; }
+    body.print-mode-month .zwevend-badge { font-size: 7px !important; padding: 0px 3px !important; }
+    body.print-mode-month .table-scroll-wrap { overflow: visible !important; width: 100% !important; }
+    body.print-mode-month .main-content { overflow: visible !important; }
+}
+
+/* ── 2-PAGINA PRINT CONTAINER (normaal verborgen) ── */
+#print-2page-container { display: none; }
