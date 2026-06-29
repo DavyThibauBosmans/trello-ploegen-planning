@@ -117,7 +117,7 @@ function maakBandBase(id, datum, isFirstVisible, isLastVisible, isZwevend, stijl
     el.dataset[dataAttrName] = id;
     el.dataset.datum = datum;
     el.dataset.rol = rol;
-    el.draggable = false;
+    el.draggable = isAdmin;
     el.style.top    = (top    !== undefined ? top    : 6) + 'px';
     el.style.height = (height !== undefined ? height : BAND_HOOGTE) + 'px';
     el.style.bottom = 'auto';
@@ -1103,10 +1103,11 @@ var plaatsingsData = {};       // { instanceId: plaatsingObject }
 var allePlaatsingsParen = [];  // [{ p, ctx }, ...]
 var alleInterventies = [];
 var alleVerlofItems = [];
-var _reorderLastIdx = 0;  // bewaar laatste insert-index voor drop
-var _dragCurrentId = '';    // id van de kaart die gesleept wordt
-var _dragCurrentPloeg = ''; // ploeg van die kaart
-var _dragCurrentDatum = ''; // datum van de cel waar de drag begon
+var _reorderLastIdx = 0;
+var _dragCurrentId = '';
+var _dragCurrentPloeg = '';
+var _dragCurrentDatum = '';
+var _dragViaHandle = false;
 function rijNaarTop(rij) { return BAND_TOP + rij * (BAND_HOOGTE + BAND_GAP); }
 function stapelReserveer(zoneIds, instanceId) {
     zoneIds.forEach(function(zid) { if (!stackMap[zid]) stackMap[zid] = {}; });
@@ -1723,7 +1724,7 @@ function maakTrelloInstantieKaart(card, placement, opts) {
     var el = document.createElement('div'); el.className = 'planning-card';
     if (placement.zwevend) el.classList.add('zwevend');
     el.id = placement.instanceId; el.dataset.instanceId = placement.instanceId;
-    el.draggable = false; el.dataset.rol = 'instantie';
+    el.draggable = isAdmin; el.dataset.rol = 'instantie';
     var body = document.createElement('div'); body.className = 'card-body';
     vulTrelloBasis(body, card);
     if (opts.isArchief) body.appendChild(maakBadge('archief-tag', '📦 Archief'));
@@ -1750,7 +1751,7 @@ function maakInterventieKaart(int, opts) {
     var id = int.id;
     var el = document.createElement('div'); el.className = 'planning-card';
     if (int.zwevend) el.classList.add('zwevend');
-    el.id = id; el.dataset.intId = id; el.draggable = false; el.dataset.rol = 'interventie';
+    el.id = id; el.dataset.intId = id; el.draggable = isAdmin; el.dataset.rol = 'interventie';
     var body = document.createElement('div'); body.className = 'card-body';
     var titleEl = document.createElement('div'); titleEl.className = 'card-title'; titleEl.innerText = int.name;
     maakBewerkbaarVeld(titleEl, function(txt) { updateInterventionText(id, txt); }); body.appendChild(titleEl);
@@ -1828,7 +1829,6 @@ function allowDrop(e){
     if(dragType==='verlof'&&!zoneIsVerlof)return;
     if(dragType&&dragType!=='verlof'&&zoneIsVerlof)return;
     e.preventDefault();this.classList.add('dragover');
-    console.log('[ALLOWDROP]',{dragType:dragType,id:_dragCurrentId,zonePloeg:this.dataset.ploeg,dragPloeg:_dragCurrentPloeg,match:(this.dataset.ploeg===_dragCurrentPloeg)});
     if((dragType==='instantie'||dragType==='interventie')&&_dragCurrentId&&this.dataset.ploeg===_dragCurrentPloeg){
         var sD,eD;
         if(dragType==='instantie'){
@@ -1847,7 +1847,6 @@ function allowDrop(e){
 }
 function toonReorderIndicator(zone, e){
     var ploeg=zone.dataset.ploeg; if(!ploeg)return;
-    console.log('[INDICATOR] toonReorderIndicator aangeroepen',{zoneId:zone.id,ploeg:ploeg,kaarten:document.querySelectorAll('.dropzone[data-ploeg="'+ploeg+'"] > .planning-card, .dropzone[data-ploeg="'+ploeg+'"] > .placement-band').length});
     var zoneDatum=zone.dataset.datum;
     /* Verzamel zichtbare kaarten in dezelfde ploeg-rij die visueel in deze cel staan,
        gesorteerd op topY. Meerdaagse bands staan fysiek in hun startdatum-cel: gebruik
@@ -1886,7 +1885,6 @@ function toonReorderIndicator(zone, e){
     var lijn=document.createElement('div');lijn.className='reorder-indicator';
     lijn.style.top=indicatorY+'px';
     zone.appendChild(lijn);
-    console.log('[INDICATOR] lijn toegevoegd',{top:indicatorY,insertIdx:insertIdx,kaarten:kaarten.length,zoneId:zone.id});
 }
 function dragLeave(e){
     if(e.relatedTarget && this.contains(e.relatedTarget)) return;
@@ -1905,12 +1903,7 @@ function voegReorderHandleToe(el){
     handle.innerHTML='&#8942;&#8942;';
     handle.addEventListener('mousedown',function(e){
         e.stopPropagation();
-        el.draggable=true;
-        function resetDraggable(){
-            if(!document.body.dataset.dragType) el.draggable=false;
-            document.removeEventListener('mouseup',resetDraggable,true);
-        }
-        document.addEventListener('mouseup',resetDraggable,true);
+        _dragViaHandle=true;
     });
     el.appendChild(handle);
 }
@@ -1921,6 +1914,8 @@ function verwijderReorderIndicator(){
 function drag(e){
     if(!isAdmin){e.preventDefault();return;}
     var rol=e.currentTarget.dataset.rol||'';
+    if((rol==='instantie'||rol==='interventie')&&!_dragViaHandle){e.preventDefault();return;}
+    _dragViaHandle=false;
     document.body.dataset.dragType=rol;
     var transferId;
     if(rol==='verlof'&&e.currentTarget.dataset.verlofId)transferId=e.currentTarget.dataset.verlofId;
@@ -1931,15 +1926,11 @@ function drag(e){
     _dragCurrentId=transferId;
     _dragCurrentPloeg=e.currentTarget.dataset.ploegRow||'';
     _dragCurrentDatum=e.currentTarget.dataset.datum||'';
-    console.log('[DRAG]',{rol:rol,id:_dragCurrentId,ploeg:_dragCurrentPloeg,datum:_dragCurrentDatum,draggable:e.currentTarget.draggable});
 }
 function dragEnd(e){
     delete document.body.dataset.dragType;
-    if(e.currentTarget){
-        delete e.currentTarget.dataset.dragAction;
-        var rol=e.currentTarget.dataset.rol;
-        if(rol==='instantie'||rol==='interventie') e.currentTarget.draggable=false;
-    }
+    if(e.currentTarget) delete e.currentTarget.dataset.dragAction;
+    _dragViaHandle=false;
     _dragCurrentId='';_dragCurrentPloeg='';_dragCurrentDatum='';
     verwijderReorderIndicator();
 }
