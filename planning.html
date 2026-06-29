@@ -183,21 +183,41 @@
         .card-address-editable:empty:focus,
         .card-info-placement:empty:focus { display: block; }
 
+        /* Duidelijk zichtbaar info-plaatsing vak bij hoveren (enkel admin-modus) */
+        body:not(.view-only-mode) .planning-card:hover .card-info-placement:empty,
+        body:not(.view-only-mode) .placement-band:hover .card-info-placement:empty {
+            background-color: rgba(255,255,255,0.65);
+            border-left: 2px solid rgba(0,82,204,0.45);
+            border-radius: 2px;
+        }
+        body:not(.view-only-mode) .planning-card:hover .card-info-placement:empty::before,
+        body:not(.view-only-mode) .placement-band:hover .card-info-placement:empty::before {
+            opacity: 0.65;
+            color: #0052cc;
+        }
+
         /* ── Reorder handle & indicator ── */
         .reorder-handle {
-            position: absolute; left: 3px; top: 50%; transform: translateY(-50%);
+            position: absolute; left: 2px; top: 50%; transform: translateY(-50%);
             cursor: grab; opacity: 0; transition: opacity .15s;
-            font-size: 11px; color: rgba(0,0,0,.35); user-select: none;
-            padding: 4px 2px; z-index: 10; line-height: 1;
-            letter-spacing: -2px;
+            font-size: 17px; color: rgba(0,0,0,.65); user-select: none;
+            padding: 4px 3px; z-index: 10; line-height: 1;
+            letter-spacing: -4px; text-shadow: 0 1px 2px rgba(255,255,255,0.7);
         }
         .planning-card:hover .reorder-handle,
         .placement-band:hover .reorder-handle { opacity: 1; }
-        .reorder-handle:active { cursor: grabbing; }
+        .reorder-handle:active { cursor: grabbing; opacity: 1; }
         .reorder-indicator {
-            position: absolute; left: 4px; right: 4px; height: 3px;
-            background: #0079bf; border-radius: 2px; z-index: 20; pointer-events: none;
+            position: absolute; left: 2px; right: 2px; height: 3px;
+            background: #0052cc; border-radius: 2px; z-index: 25; pointer-events: none;
+            box-shadow: 0 0 0 2px rgba(0,82,204,0.25);
         }
+        .reorder-indicator::before, .reorder-indicator::after {
+            content: ''; position: absolute; top: 50%; transform: translateY(-50%);
+            width: 7px; height: 7px; background: #0052cc; border-radius: 50%;
+        }
+        .reorder-indicator::before { left: -3px; }
+        .reorder-indicator::after  { right: -3px; }
 
         /* Knoppen op de kaart */
         .card-controls {
@@ -1969,6 +1989,7 @@
         var allePlaatsingsParen = [];  // [{ p, ctx }, ...]
         var alleInterventies = [];
         var alleVerlofItems = [];
+        var _reorderLastIdx = 0;  // bewaar laatste insert-index voor drop
         function rijNaarTop(rij) { return BAND_TOP + rij * (BAND_HOOGTE + BAND_GAP); }
         function stapelReserveer(zoneIds, instanceId) {
             zoneIds.forEach(function(zid) { if (!stackMap[zid]) stackMap[zid] = {}; });
@@ -2709,6 +2730,7 @@
             var insertIdx=kaarten.length;
             for(var i=0;i<kaarten.length;i++){if(e.clientY<kaarten[i].midY){insertIdx=i;break;}}
             zone.dataset.reorderInsertIdx=insertIdx;
+            _reorderLastIdx=insertIdx;
             /* Teken indicator lijn */
             verwijderReorderIndicator();
             var zoneRect=zone.getBoundingClientRect();
@@ -2729,7 +2751,13 @@
             lijn.style.top=indicatorY+'px';
             zone.appendChild(lijn);
         }
-        function dragLeave(e){this.classList.remove('dragover');verwijderReorderIndicator();}
+        function dragLeave(e){
+            /* Negeer dragleave als de muis naar een kind-element gaat (bubbling) */
+            if(e.relatedTarget && this.contains(e.relatedTarget)) return;
+            this.classList.remove('dragover');
+            if((document.body.dataset.dragType||'')==='herschikken') return; /* indicator blijft bij herschikken */
+            verwijderReorderIndicator();
+        }
         function voegReorderHandleToe(el){
             var handle=document.createElement('span');
             handle.className='reorder-handle';
@@ -2772,7 +2800,8 @@
             /* ── HERSCHIKKEN binnen ploeg-rij ── */
             if(id.indexOf('reorder:')===0){
                 var reorderId=id.slice(8);
-                var insertIdx=parseInt(doelZone.dataset.reorderInsertIdx||'999',10);
+                var insertIdx=parseInt(doelZone.dataset.reorderInsertIdx,10);
+                if(isNaN(insertIdx)) insertIdx=_reorderLastIdx;
                 verwijderReorderIndicator();
                 if(doelPloeg) herschikKaart(reorderId,doelPloeg,insertIdx);
                 return;
