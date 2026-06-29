@@ -2221,7 +2221,7 @@
                 if (!zone) return;
                 var pos1=stapelReserveer([zoneId],p.instanceId);
                 var kaart=maakTrelloInstantieKaart(ctx.card,p,{isArchief:ctx.isArchief,kanTonen:ctx.kanTonen,url:ctx.url,metResize:true,ctx:ctx});
-                kaart.dataset.lane=pos1.rij; kaart.dataset.ploegRow=p.ploeg; zone.appendChild(kaart);
+                kaart.dataset.lane=pos1.rij; kaart.dataset.ploegRow=p.ploeg; kaart.dataset.datum=start; zone.appendChild(kaart);
             } else {
                 var zoneIds=dagen.map(function(dag){return maakZoneId(p.ploeg,dag.datum);});
                 var pos=stapelReserveer(zoneIds,p.instanceId);
@@ -2337,7 +2337,7 @@
                 if(!zone){var pool=document.getElementById('sidebar-pool');if(pool)pool.appendChild(maakInterventieKaart(int));return;}
                 var pos1=stapelReserveer([zoneId],int.id);
                 var kaart=maakInterventieKaart(int,{metResize:true});
-                kaart.dataset.lane=pos1.rij; kaart.dataset.ploegRow=int.ploeg; zone.appendChild(kaart);
+                kaart.dataset.lane=pos1.rij; kaart.dataset.ploegRow=int.ploeg; kaart.dataset.datum=start; zone.appendChild(kaart);
             } else {
                 var zoneIds=dagen.map(function(dag){return maakZoneId(int.ploeg,dag.datum);});
                 var pos=stapelReserveer(zoneIds,int.id);
