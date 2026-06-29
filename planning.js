@@ -1828,6 +1828,7 @@ function allowDrop(e){
     if(dragType==='verlof'&&!zoneIsVerlof)return;
     if(dragType&&dragType!=='verlof'&&zoneIsVerlof)return;
     e.preventDefault();this.classList.add('dragover');
+    console.log('[ALLOWDROP]',{dragType:dragType,id:_dragCurrentId,zonePloeg:this.dataset.ploeg,dragPloeg:_dragCurrentPloeg,match:(this.dataset.ploeg===_dragCurrentPloeg)});
     if((dragType==='instantie'||dragType==='interventie')&&_dragCurrentId&&this.dataset.ploeg===_dragCurrentPloeg){
         var sD,eD;
         if(dragType==='instantie'){
@@ -1846,6 +1847,7 @@ function allowDrop(e){
 }
 function toonReorderIndicator(zone, e){
     var ploeg=zone.dataset.ploeg; if(!ploeg)return;
+    console.log('[INDICATOR] toonReorderIndicator aangeroepen',{zoneId:zone.id,ploeg:ploeg,kaarten:document.querySelectorAll('.dropzone[data-ploeg="'+ploeg+'"] > .planning-card, .dropzone[data-ploeg="'+ploeg+'"] > .placement-band').length});
     var zoneDatum=zone.dataset.datum;
     /* Verzamel zichtbare kaarten in dezelfde ploeg-rij die visueel in deze cel staan,
        gesorteerd op topY. Meerdaagse bands staan fysiek in hun startdatum-cel: gebruik
@@ -1884,6 +1886,7 @@ function toonReorderIndicator(zone, e){
     var lijn=document.createElement('div');lijn.className='reorder-indicator';
     lijn.style.top=indicatorY+'px';
     zone.appendChild(lijn);
+    console.log('[INDICATOR] lijn toegevoegd',{top:indicatorY,insertIdx:insertIdx,kaarten:kaarten.length,zoneId:zone.id});
 }
 function dragLeave(e){
     if(e.relatedTarget && this.contains(e.relatedTarget)) return;
@@ -1928,6 +1931,7 @@ function drag(e){
     _dragCurrentId=transferId;
     _dragCurrentPloeg=e.currentTarget.dataset.ploegRow||'';
     _dragCurrentDatum=e.currentTarget.dataset.datum||'';
+    console.log('[DRAG]',{rol:rol,id:_dragCurrentId,ploeg:_dragCurrentPloeg,datum:_dragCurrentDatum,draggable:e.currentTarget.draggable});
 }
 function dragEnd(e){
     delete document.body.dataset.dragType;
