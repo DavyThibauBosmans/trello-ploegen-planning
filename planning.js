@@ -1,4 +1,4 @@
-﻿var t = TrelloPowerUp.iframe();
+var t = TrelloPowerUp.iframe();
 
 var DEFAULT_PLOEGEN = ["Ploeg 1", "Ploeg 2", "Ploeg 5", "Ploeg 7 / Extra"];
 var ploegen = DEFAULT_PLOEGEN.slice();
@@ -224,8 +224,10 @@ function printPlanning(modus) {
         var headerH  = headerEl ? headerEl.offsetHeight : 50;
         var paddingV = 4 * MM_TO_PX; /* 2mm top + 2mm bottom */
 
-        /* Stap 3: verdeel beschikbare hoogte gelijkmatig over ploeg-rijen */
-        var beschikbaarH = nettoHoogtePx - paddingV - headerH - theadH - verlofH;
+        /* Stap 3: verdeel beschikbare hoogte gelijkmatig over ploeg-rijen.
+           5% veiligheidsmarge compenseert voor het feit dat headerH in schermcontext
+           gemeten wordt maar in printcontext iets kan afwijken. */
+        var beschikbaarH = nettoHoogtePx * 0.95 - paddingV - headerH - theadH - verlofH;
         var rijH = ploegRijen.length > 0 ? Math.floor(beschikbaarH / ploegRijen.length) : 0;
         if (rijH > 20) {
             ploegRijen.forEach(function(r) {
@@ -236,11 +238,12 @@ function printPlanning(modus) {
             });
         }
 
-        /* Stap 4: meet werkelijke hoogte na instellen en pas zoom toe indien nodig.
-           Breedte wordt geregeld via @media print (table-layout:auto, col-dag:min-width:0,
-           planning-table:width:100%). scrollWidth in screen-context is veel groter dan
-           print-breedte → nooit gebruiken voor zoom, dat geeft te agressieve compressie. */
-        var eindZoom = nettoHoogtePx / mainContent.scrollHeight;
+        /* Stap 4: bereken zoom op basis van tabelHoogte vs beschikbare ruimte voor tabel.
+           Gebruik table.scrollHeight (enkel de tabel) i.p.v. mainContent.scrollHeight
+           (die ook de header bevat die niet gezoomd wordt). Breedte wordt geregeld door
+           @media print (table-layout:auto, width:100%, col-dag:min-width:0). */
+        var ruimteVoorTabel = nettoHoogtePx - headerH - paddingV;
+        var eindZoom = ruimteVoorTabel / (table.scrollHeight || ruimteVoorTabel);
         if (eindZoom < 0.999) table.style.zoom = eindZoom.toFixed(4);
 
         window.print();
