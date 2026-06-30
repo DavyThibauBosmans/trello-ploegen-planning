@@ -1,4 +1,4 @@
-var t = TrelloPowerUp.iframe();
+﻿var t = TrelloPowerUp.iframe();
 
 var DEFAULT_PLOEGEN = ["Ploeg 1", "Ploeg 2", "Ploeg 5", "Ploeg 7 / Extra"];
 var ploegen = DEFAULT_PLOEGEN.slice();
