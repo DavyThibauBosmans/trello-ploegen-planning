@@ -842,6 +842,11 @@ body.print-mode-week .zoom-toolbar { display: none !important; }
     body.print-mode-week .zoom-toolbar { display: none !important; }
     body.print-mode-week .dropzone { min-height: 0 !important; overflow: hidden !important; }
     body.print-mode-week .dropzone.verlof-zone { height: auto !important; overflow: visible !important; }
+    body.print-mode-week .placement-band,
+    body.print-mode-week .planning-card { overflow: hidden !important; }
+    body.print-mode-week .card-body { overflow: hidden !important; }
+    body.print-mode-week .card-title { white-space: normal !important; word-break: break-word !important; }
+    body.print-mode-week .card-address { white-space: normal !important; word-break: break-word !important; }
 }
 
 @media print {
