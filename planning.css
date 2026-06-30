@@ -852,7 +852,7 @@ body.print-mode-month .zoom-toolbar { display: none !important; }
 }
 
 @media print {
-    body.print-mode-multi .planning-table { font-size: 9px !important; table-layout: auto !important; }
+    body.print-mode-multi .planning-table { font-size: 9px !important; table-layout: auto !important; width: 100% !important; }
     body.print-mode-multi .col-ploeg { width: 80px !important; }
     body.print-mode-multi .col-dag { min-width: 0 !important; }
     body.print-mode-multi .card-title { font-size: 9px !important; }
@@ -880,7 +880,7 @@ body.print-mode-month .zoom-toolbar { display: none !important; }
 }
 
 @media print {
-    body.print-mode-month .planning-table { font-size: 8px !important; table-layout: auto !important; }
+    body.print-mode-month .planning-table { font-size: 8px !important; table-layout: auto !important; width: 100% !important; }
     body.print-mode-month .col-ploeg { width: 70px !important; }
     body.print-mode-month .col-dag { min-width: 0 !important; }
     body.print-mode-month .card-title { font-size: 8px !important; }
