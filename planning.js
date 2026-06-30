@@ -236,10 +236,11 @@ function printPlanning(modus) {
             });
         }
 
-        /* Stap 4: meet werkelijke afmetingen na instellen en pas zoom toe indien nodig.
-           headerH is gemeten in screen-context (zonder @media print), kan iets afwijken. */
-        var eindZoom = Math.min(nettoHoogtePx / mainContent.scrollHeight,
-                                nettoBreedtePx / mainContent.scrollWidth);
+        /* Stap 4: meet werkelijke hoogte na instellen en pas zoom toe indien nodig.
+           Breedte wordt geregeld via @media print (table-layout:auto, col-dag:min-width:0,
+           planning-table:width:100%). scrollWidth in screen-context is veel groter dan
+           print-breedte → nooit gebruiken voor zoom, dat geeft te agressieve compressie. */
+        var eindZoom = nettoHoogtePx / mainContent.scrollHeight;
         if (eindZoom < 0.999) table.style.zoom = eindZoom.toFixed(4);
 
         window.print();
