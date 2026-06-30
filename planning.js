@@ -198,49 +198,94 @@ function printPlanning(modus) {
     setTimeout(function() {
         var mainContent = document.querySelector('.main-content');
         var tabelWrap   = document.querySelector('.table-scroll-wrap');
-        var weekRijen   = [];
-        if (mainContent && tabelWrap) {
-            mainContent.style.transform = '';
-            mainContent.style.transformOrigin = '';
-            mainContent.style.width = '';
-            var table = mainContent.querySelector('.planning-table');
-            if (table) table.style.zoom = '';
-            /* Week: rijen uitrekken tot volle paginahoogte */
-            if (modus === 'week' && table) {
-                var tbody     = table.querySelector('tbody');
-                var alleRows  = tbody ? Array.from(tbody.children) : [];
-                var trVerlof  = alleRows.length > 0 ? alleRows[0] : null;
-                weekRijen     = alleRows.slice(1).filter(function(r){return !r.classList.contains('add-ploeg-row');}); /* ploeg-rijen */
-                var tHead     = table.querySelector('thead');
-                var theadH    = tHead    ? tHead.offsetHeight    : 24;
-                var verlofH   = trVerlof ? trVerlof.offsetHeight : 30;
-                var rijH      = weekRijen.length > 0
-                    ? Math.floor((nettoHoogtePx - (4 * MM_TO_PX) - 50 - theadH - verlofH) / weekRijen.length)
-                    : 0;
-                if (rijH > 30) { weekRijen.forEach(function(r) { r.style.height = rijH + 'px'; }); }
+        if (!mainContent || !tabelWrap) { window.print(); return; }
+
+        mainContent.style.transform = '';
+        mainContent.style.transformOrigin = '';
+        mainContent.style.width = '';
+        var table = mainContent.querySelector('.planning-table');
+        if (table) table.style.zoom = '';
+
+        /* ── WEEK: eigen pad — geen transform:scale (werkt niet voor print layout) ── */
+        if (modus === 'week' && table) {
+            var tbody    = table.querySelector('tbody');
+            var alleRows = tbody ? Array.from(tbody.children) : [];
+            var trVerlof = alleRows.length > 0 ? alleRows[0] : null;
+            var weekRijen = alleRows.slice(1).filter(function(r){ return !r.classList.contains('add-ploeg-row'); });
+
+            /* Stap 1: reset alle inline min-heights in JS zodat metingen kloppen
+               (herlayoutPloegRijen had grote min-heights ingesteld; @media print
+               min-height:0 geldt pas tijdens printen, niet bij scrollHeight-meting) */
+            var alleDropzones = Array.from(table.querySelectorAll('.dropzone'));
+            alleDropzones.forEach(function(z) { z.style.minHeight = '0'; z.style.height = ''; });
+
+            /* Stap 2: meet vaste elementen (zoom-toolbar is al verborgen via CSS) */
+            var tHead    = table.querySelector('thead');
+            var theadH   = tHead    ? tHead.offsetHeight    : 24;
+            var verlofH  = trVerlof ? trVerlof.offsetHeight : 30;
+            var headerEl = document.querySelector('.main-content-header');
+            var headerH  = headerEl ? headerEl.offsetHeight : 50;
+            var paddingV = 4 * MM_TO_PX; /* 2mm top + 2mm bottom (CSS) */
+
+            /* Stap 3: verdeel beschikbare hoogte over ploeg-rijen */
+            var beschikbaarH = nettoHoogtePx - paddingV - headerH - theadH - verlofH;
+            var rijH = weekRijen.length > 0 ? Math.floor(beschikbaarH / weekRijen.length) : 0;
+
+            if (rijH > 20) {
+                weekRijen.forEach(function(r) {
+                    r.style.height = rijH + 'px';
+                    Array.from(r.querySelectorAll('.dropzone')).forEach(function(z) {
+                        z.style.height    = rijH + 'px';
+                        z.style.minHeight = '0';
+                    });
+                });
+            } else {
+                /* Te veel ploegen om op 1 pagina te passen: zoom tabel in */
+                var totaalNatuurlijk = mainContent.scrollHeight;
+                var breedte = mainContent.scrollWidth;
+                var zIn = Math.min(nettoHoogtePx / totaalNatuurlijk, nettoBreedtePx / breedte);
+                if (table && zIn < 0.999) table.style.zoom = zIn.toFixed(4);
             }
-            var contentBreedte = mainContent.scrollWidth;
-            var contentHoogte  = mainContent.scrollHeight;
-            var schaalB = nettoBreedtePx / contentBreedte;
-            var schaalH = nettoHoogtePx  / contentHoogte;
-            var schaal  = Math.min(schaalB, schaalH, 1);
-            /* Maand: als schaal te klein → 2 pagina's */
-            if (modus === 'month' && schaal < 0.55) {
+
+            window.print();
+            setTimeout(function() {
+                document.body.classList.remove('print-mode-week', 'print-mode-month', 'print-mode-multi');
+                var s = document.getElementById('print-page-override');
+                if (s) s.remove();
+                /* Herstel layout */
+                weekRijen.forEach(function(r) {
+                    r.style.height = '';
+                    Array.from(r.querySelectorAll('.dropzone')).forEach(function(z) {
+                        z.style.height = ''; z.style.minHeight = '';
+                    });
+                });
                 if (table) table.style.zoom = tableZoom;
-                printMaand2Paginas(stijlEl);
-                return;
-            }
-            if (schaal < 0.999) {
-                stijlEl.textContent += [
-                    '@media print {',
-                    '  .main-content {',
-                    '    transform: scale(' + schaal.toFixed(4) + ') !important;',
-                    '    transform-origin: top left !important;',
-                    '    width: ' + Math.round(100 / schaal) + '% !important;',
-                    '  }',
-                    '}'
-                ].join('\n');
-            }
+                herlayoutPloegRijen();
+            }, 1500);
+            return;
+        }
+
+        /* ── MAAND / MULTI: bestaande schaal-logica ── */
+        var contentBreedte = mainContent.scrollWidth;
+        var contentHoogte  = mainContent.scrollHeight;
+        var schaalB = nettoBreedtePx / contentBreedte;
+        var schaalH = nettoHoogtePx  / contentHoogte;
+        var schaal  = Math.min(schaalB, schaalH, 1);
+        if (modus === 'month' && schaal < 0.55) {
+            if (table) table.style.zoom = tableZoom;
+            printMaand2Paginas(stijlEl);
+            return;
+        }
+        if (schaal < 0.999) {
+            stijlEl.textContent += [
+                '@media print {',
+                '  .main-content {',
+                '    transform: scale(' + schaal.toFixed(4) + ') !important;',
+                '    transform-origin: top left !important;',
+                '    width: ' + Math.round(100 / schaal) + '% !important;',
+                '  }',
+                '}'
+            ].join('\n');
         }
         window.print();
         setTimeout(function() {
@@ -251,7 +296,6 @@ function printPlanning(modus) {
                 mainContent.style.transform = '';
                 mainContent.style.transformOrigin = '';
                 mainContent.style.width = '';
-                weekRijen.forEach(function(r) { r.style.height = ''; });
                 var tAfter = mainContent.querySelector('.planning-table');
                 if (tAfter) tAfter.style.zoom = tableZoom;
             }
