@@ -198,24 +198,39 @@ function printPlanning(modus) {
     setTimeout(function() {
         var mainContent = document.querySelector('.main-content');
         var tabelWrap   = document.querySelector('.table-scroll-wrap');
+        var weekRijen   = [];
         if (mainContent && tabelWrap) {
             mainContent.style.transform = '';
             mainContent.style.transformOrigin = '';
             mainContent.style.width = '';
             var table = mainContent.querySelector('.planning-table');
             if (table) table.style.zoom = '';
+            /* Week: rijen uitrekken tot volle paginahoogte */
+            if (modus === 'week' && table) {
+                var tbody     = table.querySelector('tbody');
+                var alleRows  = tbody ? Array.from(tbody.children) : [];
+                var trVerlof  = alleRows.length > 0 ? alleRows[0] : null;
+                weekRijen     = alleRows.slice(1); /* ploeg-rijen (skip verlofRij) */
+                var tHead     = table.querySelector('thead');
+                var theadH    = tHead    ? tHead.offsetHeight    : 24;
+                var verlofH   = trVerlof ? trVerlof.offsetHeight : 30;
+                var rijH      = weekRijen.length > 0
+                    ? Math.floor((nettoHoogtePx - (4 * MM_TO_PX) - 50 - theadH - verlofH) / weekRijen.length)
+                    : 0;
+                if (rijH > 30) { weekRijen.forEach(function(r) { r.style.height = rijH + 'px'; }); }
+            }
             var contentBreedte = mainContent.scrollWidth;
             var contentHoogte  = mainContent.scrollHeight;
             var schaalB = nettoBreedtePx / contentBreedte;
             var schaalH = nettoHoogtePx  / contentHoogte;
-            var schaal  = (modus === 'week') ? Math.min(schaalB, schaalH) : Math.min(schaalB, schaalH, 1);
+            var schaal  = Math.min(schaalB, schaalH, 1);
             /* Maand: als schaal te klein → 2 pagina's */
             if (modus === 'month' && schaal < 0.55) {
                 if (table) table.style.zoom = tableZoom;
                 printMaand2Paginas(stijlEl);
                 return;
             }
-            if (Math.abs(schaal - 1) > 0.001) {
+            if (schaal < 0.999) {
                 stijlEl.textContent += [
                     '@media print {',
                     '  .main-content {',
@@ -236,6 +251,7 @@ function printPlanning(modus) {
                 mainContent.style.transform = '';
                 mainContent.style.transformOrigin = '';
                 mainContent.style.width = '';
+                weekRijen.forEach(function(r) { r.style.height = ''; });
                 var tAfter = mainContent.querySelector('.planning-table');
                 if (tAfter) tAfter.style.zoom = tableZoom;
             }
