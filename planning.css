@@ -204,16 +204,22 @@ body:not(.view-only-mode) .placement-band:hover .card-info-placement:empty::befo
 body:not(.view-only-mode) .dropzone > .planning-card,
 body:not(.view-only-mode) .dropzone > .placement-band { padding-left: 26px; }
 .reorder-indicator {
-    position: absolute; left: 2px; right: 2px; height: 3px;
+    position: absolute; left: 0; right: 0; height: 4px;
     background: #0052cc; border-radius: 2px; z-index: 25; pointer-events: none;
-    box-shadow: 0 0 0 2px rgba(0,82,204,0.25);
+    box-shadow: 0 0 0 3px rgba(0,82,204,0.30);
+    animation: reorder-pulse 0.6s ease-in-out infinite alternate;
+}
+@keyframes reorder-pulse {
+    from { box-shadow: 0 0 0 3px rgba(0,82,204,0.30); }
+    to   { box-shadow: 0 0 0 5px rgba(0,82,204,0.15); }
 }
 .reorder-indicator::before, .reorder-indicator::after {
     content: ''; position: absolute; top: 50%; transform: translateY(-50%);
-    width: 7px; height: 7px; background: #0052cc; border-radius: 50%;
+    width: 10px; height: 10px; background: #0052cc; border-radius: 50%;
+    box-shadow: 0 0 0 2px rgba(0,82,204,0.35);
 }
-.reorder-indicator::before { left: -3px; }
-.reorder-indicator::after  { right: -3px; }
+.reorder-indicator::before { left: -4px; }
+.reorder-indicator::after  { right: -4px; }
 
 /* Knoppen op de kaart */
 .card-controls {
@@ -823,6 +829,12 @@ body[data-drag-type="interventie"] .verlof-zone { cursor: not-allowed; }
     body.print-mode-week .planning-table th,
     body.print-mode-week .planning-table td { padding: 3px 4px !important; }
     body.print-mode-week .table-scroll-wrap { overflow: visible !important; width: 100% !important; }
+    body.print-mode-week .main-content { padding: 2mm 4mm 2mm 4mm !important; }
+    body.print-mode-week .main-content-header { margin-bottom: 3px !important; padding: 0 !important; }
+    body.print-mode-week .main-content h2 { font-size: 13px !important; }
+    body.print-mode-week .periode-label { font-size: 11px !important; }
+    body.print-mode-week .legenda-items { padding: 0 0 2px 0 !important; }
+    body.print-mode-week .settings-btn { display: none !important; }
 }
 
 @media print {
