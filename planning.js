@@ -183,10 +183,10 @@ function printPlanning(modus) {
         pageCSS        = '@page { size: A3 portrait; margin: 5mm; }';
         nettoBreedteMM = 297 - 5 - 5;
         nettoHoogteMM  = 420 - 5 - 5;
-    } else { /* multi + month */
-        pageCSS        = '@page { size: A3 landscape; margin: 8mm 6mm 8mm 6mm; }';
-        nettoBreedteMM = 420 - 6 - 6;
-        nettoHoogteMM  = 297 - 8 - 8;
+    } else {
+        pageCSS        = '@page { size: A3 landscape; margin: 5mm; }';
+        nettoBreedteMM = 420 - 5 - 5;
+        nettoHoogteMM  = 297 - 5 - 5;
     }
     var nettoBreedtePx = nettoBreedteMM * MM_TO_PX;
     var nettoHoogtePx  = nettoHoogteMM  * MM_TO_PX;
@@ -197,112 +197,64 @@ function printPlanning(modus) {
     document.body.classList.add('print-mode-' + modus);
     setTimeout(function() {
         var mainContent = document.querySelector('.main-content');
-        var tabelWrap   = document.querySelector('.table-scroll-wrap');
-        if (!mainContent || !tabelWrap) { window.print(); return; }
+        if (!mainContent) { window.print(); return; }
 
         mainContent.style.transform = '';
         mainContent.style.transformOrigin = '';
         mainContent.style.width = '';
         var table = mainContent.querySelector('.planning-table');
-        if (table) table.style.zoom = '';
+        if (!table) { window.print(); return; }
+        table.style.zoom = '';
 
-        /* ── WEEK: eigen pad — geen transform:scale (werkt niet voor print layout) ── */
-        if (modus === 'week' && table) {
-            var tbody    = table.querySelector('tbody');
-            var alleRows = tbody ? Array.from(tbody.children) : [];
-            var trVerlof = alleRows.length > 0 ? alleRows[0] : null;
-            var weekRijen = alleRows.slice(1).filter(function(r){ return !r.classList.contains('add-ploeg-row'); });
+        var tbody      = table.querySelector('tbody');
+        var alleRows   = tbody ? Array.from(tbody.children) : [];
+        var trVerlof   = alleRows.length > 0 ? alleRows[0] : null;
+        var ploegRijen = alleRows.slice(1).filter(function(r) { return !r.classList.contains('add-ploeg-row'); });
 
-            /* Stap 1: reset alle inline min-heights in JS zodat metingen kloppen
-               (herlayoutPloegRijen had grote min-heights ingesteld; @media print
-               min-height:0 geldt pas tijdens printen, niet bij scrollHeight-meting) */
-            var alleDropzones = Array.from(table.querySelectorAll('.dropzone'));
-            alleDropzones.forEach(function(z) { z.style.minHeight = '0'; z.style.height = ''; });
+        /* Stap 1: reset alle inline min-heights zodat meting klopt */
+        Array.from(table.querySelectorAll('.dropzone')).forEach(function(z) {
+            z.style.minHeight = '0'; z.style.height = '';
+        });
 
-            /* Stap 2: meet vaste elementen (zoom-toolbar is al verborgen via CSS) */
-            var tHead    = table.querySelector('thead');
-            var theadH   = tHead    ? tHead.offsetHeight    : 24;
-            var verlofH  = trVerlof ? trVerlof.offsetHeight : 30;
-            var headerEl = document.querySelector('.main-content-header');
-            var headerH  = headerEl ? headerEl.offsetHeight : 50;
-            var paddingV = 4 * MM_TO_PX; /* 2mm top + 2mm bottom (CSS) */
+        /* Stap 2: meet vaste elementen (zoom-toolbar verborgen via CSS) */
+        var tHead    = table.querySelector('thead');
+        var theadH   = tHead    ? tHead.offsetHeight    : 24;
+        var verlofH  = trVerlof ? trVerlof.offsetHeight : 30;
+        var headerEl = document.querySelector('.main-content-header');
+        var headerH  = headerEl ? headerEl.offsetHeight : 50;
+        var paddingV = 4 * MM_TO_PX; /* 2mm top + 2mm bottom */
 
-            /* Stap 3: verdeel beschikbare hoogte over ploeg-rijen */
-            var beschikbaarH = nettoHoogtePx - paddingV - headerH - theadH - verlofH;
-            var rijH = weekRijen.length > 0 ? Math.floor(beschikbaarH / weekRijen.length) : 0;
-
-            if (rijH > 20) {
-                weekRijen.forEach(function(r) {
-                    r.style.height = rijH + 'px';
-                    Array.from(r.querySelectorAll('.dropzone')).forEach(function(z) {
-                        z.style.height    = rijH + 'px';
-                        z.style.minHeight = '0';
-                    });
+        /* Stap 3: verdeel beschikbare hoogte gelijkmatig over ploeg-rijen */
+        var beschikbaarH = nettoHoogtePx - paddingV - headerH - theadH - verlofH;
+        var rijH = ploegRijen.length > 0 ? Math.floor(beschikbaarH / ploegRijen.length) : 0;
+        if (rijH > 20) {
+            ploegRijen.forEach(function(r) {
+                r.style.height = rijH + 'px';
+                Array.from(r.querySelectorAll('.dropzone')).forEach(function(z) {
+                    z.style.height = rijH + 'px'; z.style.minHeight = '0';
                 });
-            }
-
-            /* Stap 4: controleer werkelijke hoogte na instellen en zoom bij indien nodig.
-               De headerH-meting is in screen-context (zonder @media print CSS), dus
-               kan iets groter zijn dan in print → kleine correctie via zoom. */
-            var totaalH = mainContent.scrollHeight;
-            var totaalW = mainContent.scrollWidth;
-            var eindZoomH = nettoHoogtePx / totaalH;
-            var eindZoomW = nettoBreedtePx / totaalW;
-            var eindZoom  = Math.min(eindZoomH, eindZoomW);
-            if (eindZoom < 0.999 && table) table.style.zoom = eindZoom.toFixed(4);
-
-            window.print();
-            setTimeout(function() {
-                document.body.classList.remove('print-mode-week', 'print-mode-month', 'print-mode-multi');
-                var s = document.getElementById('print-page-override');
-                if (s) s.remove();
-                /* Herstel layout */
-                weekRijen.forEach(function(r) {
-                    r.style.height = '';
-                    Array.from(r.querySelectorAll('.dropzone')).forEach(function(z) {
-                        z.style.height = ''; z.style.minHeight = '';
-                    });
-                });
-                if (table) table.style.zoom = tableZoom;
-                herlayoutPloegRijen();
-            }, 1500);
-            return;
+            });
         }
 
-        /* ── MAAND / MULTI: bestaande schaal-logica ── */
-        var contentBreedte = mainContent.scrollWidth;
-        var contentHoogte  = mainContent.scrollHeight;
-        var schaalB = nettoBreedtePx / contentBreedte;
-        var schaalH = nettoHoogtePx  / contentHoogte;
-        var schaal  = Math.min(schaalB, schaalH, 1);
-        if (modus === 'month' && schaal < 0.55) {
-            if (table) table.style.zoom = tableZoom;
-            printMaand2Paginas(stijlEl);
-            return;
-        }
-        if (schaal < 0.999) {
-            stijlEl.textContent += [
-                '@media print {',
-                '  .main-content {',
-                '    transform: scale(' + schaal.toFixed(4) + ') !important;',
-                '    transform-origin: top left !important;',
-                '    width: ' + Math.round(100 / schaal) + '% !important;',
-                '  }',
-                '}'
-            ].join('\n');
-        }
+        /* Stap 4: meet werkelijke afmetingen na instellen en pas zoom toe indien nodig.
+           headerH is gemeten in screen-context (zonder @media print), kan iets afwijken. */
+        var eindZoom = Math.min(nettoHoogtePx / mainContent.scrollHeight,
+                                nettoBreedtePx / mainContent.scrollWidth);
+        if (eindZoom < 0.999) table.style.zoom = eindZoom.toFixed(4);
+
         window.print();
         setTimeout(function() {
             document.body.classList.remove('print-mode-week', 'print-mode-month', 'print-mode-multi');
             var s = document.getElementById('print-page-override');
             if (s) s.remove();
-            if (mainContent) {
-                mainContent.style.transform = '';
-                mainContent.style.transformOrigin = '';
-                mainContent.style.width = '';
-                var tAfter = mainContent.querySelector('.planning-table');
-                if (tAfter) tAfter.style.zoom = tableZoom;
-            }
+            ploegRijen.forEach(function(r) {
+                r.style.height = '';
+                Array.from(r.querySelectorAll('.dropzone')).forEach(function(z) {
+                    z.style.height = ''; z.style.minHeight = '';
+                });
+            });
+            table.style.zoom = tableZoom;
+            herlayoutPloegRijen();
         }, 1500);
     }, 120);
 }
@@ -449,10 +401,10 @@ function printMaand2Paginas(stijlEl) {
     var weekBtn  = document.getElementById('print-week-btn');
     var maandBtn = document.getElementById('print-month-btn');
     /* Week-knop print de huidige view: week=staand A3, multi/maand=liggend A3 */
-    if (weekBtn) weekBtn.addEventListener('click', function() {
-        printPlanning(VIEW_MODUS === 'week' ? 'week' : VIEW_MODUS === 'multi' ? 'multi' : 'month');
+    if (weekBtn)  weekBtn.addEventListener('click',  function() { printPlanning('week'); });
+    if (maandBtn) maandBtn.addEventListener('click', function() {
+        printPlanning(VIEW_MODUS === 'multi' ? 'multi' : 'month');
     });
-    if (maandBtn) maandBtn.addEventListener('click', function() { printPlanning('month'); });
 })();
 
 /* ── LEGENDE ── */
