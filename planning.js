@@ -1156,9 +1156,6 @@ function herlayoutPloegRijen() {
     var tableEl = document.querySelector('.planning-table');
     /* Reset zoom voor accurate offsetHeight meting (CSS zoom beïnvloedt offsetHeight) */
     if (tableEl) tableEl.style.zoom = '';
-    var sv = instellingen[VIEW_MODUS];
-    var rijHoogte = sv.rijHoogte || { vast: false, hoogte: 120 };
-    var perRijHoogte = sv.perRijHoogte || {};
     var zones = document.querySelectorAll('.dropzone[data-row-type="ploeg"]');
     var perPloeg = {};
     zones.forEach(function(z) { var pl=z.dataset.ploeg; if (!pl) return; if (!perPloeg[pl]) perPloeg[pl]=[]; perPloeg[pl].push(z); });
@@ -1185,26 +1182,10 @@ function herlayoutPloegRijen() {
         items.forEach(function(it) { it.el.style.top=tops[it.baan]+'px'; it.el.style.height='auto'; it.el.style.bottom='auto'; });
         contentHoogtes[pl] = Math.max(80, totaal);
     });
-    /* Tweede pas: bepaal uiteindelijke hoogte per rij op basis van instellingen */
-    var maxAutoHoogte = 80;
+    /* Tweede pas: stel hoogte per rij in op basis van eigen content */
     Object.keys(perPloeg).forEach(function(pl) {
-        var prh = perRijHoogte[pl];
-        if (!(prh && prh.aan) && !rijHoogte.vast) {
-            if ((contentHoogtes[pl] || 80) > maxAutoHoogte) maxAutoHoogte = contentHoogtes[pl];
-        }
-    });
-    Object.keys(perPloeg).forEach(function(pl) {
-        var cellen = perPloeg[pl];
-        var prh = perRijHoogte[pl];
-        var hoogte;
-        if (prh && prh.aan && prh.hoogte) {
-            hoogte = Math.max(prh.hoogte, contentHoogtes[pl] || 80);
-        } else if (rijHoogte.vast && rijHoogte.hoogte) {
-            hoogte = Math.max(rijHoogte.hoogte, contentHoogtes[pl] || 80);
-        } else {
-            hoogte = maxAutoHoogte;
-        }
-        cellen.forEach(function(z) { z.style.minHeight = hoogte + 'px'; });
+        var hoogte = contentHoogtes[pl] || 80;
+        perPloeg[pl].forEach(function(z) { z.style.minHeight = hoogte + 'px'; });
     });
     /* Herstel zoom na meting */
     if (tableEl) tableEl.style.zoom = tableZoom;
@@ -2100,17 +2081,13 @@ var INSTELLINGEN_KEY = 'layoutInstellingen';
 
 /* Standaardwaarden per view */
 var INST_DEFAULTS = {
-    week:  { weekdag: 150, weekend: 100, ploegKol: 130, tekstGrootte: 13, rijHoogte: { vast: false, hoogte: 120 }, perRijHoogte: {} },
-    multi: { weekdag: 120, weekend:  80, ploegKol: 130, tekstGrootte: 12, rijHoogte: { vast: false, hoogte: 100 }, perRijHoogte: {} },
-    month: { weekdag: 100, weekend:  67, ploegKol: 130, tekstGrootte: 10, rijHoogte: { vast: false, hoogte:  80 }, perRijHoogte: {} }
+    week:  { weekdag: 150, weekend: 100, ploegKol: 130, tekstGrootte: 13 },
+    multi: { weekdag: 120, weekend:  80, ploegKol: 130, tekstGrootte: 12 },
+    month: { weekdag: 100, weekend:  67, ploegKol: 130, tekstGrootte: 10 }
 };
 
 function kloonInstDefaults(v) {
-    var d = INST_DEFAULTS[v];
-    return Object.assign({}, d, {
-        rijHoogte: Object.assign({}, d.rijHoogte),
-        perRijHoogte: Object.assign({}, d.perRijHoogte)
-    });
+    return Object.assign({}, INST_DEFAULTS[v]);
 }
 
 /* Huidige instellingen (gevuld bij laden) */
@@ -2168,8 +2145,6 @@ function laadInstellingen() {
             ['week','multi','month'].forEach(function(v) {
                 if (opgeslagen[v]) {
                     instellingen[v] = Object.assign({}, INST_DEFAULTS[v], opgeslagen[v]);
-                    if (opgeslagen[v].rijHoogte) instellingen[v].rijHoogte = Object.assign({}, INST_DEFAULTS[v].rijHoogte, opgeslagen[v].rijHoogte);
-                    instellingen[v].perRijHoogte = Object.assign({}, opgeslagen[v].perRijHoogte || {});
                 }
             });
         }
@@ -2249,63 +2224,6 @@ function bouwSettingsPaneel() {
     secTekst.innerText = 'Tekstgrootte — ' + vLabels[settingsPaneelView];
     body.appendChild(secTekst);
     body.appendChild(maakNumInput('Kaarttitel', 'tekstGrootte', 7, 18, 1));
-
-    /* ── Rijhoogte sectie ── */
-    var secRij = document.createElement('div'); secRij.className = 'settings-section-label';
-    secRij.innerText = 'Rijhoogte — ' + vLabels[settingsPaneelView];
-    body.appendChild(secRij);
-
-    if (!sv.rijHoogte) sv.rijHoogte = { vast: false, hoogte: 120 };
-    if (!sv.perRijHoogte) sv.perRijHoogte = {};
-
-    /* Master blok */
-    var masterBlok = document.createElement('div'); masterBlok.className = 'settings-master-blok';
-    var masterCb = document.createElement('input'); masterCb.type = 'checkbox'; masterCb.id = 'rij-hoogte-vast'; masterCb.checked = sv.rijHoogte.vast;
-    var masterLbl = document.createElement('label'); masterLbl.htmlFor = 'rij-hoogte-vast'; masterLbl.innerText = 'Vaste hoogte voor alle rijen';
-    var masterInp = document.createElement('input'); masterInp.type = 'number'; masterInp.className = 'settings-num';
-    masterInp.min = 50; masterInp.max = 600; masterInp.step = 10; masterInp.value = sv.rijHoogte.hoogte || 120;
-    masterInp.disabled = !sv.rijHoogte.vast;
-    var masterUnit = document.createElement('span'); masterUnit.className = 'settings-num-unit'; masterUnit.innerText = 'px';
-    masterCb.addEventListener('change', function() {
-        sv.rijHoogte = { vast: masterCb.checked, hoogte: parseInt(masterInp.value, 10) || 120 };
-        masterInp.disabled = !masterCb.checked;
-        slaInstellingenOp(); herlayoutPloegRijen();
-    });
-    masterInp.addEventListener('input', function() {
-        var val = Math.max(50, parseInt(masterInp.value, 10) || 50);
-        sv.rijHoogte = { vast: sv.rijHoogte.vast, hoogte: val };
-        slaInstellingenOp(); herlayoutPloegRijen();
-    });
-    masterBlok.appendChild(masterCb); masterBlok.appendChild(masterLbl); masterBlok.appendChild(masterInp); masterBlok.appendChild(masterUnit);
-    body.appendChild(masterBlok);
-
-    /* Per-rij overrides */
-    var rijList = document.createElement('div'); rijList.className = 'settings-rij-list';
-    ploegen.forEach(function(ploeg) {
-        var prh = sv.perRijHoogte[ploeg] || { aan: false, hoogte: sv.rijHoogte.hoogte || 120 };
-        var item = document.createElement('div'); item.className = 'settings-rij-item';
-        var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = prh.aan;
-        var lbl = document.createElement('label'); lbl.innerText = ploeg; lbl.style.cssText = 'flex:1;font-size:13px;color:#172b4d;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
-        var inp = document.createElement('input'); inp.type = 'number'; inp.className = 'settings-num';
-        inp.min = 50; inp.max = 600; inp.step = 10; inp.value = prh.hoogte || sv.rijHoogte.hoogte || 120;
-        inp.disabled = !prh.aan;
-        var unit = document.createElement('span'); unit.className = 'settings-num-unit'; unit.innerText = 'px';
-        (function(pl, cbEl, inpEl) {
-            cbEl.addEventListener('change', function() {
-                sv.perRijHoogte[pl] = { aan: cbEl.checked, hoogte: parseInt(inpEl.value, 10) || 120 };
-                inpEl.disabled = !cbEl.checked;
-                slaInstellingenOp(); herlayoutPloegRijen();
-            });
-            inpEl.addEventListener('input', function() {
-                var val = Math.max(50, parseInt(inpEl.value, 10) || 50);
-                sv.perRijHoogte[pl] = { aan: cbEl.checked, hoogte: val };
-                slaInstellingenOp(); herlayoutPloegRijen();
-            });
-        })(ploeg, cb, inp);
-        item.appendChild(cb); item.appendChild(lbl); item.appendChild(inp); item.appendChild(unit);
-        rijList.appendChild(item);
-    });
-    body.appendChild(rijList);
 
     /* Knoppenrij onderaan */
     var btnRij = document.createElement('div'); btnRij.className = 'settings-btn-rij';
