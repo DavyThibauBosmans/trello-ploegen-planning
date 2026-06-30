@@ -239,13 +239,17 @@ function printPlanning(modus) {
                         z.style.minHeight = '0';
                     });
                 });
-            } else {
-                /* Te veel ploegen om op 1 pagina te passen: zoom tabel in */
-                var totaalNatuurlijk = mainContent.scrollHeight;
-                var breedte = mainContent.scrollWidth;
-                var zIn = Math.min(nettoHoogtePx / totaalNatuurlijk, nettoBreedtePx / breedte);
-                if (table && zIn < 0.999) table.style.zoom = zIn.toFixed(4);
             }
+
+            /* Stap 4: controleer werkelijke hoogte na instellen en zoom bij indien nodig.
+               De headerH-meting is in screen-context (zonder @media print CSS), dus
+               kan iets groter zijn dan in print → kleine correctie via zoom. */
+            var totaalH = mainContent.scrollHeight;
+            var totaalW = mainContent.scrollWidth;
+            var eindZoomH = nettoHoogtePx / totaalH;
+            var eindZoomW = nettoBreedtePx / totaalW;
+            var eindZoom  = Math.min(eindZoomH, eindZoomW);
+            if (eindZoom < 0.999 && table) table.style.zoom = eindZoom.toFixed(4);
 
             window.print();
             setTimeout(function() {
