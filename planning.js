@@ -210,7 +210,7 @@ function printPlanning(modus) {
                 var tbody     = table.querySelector('tbody');
                 var alleRows  = tbody ? Array.from(tbody.children) : [];
                 var trVerlof  = alleRows.length > 0 ? alleRows[0] : null;
-                weekRijen     = alleRows.slice(1); /* ploeg-rijen (skip verlofRij) */
+                weekRijen     = alleRows.slice(1).filter(function(r){return !r.classList.contains('add-ploeg-row');}); /* ploeg-rijen */
                 var tHead     = table.querySelector('thead');
                 var theadH    = tHead    ? tHead.offsetHeight    : 24;
                 var verlofH   = trVerlof ? trVerlof.offsetHeight : 30;
