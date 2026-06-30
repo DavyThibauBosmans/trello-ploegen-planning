@@ -1830,19 +1830,7 @@ function allowDrop(e){
     if(dragType&&dragType!=='verlof'&&zoneIsVerlof)return;
     e.preventDefault();this.classList.add('dragover');
     if((dragType==='instantie'||dragType==='interventie')&&_dragCurrentId&&this.dataset.ploeg===_dragCurrentPloeg){
-        var sD,eD;
-        if(dragType==='instantie'){
-            var p=plaatsingsData[_dragCurrentId];
-            if(p){sD=ddMMNaarDate(placementStart(p));eD=ddMMNaarDate(placementEind(p));}
-        } else {
-            var int0=null;
-            for(var i=0;i<alleInterventies.length;i++){if(alleInterventies[i].id===_dragCurrentId){int0=alleInterventies[i];break;}}
-            if(int0){sD=ddMMNaarDate(intStart(int0));eD=ddMMNaarDate(intEind(int0));}
-        }
-        if(sD&&eD){
-            var hoverDatum=ddMMNaarDate(this.dataset.datum);
-            if(hoverDatum&&hoverDatum>=sD&&hoverDatum<=eD){toonReorderIndicator(this,e);}
-        }
+        if(this.dataset.datum===_dragCurrentDatum){toonReorderIndicator(this,e);}
     }
 }
 function toonReorderIndicator(zone, e){
@@ -1972,16 +1960,12 @@ function drop(e){
     if(soort==='instantie'){
         /* Zelfde ploeg + drop valt binnen huidige datumspanne → herschikken (niet verplaatsen) */
         var p0=plaatsingsData[id];
-        if(p0&&doelPloeg===p0.ploeg){
-            var p0sD=ddMMNaarDate(placementStart(p0)),p0eD=ddMMNaarDate(placementEind(p0));
-            var dropD=ddMMNaarDate(doelDatum);
-            if(doelDatum===_dragCurrentDatum||(dropD&&p0sD&&p0eD&&dropD>=p0sD&&dropD<=p0eD)){
-                var insertIdx0=parseInt(doelZone.dataset.reorderInsertIdx,10);
-                if(isNaN(insertIdx0))insertIdx0=_reorderLastIdx;
-                verwijderReorderIndicator();
-                herschikKaart(id,doelPloeg,insertIdx0);
-                return;
-            }
+        if(p0&&doelPloeg===p0.ploeg&&doelDatum===_dragCurrentDatum){
+            var insertIdx0=parseInt(doelZone.dataset.reorderInsertIdx,10);
+            if(isNaN(insertIdx0))insertIdx0=_reorderLastIdx;
+            verwijderReorderIndicator();
+            herschikKaart(id,doelPloeg,insertIdx0);
+            return;
         }
         var cardId=cardIdVanInstantie(id),ctx=placementCtx[id];
         if(naarZijbalk){
@@ -2037,16 +2021,12 @@ function drop(e){
         /* Zelfde ploeg + valt binnen huidige datumspanne → herschikken */
         var int0r=null;
         for(var ii=0;ii<alleInterventies.length;ii++){if(alleInterventies[ii].id===id){int0r=alleInterventies[ii];break;}}
-        if(int0r&&doelPloeg&&doelPloeg===int0r.ploeg){
-            var intS=ddMMNaarDate(intStart(int0r)),intE=ddMMNaarDate(intEind(int0r));
-            var dropDI=ddMMNaarDate(doelDatum);
-            if(doelDatum===_dragCurrentDatum||(dropDI&&intS&&intE&&dropDI>=intS&&dropDI<=intE)){
-                var insertIdxI=parseInt(doelZone.dataset.reorderInsertIdx,10);
-                if(isNaN(insertIdxI))insertIdxI=_reorderLastIdx;
-                verwijderReorderIndicator();
-                herschikKaart(id,doelPloeg,insertIdxI);
-                return;
-            }
+        if(int0r&&doelPloeg&&doelPloeg===int0r.ploeg&&doelDatum===_dragCurrentDatum){
+            var insertIdxI=parseInt(doelZone.dataset.reorderInsertIdx,10);
+            if(isNaN(insertIdxI))insertIdxI=_reorderLastIdx;
+            verwijderReorderIndicator();
+            herschikKaart(id,doelPloeg,insertIdxI);
+            return;
         }
         if(naarZijbalk){
             document.querySelectorAll('[data-int-id="'+id+'"]').forEach(function(el){if(el.parentNode)el.parentNode.removeChild(el);});
