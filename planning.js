@@ -180,9 +180,9 @@ function printPlanning(modus) {
     var MM_TO_PX = 3.7795;
     var pageCSS, nettoBreedteMM, nettoHoogteMM;
     if (modus === 'week') {
-        pageCSS        = '@page { size: A3 portrait; margin: 10mm 8mm 10mm 8mm; }';
-        nettoBreedteMM = 297 - 8 - 8;
-        nettoHoogteMM  = 420 - 10 - 10;
+        pageCSS        = '@page { size: A3 portrait; margin: 5mm; }';
+        nettoBreedteMM = 297 - 5 - 5;
+        nettoHoogteMM  = 420 - 5 - 5;
     } else { /* multi + month */
         pageCSS        = '@page { size: A3 landscape; margin: 8mm 6mm 8mm 6mm; }';
         nettoBreedteMM = 420 - 6 - 6;
@@ -208,14 +208,14 @@ function printPlanning(modus) {
             var contentHoogte  = mainContent.scrollHeight;
             var schaalB = nettoBreedtePx / contentBreedte;
             var schaalH = nettoHoogtePx  / contentHoogte;
-            var schaal  = Math.min(schaalB, schaalH, 1);
+            var schaal  = (modus === 'week') ? Math.min(schaalB, schaalH) : Math.min(schaalB, schaalH, 1);
             /* Maand: als schaal te klein → 2 pagina's */
             if (modus === 'month' && schaal < 0.55) {
                 if (table) table.style.zoom = tableZoom;
                 printMaand2Paginas(stijlEl);
                 return;
             }
-            if (schaal < 0.999) {
+            if (Math.abs(schaal - 1) > 0.001) {
                 stijlEl.textContent += [
                     '@media print {',
                     '  .main-content {',
