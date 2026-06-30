@@ -1852,10 +1852,14 @@ function toonReorderIndicator(zone, e){
        gesorteerd op topY. Meerdaagse bands staan fysiek in hun startdatum-cel: gebruik
        getBoundingClientRect om ongeacht datum de juiste schermposities te vergelijken. */
     var kaarten=[];
-    document.querySelectorAll('.dropzone[data-ploeg="'+ploeg+'"] > .planning-card, .dropzone[data-ploeg="'+ploeg+'"] > .placement-band').forEach(function(el){
-        if(el.style.display==='none')return;
-        var rect=el.getBoundingClientRect();
-        kaarten.push({el:el,midY:(rect.top+rect.bottom)/2,topY:rect.top,bottomY:rect.bottom});
+    document.querySelectorAll('.dropzone').forEach(function(z){
+        if(z.dataset.ploeg!==ploeg)return;
+        Array.from(z.children).forEach(function(el){
+            if(!el.classList.contains('planning-card')&&!el.classList.contains('placement-band'))return;
+            if(el.style.display==='none')return;
+            var rect=el.getBoundingClientRect();
+            kaarten.push({el:el,midY:(rect.top+rect.bottom)/2,topY:rect.top,bottomY:rect.bottom});
+        });
     });
     /* Verwijder dubbels (meerdaagse band heeft één zichtbaar segment, maar kan via
        meerdere datums gevonden worden — dedup op element-referentie is al geborgd door
