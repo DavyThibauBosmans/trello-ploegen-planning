@@ -835,6 +835,8 @@ body[data-drag-type="interventie"] .verlof-zone { cursor: not-allowed; }
     body.print-mode-week .periode-label { font-size: 11px !important; }
     body.print-mode-week .legenda-items { padding: 0 0 2px 0 !important; }
     body.print-mode-week .settings-btn { display: none !important; }
+    body.print-mode-week .dropzone { min-height: 0 !important; }
+    body.print-mode-week .dropzone.verlof-zone { height: auto !important; }
 }
 
 @media print {
