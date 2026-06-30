@@ -820,9 +820,11 @@ body[data-drag-type="interventie"] .verlof-zone { cursor: not-allowed; }
     body.print-2page-modus #print-2page-container { display: block !important; }
 }
 
-/* Zoom-toolbar verbergen zodra print-mode-week actief is (screen + print),
-   zodat de JS-hoogte-meting correct is vóór window.print() */
-body.print-mode-week .zoom-toolbar { display: none !important; }
+/* Zoom-toolbar verbergen zodra print-mode actief is (screen + print),
+   zodat JS-hoogte-meting correct is vóór window.print() */
+body.print-mode-week .zoom-toolbar,
+body.print-mode-multi .zoom-toolbar,
+body.print-mode-month .zoom-toolbar { display: none !important; }
 
 @media print {
     body.print-mode-week .planning-table { font-size: 11px !important; table-layout: auto !important; }
@@ -861,6 +863,20 @@ body.print-mode-week .zoom-toolbar { display: none !important; }
     body.print-mode-multi .verlof-segment { font-size: 7px !important; padding: 1px 3px !important; min-height: 16px !important; }
     body.print-mode-multi .placement-band { padding: 3px 5px !important; }
     body.print-mode-multi .table-scroll-wrap { overflow: visible !important; width: 100% !important; }
+    body.print-mode-multi .main-content { padding: 2mm 4mm 2mm 4mm !important; }
+    body.print-mode-multi .main-content-header { margin-bottom: 3px !important; padding: 0 !important; }
+    body.print-mode-multi .main-content h2 { font-size: 13px !important; }
+    body.print-mode-multi .periode-label { font-size: 11px !important; }
+    body.print-mode-multi .legenda-items { padding: 0 0 2px 0 !important; }
+    body.print-mode-multi .settings-btn,
+    body.print-mode-multi .zoom-toolbar { display: none !important; }
+    body.print-mode-multi .dropzone { min-height: 0 !important; overflow: hidden !important; }
+    body.print-mode-multi .dropzone.verlof-zone { height: auto !important; overflow: visible !important; }
+    body.print-mode-multi .placement-band,
+    body.print-mode-multi .planning-card { overflow: hidden !important; }
+    body.print-mode-multi .card-body { overflow: hidden !important; }
+    body.print-mode-multi .card-title { white-space: normal !important; word-break: break-word !important; }
+    body.print-mode-multi .card-address { white-space: normal !important; word-break: break-word !important; }
 }
 
 @media print {
@@ -877,7 +893,20 @@ body.print-mode-week .zoom-toolbar { display: none !important; }
     body.print-mode-month .placement-band { padding: 2px 4px !important; }
     body.print-mode-month .zwevend-badge { font-size: 7px !important; padding: 0px 3px !important; }
     body.print-mode-month .table-scroll-wrap { overflow: visible !important; width: 100% !important; }
-    body.print-mode-month .main-content { overflow: visible !important; }
+    body.print-mode-month .main-content { padding: 2mm 4mm 2mm 4mm !important; overflow: visible !important; }
+    body.print-mode-month .main-content-header { margin-bottom: 3px !important; padding: 0 !important; }
+    body.print-mode-month .main-content h2 { font-size: 13px !important; }
+    body.print-mode-month .periode-label { font-size: 11px !important; }
+    body.print-mode-month .legenda-items { padding: 0 0 2px 0 !important; }
+    body.print-mode-month .settings-btn,
+    body.print-mode-month .zoom-toolbar { display: none !important; }
+    body.print-mode-month .dropzone { min-height: 0 !important; overflow: hidden !important; }
+    body.print-mode-month .dropzone.verlof-zone { height: auto !important; overflow: visible !important; }
+    body.print-mode-month .placement-band,
+    body.print-mode-month .planning-card { overflow: hidden !important; }
+    body.print-mode-month .card-body { overflow: hidden !important; }
+    body.print-mode-month .card-title { white-space: normal !important; word-break: break-word !important; }
+    body.print-mode-month .card-address { white-space: normal !important; word-break: break-word !important; }
 }
 
 /* ── 2-PAGINA PRINT CONTAINER (normaal verborgen) ── */
