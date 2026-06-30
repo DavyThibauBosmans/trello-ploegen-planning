@@ -820,6 +820,10 @@ body[data-drag-type="interventie"] .verlof-zone { cursor: not-allowed; }
     body.print-2page-modus #print-2page-container { display: block !important; }
 }
 
+/* Zoom-toolbar verbergen zodra print-mode-week actief is (screen + print),
+   zodat de JS-hoogte-meting correct is vóór window.print() */
+body.print-mode-week .zoom-toolbar { display: none !important; }
+
 @media print {
     body.print-mode-week .planning-table { font-size: 11px !important; table-layout: auto !important; }
     body.print-mode-week .col-ploeg { width: 100px !important; }
@@ -834,9 +838,10 @@ body[data-drag-type="interventie"] .verlof-zone { cursor: not-allowed; }
     body.print-mode-week .main-content h2 { font-size: 13px !important; }
     body.print-mode-week .periode-label { font-size: 11px !important; }
     body.print-mode-week .legenda-items { padding: 0 0 2px 0 !important; }
-    body.print-mode-week .settings-btn { display: none !important; }
-    body.print-mode-week .dropzone { min-height: 0 !important; }
-    body.print-mode-week .dropzone.verlof-zone { height: auto !important; }
+    body.print-mode-week .settings-btn,
+    body.print-mode-week .zoom-toolbar { display: none !important; }
+    body.print-mode-week .dropzone { min-height: 0 !important; overflow: hidden !important; }
+    body.print-mode-week .dropzone.verlof-zone { height: auto !important; overflow: visible !important; }
 }
 
 @media print {
