@@ -19,26 +19,137 @@ function boardSet(key, val)      { return t.set('board', 'shared', key, val); }
 function cardGet(id, key, def)   { return t.get(id, 'shared', key, def); }
 function cardSet(id, key, val)   { return t.set(id, 'shared', key, val); }
 
-async function muteInterventies(fn) {
-    var arr = ensureArray(await boardGet('interventions', []));
-    var r = fn(arr);
-    var s = r !== undefined ? r : arr;
-    await boardSet('interventions', s);
-    return s;
-}
-async function muteVerlof(fn) {
-    var arr = ensureArray(await boardGet('verlofItems', []));
-    var r = fn(arr);
-    var s = r !== undefined ? r : arr;
-    await boardSet('verlofItems', s);
-    return s;
-}
 async function mutePlacements(cardId, fn) {
     var arr = ensureArray(await cardGet(cardId, 'placements', []));
     var r = fn(arr);
     var s = r !== undefined ? r : arr;
     await cardSet(cardId, 'placements', s);
     return s;
+}
+
+/* ── GESPREIDE OPSLAG (SHARDS) ──
+   interventions/verlofItems groeien onbeperkt en botsen op Trello's limiet van
+   8192 tekens voor alle 'board'+'shared' data samen. Elke Trello-kaart heeft
+   echter een eigen, onafhankelijk budget van 4096 tekens (card/shared-scope) —
+   we verdelen de data daarom over speciale "opslag-kaarten" (kaarten in de lijst
+   "🗄️ Planning opslag", zie isOpslagLijst hierboven). Elke kaart draagt maximaal
+   één stroom ('doel': 'interventions' of 'verlofItems') plus één datachunk.
+   Is er geen opslag-lijst aangemaakt, dan valt alles terug op de oude, kleinere
+   board+shared opslag zodat de app blijft werken zoals voorheen. */
+var CHUNK_MAX = 3000; // ruime marge onder 4096 (JSON-escaping-overhead + 'doel'-veld)
+var opslagKaarten = { interventions: [], verlofItems: [], vrij: [] };
+var opslagActief = false;
+
+function verdeelOpslagKaarten(shardIds) {
+    if (!shardIds || shardIds.length === 0) return Promise.resolve({ interventions: [], verlofItems: [], vrij: [] });
+    return Promise.all(shardIds.map(function(id) { return cardGet(id, 'doel', ''); })).then(function(doelen) {
+        var verdeling = { interventions: [], verlofItems: [], vrij: [] };
+        shardIds.forEach(function(id, i) {
+            if (doelen[i] === 'interventions') verdeling.interventions.push(id);
+            else if (doelen[i] === 'verlofItems') verdeling.verlofItems.push(id);
+            else verdeling.vrij.push(id);
+        });
+        return verdeling;
+    });
+}
+
+function leesGespreideData(shardIds) {
+    if (!shardIds || shardIds.length === 0) return Promise.resolve([]);
+    return Promise.all(shardIds.map(function(id) { return cardGet(id, 'chunk', ''); })).then(function(chunks) {
+        var json = chunks.join('');
+        if (!json) return [];
+        try { return JSON.parse(json); } catch (e) { console.error('leesGespreideData parse-fout:', e); return []; }
+    });
+}
+
+/* Schrijft arr als opeenvolgende chunks over de kaarten die al aan 'stroom' toegewezen
+   zijn; claimt extra kaarten uit de vrije pool (of via zorgVoorOpslagCapaciteit) als er
+   meer ruimte nodig is, en geeft overtollige kaarten terug aan de vrije pool. */
+async function schrijfGespreideData(stroom, arr) {
+    var json = JSON.stringify(arr);
+    var chunks = [];
+    for (var i = 0; i < json.length; i += CHUNK_MAX) chunks.push(json.slice(i, i + CHUNK_MAX));
+    var toegewezen = opslagKaarten[stroom].slice();
+    while (toegewezen.length < chunks.length) {
+        if (opslagKaarten.vrij.length === 0) {
+            var extra = await zorgVoorOpslagCapaciteit(chunks.length - toegewezen.length);
+            if (!extra || extra.length === 0) {
+                var fout = new Error('Onvoldoende opslag-kaarten voor "' + stroom + '": ' + chunks.length + ' nodig, ' + toegewezen.length + ' beschikbaar. Voeg een kaart toe aan de lijst "' + OPSLAG_LIJST_NAAM + '".');
+                fout.code = 'OPSLAG_VOL';
+                throw fout;
+            }
+            opslagKaarten.vrij = opslagKaarten.vrij.concat(extra);
+        }
+        var kaartId = opslagKaarten.vrij.shift();
+        await cardSet(kaartId, 'doel', stroom);
+        toegewezen.push(kaartId);
+    }
+    var overtollig = toegewezen.slice(chunks.length);
+    toegewezen = toegewezen.slice(0, chunks.length);
+    await Promise.all(toegewezen.map(function(id, idx) { return cardSet(id, 'chunk', chunks[idx]); }));
+    await Promise.all(overtollig.map(function(id) {
+        return Promise.all([cardSet(id, 'chunk', ''), cardSet(id, 'doel', '')]);
+    }));
+    opslagKaarten[stroom] = toegewezen;
+    opslagKaarten.vrij = opslagKaarten.vrij.concat(overtollig);
+}
+
+/* Fase B (later): automatisch nieuwe opslag-kaarten aanmaken via de Trello REST API
+   wanneer de vrije pool leeg raakt. Nog niet geïmplementeerd — retourneert nu geen
+   extra kaarten, waardoor schrijfGespreideData een duidelijke fout toont i.p.v. stil
+   te falen. */
+async function zorgVoorOpslagCapaciteit(aantalNodig) {
+    return [];
+}
+
+async function muteInterventies(fn) {
+    if (opslagActief) {
+        var arr = ensureArray(await leesGespreideData(opslagKaarten.interventions));
+        var r = fn(arr);
+        var s = r !== undefined ? r : arr;
+        await schrijfGespreideData('interventions', s);
+        return s;
+    }
+    var arrLegacy = ensureArray(await boardGet('interventions', []));
+    var rLegacy = fn(arrLegacy);
+    var sLegacy = rLegacy !== undefined ? rLegacy : arrLegacy;
+    await boardSet('interventions', sLegacy);
+    return sLegacy;
+}
+async function muteVerlof(fn) {
+    if (opslagActief) {
+        var arr = ensureArray(await leesGespreideData(opslagKaarten.verlofItems));
+        var r = fn(arr);
+        var s = r !== undefined ? r : arr;
+        await schrijfGespreideData('verlofItems', s);
+        return s;
+    }
+    var arrLegacy = ensureArray(await boardGet('verlofItems', []));
+    var rLegacy = fn(arrLegacy);
+    var sLegacy = rLegacy !== undefined ? rLegacy : arrLegacy;
+    await boardSet('verlofItems', sLegacy);
+    return sLegacy;
+}
+
+/* Alleen-lezen equivalenten (geen schrijfactie) — te gebruiken vóór een confirm()
+   of andere beslissing waarbij niet elke lees-actie automatisch mag wegschrijven. */
+async function leesInterventies() {
+    return opslagActief ? ensureArray(await leesGespreideData(opslagKaarten.interventions)) : ensureArray(await boardGet('interventions', []));
+}
+async function leesVerlofItems() {
+    return opslagActief ? ensureArray(await leesGespreideData(opslagKaarten.verlofItems)) : ensureArray(await boardGet('verlofItems', []));
+}
+
+/* Eenmalige migratie: bestaande board+shared interventions/verlofItems overhevelen
+   naar de shards zodra er opslag-kaarten gevonden zijn, daarna de oude sleutels legen.
+   Beveiligd met een vlag zodat dit maar één keer per bord gebeurt. */
+async function migreerNaarGespreideOpslagIndienNodig(legacyInterventions, legacyVerlofItems) {
+    if (!opslagActief) return;
+    var versie = await boardGet('dataOpslagVersie', 0);
+    if (versie >= 1) return;
+    if (legacyInterventions.length > 0) await schrijfGespreideData('interventions', legacyInterventions);
+    if (legacyVerlofItems.length > 0) await schrijfGespreideData('verlofItems', legacyVerlofItems);
+    await Promise.all([boardSet('interventions', []), boardSet('verlofItems', []), boardSet('dataOpslagVersie', 1)]);
 }
 
 function selecteerAllesTekst(el) {
@@ -147,7 +258,7 @@ var PROJECTLEIDERS = [
     { username: 'evageeroms',      naam: 'Eva',             bg: '#61bd4f', text: '#ffffff' },
     { username: 'davythibau01',    naam: 'Davy',            bg: '#f2d600', text: '#172b4d' },
     { username: 'bertdebie1',      naam: 'Bert',            bg: '#0079bf', text: '#ffffff' },
-    { username: 'laurenabsillis1', naam: 'Lauren Absillis', bg: '#c377e0', text: '#ffffff' }
+    { username: 'laurenabsillis1', naam: 'Lauren',          bg: '#c377e0', text: '#ffffff' }
 ];
 var STANDAARD_KAART_STIJL = { bg: '#eaecf0', text: '#172b4d' };
 
@@ -858,6 +969,15 @@ function isArchiefLijst(naam) {
     return n.indexOf('archiveren') !== -1 || n.indexOf('archief') !== -1 || n.indexOf('archive') !== -1;
 }
 
+/* ── OPSLAG-KAARTEN: kaarten in deze lijst dienen als extra opslagcapaciteit
+   voor interventions/verlofItems (elke Trello-kaart heeft een eigen, onafhankelijk
+   8192-tekenbudget). Deze kaarten worden nergens als projectkaart behandeld. */
+var OPSLAG_LIJST_NAAM = '🗄️ Planning opslag';
+function isOpslagLijst(naam) {
+    if (!naam) return false;
+    return naam.trim().toLowerCase().indexOf('planning opslag') !== -1;
+}
+
 function maakKaartSnapshot(card) {
     return { n: card.name||'', a: card.address||'', u: card.url||'', m: (card.members||[]).map(function(m){return m.username;}) };
 }
@@ -928,7 +1048,7 @@ async function verwijderPloeg(naam, rijElement) {
     if (!confirm('⚠️ Ploeg "' + naam + '" verwijderen?\n\nDit kan niet ongedaan worden gemaakt.')) return;
     if (ploegen.length <= 1) { toonPloegMelding(rijElement, 'Er moet minstens één ploeg overblijven.'); return; }
     try {
-        var ints = ensureArray(await boardGet('interventions', []));
+        var ints = await leesInterventies();
         var ids  = ensureArray(await boardGet('plannedCardIds', []));
         var intCount = ints.filter(function(i) { return i.ploeg === naam; }).length;
         var perKaart = await Promise.all(ids.map(function(cid) {
@@ -945,8 +1065,9 @@ async function verwijderPloeg(naam, rijElement) {
             if (placementCount > 0) extra += '\n  • ' + placementCount + ' ingeplande kaart(en)';
             if (!confirm('⚠️ Ploeg "' + naam + '" bevat nog:' + extra + '\n\nDeze worden mee verwijderd. Toch doorgaan?')) return;
         }
+        var gefilterdeInterventies = ints.filter(function(i) { return i.ploeg !== naam; });
         var ops = [
-            boardSet('interventions', ints.filter(function(i) { return i.ploeg !== naam; }))
+            opslagActief ? schrijfGespreideData('interventions', gefilterdeInterventies) : boardSet('interventions', gefilterdeInterventies)
         ];
         perKaart.forEach(function(k) {
             var gefilterd = k.placements.filter(function(p) { return p.ploeg !== naam; });
@@ -1555,7 +1676,7 @@ function laadEnRenderAlles(){
     if(errorMsg)errorMsg.style.display='none';
     if(pool)pool.innerHTML='';
     return Promise.all([
-        t.cards('id','name','members','address','desc','idList','url','labels','due','dueComplete'),
+        t.cards('id','name','members','address','desc','idList','url','labels','due','dueComplete','pos'),
         t.lists('id','name'),
         t.get('board','shared','interventions',[]),
         t.get('board','shared','plannedCardIds',[]),
@@ -1565,10 +1686,10 @@ function laadEnRenderAlles(){
         DEV_MODE ? Promise.resolve(null) : t.member('username').catch(function(){return null;}),
         t.get('board','shared','ploegLaanVolgorde',{})
     ]).then(function(resultaten){
-        var cards=resultaten[0],lists=resultaten[1],interventions=resultaten[2];
+        var cards=resultaten[0],lists=resultaten[1],legacyInterventions=ensureArray(resultaten[2]);
         var indexIds=Array.isArray(resultaten[3])?resultaten[3]:[];
         var opgeslagenPloegen=resultaten[4];
-        var verlofItems=Array.isArray(resultaten[5])?resultaten[5]:[];
+        var legacyVerlofItems=ensureArray(resultaten[5]);
         var opgeslagenAdmins=resultaten[6];
         var memberInfo=resultaten[7];
         ploegLaanVolgorde=(resultaten[8]&&typeof resultaten[8]==='object'&&!Array.isArray(resultaten[8]))?resultaten[8]:{};
@@ -1578,20 +1699,42 @@ function laadEnRenderAlles(){
         toepassenAdminStatus();
         if(Array.isArray(opgeslagenPloegen)&&opgeslagenPloegen.length>0){ploegen=opgeslagenPloegen.slice();}
         else{ploegen=DEFAULT_PLOEGEN.slice();t.set('board','shared','ploegen',ploegen);}
+
+        /* Opslag-kaarten (shards) ontdekken: kaarten in de lijst "🗄️ Planning opslag"
+           dienen als extra opslagcapaciteit en worden overal verder uitgesloten van de
+           normale projectkaart-verwerking (zijbalk, placements, archief-detectie). */
+        var opslagLijstIds={};
+        lists.forEach(function(l){if(isOpslagLijst(l.name))opslagLijstIds[l.id]=true;});
+        var opslagCardIds=cards.filter(function(c){return opslagLijstIds[c.idList];})
+            .sort(function(a,b){return (a.pos||0)-(b.pos||0);})
+            .map(function(c){return c.id;});
+
+        var archiefLijstIds={};
+        lists.forEach(function(l){if(isArchiefLijst(l.name))archiefLijstIds[l.id]=true;});
+        var visibleById={};cards.forEach(function(c){if(!opslagLijstIds[c.idList])visibleById[c.id]=c;});
+        var alleIds=[],gezien={};
+        cards.forEach(function(c){if(!opslagLijstIds[c.idList]&&!gezien[c.id]){gezien[c.id]=true;alleIds.push(c.id);}});
+        indexIds.forEach(function(id){if(!gezien[id]){gezien[id]=true;alleIds.push(id);}});
+
+        return verdeelOpslagKaarten(opslagCardIds).then(function(verdeling){
+            opslagKaarten=verdeling;
+            opslagActief=opslagCardIds.length>0;
+            return migreerNaarGespreideOpslagIndienNodig(legacyInterventions,legacyVerlofItems);
+        }).then(function(){
+            return Promise.all([
+                opslagActief?leesGespreideData(opslagKaarten.interventions):Promise.resolve(legacyInterventions),
+                opslagActief?leesGespreideData(opslagKaarten.verlofItems):Promise.resolve(legacyVerlofItems)
+            ]);
+        }).then(function(gespreideData){
+        var interventions=gespreideData[0],verlofItems=gespreideData[1];
         var verlofMigratieNodig=false;
         verlofItems.forEach(function(v){
             if(!v.startDatum&&v.datum){v.startDatum=v.datum;v.eindDatum=v.eindDatum||v.datum;delete v.datum;verlofMigratieNodig=true;}
             if(!v.eindDatum&&v.startDatum){v.eindDatum=v.startDatum;verlofMigratieNodig=true;}
         });
-        if(verlofMigratieNodig)t.set('board','shared','verlofItems',verlofItems);
+        if(verlofMigratieNodig){if(opslagActief){schrijfGespreideData('verlofItems',verlofItems);}else{t.set('board','shared','verlofItems',verlofItems);}}
         bouwTabel();
         if(loadingMsg)loadingMsg.style.display='none';
-        var archiefLijstIds={};
-        lists.forEach(function(l){if(isArchiefLijst(l.name))archiefLijstIds[l.id]=true;});
-        var visibleById={};cards.forEach(function(c){visibleById[c.id]=c;});
-        var alleIds=[],gezien={};
-        cards.forEach(function(c){if(!gezien[c.id]){gezien[c.id]=true;alleIds.push(c.id);}});
-        indexIds.forEach(function(id){if(!gezien[id]){gezien[id]=true;alleIds.push(id);}});
         var idPromises=alleIds.map(function(cardId){
             return Promise.all([
                 t.get(cardId,'shared','placements',null),
@@ -1652,6 +1795,7 @@ function laadEnRenderAlles(){
             var zoekVeld=document.getElementById('sidebar-search');
             if(zoekVeld)filterZijbalk(zoekVeld.value);
             controleerOpslagLimiet();
+        });
         });
     }).catch(function(err){
         console.error('Fout bij laden kaarten:',err&&err.message?err.message:err);
@@ -1975,15 +2119,19 @@ function drop(e){
 
     if(soort==='verlof'){
         if(naarZijbalk||doelRowType!=='verlof')return;
-        t.get('board','shared','verlofItems',[]).then(function(lijst){
-            var arr=Array.isArray(lijst)?lijst:[],item=null;
+        var verplaatstVerlofItem=null;
+        muteVerlof(function(arr){
+            var item=null;
             arr.forEach(function(v){if(v.id===id)item=v;});
-            if(!item)return;
+            if(!item)return arr;
             var oudeStart=item.startDatum||item.datum,oudeEind=item.eindDatum||oudeStart;
-            if(oudeStart===doelDatum)return;
+            if(oudeStart===doelDatum)return arr;
             var rangeLengte=aantalDagenTussen(oudeStart,oudeEind);
             item.startDatum=doelDatum;item.eindDatum=voegDagenToe(doelDatum,rangeLengte);delete item.datum;
-            return t.set('board','shared','verlofItems',arr).then(function(){hertekenEnkelVerlofItem(item);});
+            verplaatstVerlofItem=item;
+            return arr;
+        }).then(function(){
+            if(verplaatstVerlofItem)hertekenEnkelVerlofItem(verplaatstVerlofItem);
         });
         return;
     }
@@ -2064,28 +2212,31 @@ function drop(e){
             document.querySelectorAll('[data-int-id="'+id+'"]').forEach(function(el){if(el.parentNode)el.parentNode.removeChild(el);});
             var losEl=document.getElementById(id);if(losEl&&losEl.parentNode)losEl.parentNode.removeChild(losEl);
             stapelVrijgeven(id);
-            t.get('board','shared','interventions',[]).then(function(lijst){
-                var arr=Array.isArray(lijst)?lijst:[],doelInt=null;
-                arr=arr.map(function(item){if(item.id===id){item.ploeg=null;item.datum=null;delete item.eindDatum;doelInt=item;}return item;});
-                return t.set('board','shared','interventions',arr).then(function(){return doelInt;});
-            }).then(function(doelInt){
+            muteInterventies(function(arr){
+                arr.forEach(function(item){if(item.id===id){item.ploeg=null;item.datum=null;delete item.eindDatum;}});
+                return arr;
+            }).then(function(arr){
+                var doelInt=null;
+                arr.forEach(function(item){if(item.id===id)doelInt=item;});
                 if(doelInt){tekenInterventie(doelInt);herlayoutPloegRijen();}
                 var z=document.getElementById('sidebar-search');if(z)filterZijbalk(z.value);
             });
             return;
         }
-        t.get('board','shared','interventions',[]).then(function(lijst){
-            var arr=Array.isArray(lijst)?lijst:[],doelInt=null;
-            arr=arr.map(function(item){
+        muteInterventies(function(arr){
+            arr.forEach(function(item){
                 if(item.id===id){
                     var oudStart=item.datum,oudEind=item.eindDatum||item.datum,len=(oudStart?aantalDagenTussen(oudStart,oudEind):0);
                     item.ploeg=doelPloeg;item.datum=doelDatum;
                     if(len>0){item.eindDatum=voegDagenToe(doelDatum,len);}else{delete item.eindDatum;}
-                    doelInt=item;
-                }return item;
+                }
             });
-            return t.set('board','shared','interventions',arr).then(function(){return doelInt;});
-        }).then(function(doelInt){if(doelInt)hertekenEnkeleInterventie(doelInt);});
+            return arr;
+        }).then(function(arr){
+            var doelInt=null;
+            arr.forEach(function(item){if(item.id===id)doelInt=item;});
+            if(doelInt)hertekenEnkeleInterventie(doelInt);
+        });
         return;
     }
 }
@@ -2506,8 +2657,8 @@ var _backupReminderGetoond = false;
 function exporteerBackup() {
     return Promise.all([
         t.get('board','shared','ploegen',[]),
-        t.get('board','shared','interventions',[]),
-        t.get('board','shared','verlofItems',[]),
+        leesInterventies(),
+        leesVerlofItems(),
         t.get('board','shared','plannedCardIds',[]),
         t.get('board','shared','layoutInstellingen',null),
         t.get('board','shared','layoutStandaard',null)
@@ -2572,8 +2723,8 @@ function importeerBackup(bestand, onKlaar) {
 
         var ops = [
             t.set('board','shared','ploegen',        data.ploegen        || []),
-            t.set('board','shared','interventions',  data.interventions  || []),
-            t.set('board','shared','verlofItems',    data.verlofItems    || []),
+            opslagActief ? schrijfGespreideData('interventions', data.interventions || []) : t.set('board','shared','interventions', data.interventions || []),
+            opslagActief ? schrijfGespreideData('verlofItems',   data.verlofItems   || []) : t.set('board','shared','verlofItems',   data.verlofItems   || []),
             t.set('board','shared','plannedCardIds', data.plannedCardIds || [])
         ];
         if (data.layoutInstellingen) ops.push(t.set('board','shared','layoutInstellingen', data.layoutInstellingen));
@@ -2681,22 +2832,40 @@ function toonBackupReminder() {
 /* ════════════════════════════════════════════════════════
    ── OPSLAGLIMIET-WAARSCHUWING ──
    Trello staat maximaal 8192 tekens toe voor alle 'board'+'shared'
-   sleutels samen (ploegen, interventions, verlofItems, enz. delen
-   allemaal dezelfde pot). Bij overschrijding mislukt elke t.set
-   stil op de achtergrond — bv. het "+"-knopje lijkt dan niets te
-   doen. Waarschuw ruim op tijd zodat er nog marge is om op te ruimen. */
-var BOARD_SHARED_SLEUTELS = ['ploegen','interventions','verlofItems','plannedCardIds','ploegLaanVolgorde','layoutInstellingen','layoutStandaard','adminUsernames','viewMode','ankerDatum'];
+   sleutels samen. Zolang er geen opslag-kaarten zijn (opslagActief===false)
+   delen interventions/verlofItems nog steeds die pot — vandaar de
+   klassieke board-brede waarschuwing hieronder. Zodra opslagActief===true
+   leven interventions/verlofItems op losse "opslag-kaarten" (elk met een
+   eigen 4096-tekenbudget) en waarschuwen we in plaats daarvan wanneer díe
+   gezamenlijke capaciteit bijna vol is — met als oplossing: een kaart
+   toevoegen aan de lijst "🗄️ Planning opslag" (i.p.v. opruimen). */
+var BOARD_SHARED_SLEUTELS = ['ploegen','plannedCardIds','ploegLaanVolgorde','layoutInstellingen','layoutStandaard','adminUsernames','viewMode','ankerDatum','dataOpslagVersie'];
 var TRELLO_OPSLAG_LIMIET = 8192;
 var OPSLAG_WAARSCHUW_GRENS = 7500;
+var SHARD_WAARSCHUW_PERCENTAGE = 0.85;
 var OPSLAG_WAARSCHUW_REMINDER_KEY = 'ploegenPlanningOpslagWaarschuwing';
 var OPSLAG_SNOOZE_DAGEN = 3;
 var _opslagWaarschuwingGetoond = false;
 
 function berekenBoardSharedGrootte() {
-    return Promise.all(BOARD_SHARED_SLEUTELS.map(function(k) { return boardGet(k, null); })).then(function(waarden) {
+    var sleutels = BOARD_SHARED_SLEUTELS.slice();
+    if (!opslagActief) sleutels = sleutels.concat(['interventions', 'verlofItems']);
+    return Promise.all(sleutels.map(function(k) { return boardGet(k, null); })).then(function(waarden) {
         var obj = {};
-        BOARD_SHARED_SLEUTELS.forEach(function(k, i) { if (waarden[i] !== null && waarden[i] !== undefined) obj[k] = waarden[i]; });
+        sleutels.forEach(function(k, i) { if (waarden[i] !== null && waarden[i] !== undefined) obj[k] = waarden[i]; });
         return JSON.stringify(obj).length;
+    });
+}
+
+function berekenShardCapaciteit() {
+    if (!opslagActief) return Promise.resolve(null);
+    return Promise.all([
+        leesGespreideData(opslagKaarten.interventions),
+        leesGespreideData(opslagKaarten.verlofItems)
+    ]).then(function(res) {
+        var gebruikt = JSON.stringify(res[0]).length + JSON.stringify(res[1]).length;
+        var aantalKaarten = opslagKaarten.interventions.length + opslagKaarten.verlofItems.length + opslagKaarten.vrij.length;
+        return { gebruikt: gebruikt, capaciteit: aantalKaarten * CHUNK_MAX, aantalKaarten: aantalKaarten };
     });
 }
 
@@ -2800,6 +2969,64 @@ function toonOpslagWaarschuwing(grootte) {
     document.body.appendChild(overlay);
 }
 
+function toonShardCapaciteitWaarschuwing(info) {
+    if (document.getElementById('opslag-waarschuwing-overlay')) return;
+    var overlay = document.createElement('div');
+    overlay.id = 'opslag-waarschuwing-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(9,30,66,0.42);display:flex;align-items:center;justify-content:center;z-index:900;';
+
+    var popup = document.createElement('div');
+    popup.style.cssText = 'background:#fff;border-radius:10px;width:min(440px,92vw);padding:28px 24px 20px;box-shadow:0 8px 32px rgba(0,0,0,0.28);text-align:center;font-family:inherit;';
+
+    var icoon = document.createElement('div');
+    icoon.style.cssText = 'font-size:44px;margin-bottom:10px;'; icoon.innerText = '📦';
+
+    var titel = document.createElement('div');
+    titel.style.cssText = 'font-size:16px;font-weight:700;color:#172b4d;margin-bottom:8px;';
+    titel.innerText = 'Opslag-kaarten bijna vol';
+
+    var percentage = info.capaciteit > 0 ? Math.round((info.gebruikt / info.capaciteit) * 100) : 100;
+    var tekst = document.createElement('div');
+    tekst.style.cssText = 'font-size:13px;color:#5e6c84;line-height:1.55;margin-bottom:18px;white-space:pre-wrap;';
+    tekst.innerText = 'De interventies en afwezigheden gebruiken momenteel ' + percentage + '% van de ' + info.aantalKaarten + ' opslag-kaart(en) in de lijst "' + OPSLAG_LIJST_NAAM + '".\n\n' +
+        'Voeg gewoon een extra (lege) kaart toe aan die lijst om meer ruimte te krijgen — geen andere actie nodig, de app gebruikt ze automatisch bij de volgende wijziging.';
+
+    var statusEl = document.createElement('div');
+    statusEl.style.cssText = 'font-size:12px;color:#5e6c84;min-height:16px;margin-bottom:4px;';
+
+    var btnWrap = document.createElement('div');
+    btnWrap.style.cssText = 'display:flex;gap:10px;justify-content:center;flex-wrap:wrap;';
+
+    var opkuisBtn = document.createElement('button');
+    opkuisBtn.style.cssText = 'background:#ffebe6;color:#bf2600;border:1px solid #ff8f73;border-radius:6px;padding:10px 18px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;';
+    opkuisBtn.innerText = '🧹 Of ruim items ouder dan 90 dagen op';
+    opkuisBtn.addEventListener('click', function() {
+        if (!confirm('⚠️ Interventies en afwezigheden die meer dan 90 dagen geleden zijn afgelopen worden definitief verwijderd uit de actieve planning.\n\nDoorgaan?')) return;
+        opkuisBtn.disabled = true;
+        verwijderOudeItems(90).then(function(res) {
+            statusEl.innerText = '✓ ' + res.verwijderdInt + ' interventie(s) en ' + res.verwijderdVerlof + ' afwezigheid(-heden) verwijderd.';
+            opkuisBtn.disabled = false;
+            laadEnRenderAlles();
+        }).catch(function(err) {
+            statusEl.innerText = '⚠️ Opkuis mislukt: ' + (err && err.message ? err.message : 'onbekende fout');
+            opkuisBtn.disabled = false;
+        });
+    });
+
+    var laterBtn = document.createElement('button');
+    laterBtn.style.cssText = 'background:none;color:#5e6c84;border:1px solid #dfe1e6;border-radius:6px;padding:10px 18px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;';
+    laterBtn.innerText = 'Later herinneren';
+    laterBtn.addEventListener('click', function() {
+        try { localStorage.setItem(OPSLAG_WAARSCHUW_REMINDER_KEY, new Date().toISOString()); } catch (e) {}
+        sluitOpslagWaarschuwing();
+    });
+
+    btnWrap.appendChild(opkuisBtn); btnWrap.appendChild(laterBtn);
+    popup.appendChild(icoon); popup.appendChild(titel); popup.appendChild(tekst); popup.appendChild(statusEl); popup.appendChild(btnWrap);
+    overlay.appendChild(popup);
+    document.body.appendChild(overlay);
+}
+
 function controleerOpslagLimiet() {
     if (!isAdmin || _opslagWaarschuwingGetoond) return;
     try {
@@ -2809,11 +3036,19 @@ function controleerOpslagLimiet() {
             if (dagenGeleden < OPSLAG_SNOOZE_DAGEN) return;
         }
     } catch (e) {}
-    berekenBoardSharedGrootte().then(function(grootte) {
-        if (grootte < OPSLAG_WAARSCHUW_GRENS) return;
-        _opslagWaarschuwingGetoond = true;
-        toonOpslagWaarschuwing(grootte);
-    }).catch(function() {});
+    if (opslagActief) {
+        berekenShardCapaciteit().then(function(info) {
+            if (!info || info.capaciteit === 0 || (info.gebruikt / info.capaciteit) < SHARD_WAARSCHUW_PERCENTAGE) return;
+            _opslagWaarschuwingGetoond = true;
+            toonShardCapaciteitWaarschuwing(info);
+        }).catch(function() {});
+    } else {
+        berekenBoardSharedGrootte().then(function(grootte) {
+            if (grootte < OPSLAG_WAARSCHUW_GRENS) return;
+            _opslagWaarschuwingGetoond = true;
+            toonOpslagWaarschuwing(grootte);
+        }).catch(function() {});
+    }
 }
 
 /* Laad instellingen bij opstart (wordt aangeroepen voor t.render) */
