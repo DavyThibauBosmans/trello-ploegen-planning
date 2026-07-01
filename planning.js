@@ -699,6 +699,31 @@ function toonPloegMelding(rijEl, tekst) {
     setTimeout(function() { w.classList.remove('show'); setTimeout(function() { if (w.parentNode) w.parentNode.removeChild(w); }, 200); }, 3200);
 }
 
+/* ── QUICK-ADD KNOPPEN (afwezig-rij en ploeg-cellen) ──
+   Los in een functie zodat hertekenVanuitCache ze kan herplaatsen na een dropzone-wipe. */
+function voegVerlofAddBtnToe(tdV) {
+    var addBtnV = document.createElement('button');
+    addBtnV.className = 'verlof-add-btn';
+    addBtnV.innerHTML = '+'; addBtnV.type = 'button';
+    addBtnV.title = 'Snel verlof toevoegen';
+    addBtnV.addEventListener('click', function(e) {
+        e.stopPropagation(); if (!isAdmin) return;
+        voegVerlofToe(tdV.dataset.datum);
+    });
+    tdV.appendChild(addBtnV);
+}
+function voegCelAddBtnToe(td) {
+    var addBtn = document.createElement('button');
+    addBtn.className = 'cell-add-btn';
+    addBtn.innerHTML = '+'; addBtn.type = 'button';
+    addBtn.title = 'Snelle interventie toevoegen';
+    addBtn.addEventListener('click', function(e) {
+        e.stopPropagation(); if (!isAdmin) return;
+        voegDirecteInterventieToe(td.dataset.ploeg, td.dataset.datum);
+    });
+    td.appendChild(addBtn);
+}
+
 /* ── TABEL OPBOUW ── */
 function bouwTabel() {
     var tbody = document.getElementById('table-body');
@@ -730,16 +755,7 @@ function bouwTabel() {
         tdV.addEventListener('dragover',  allowDrop);
         tdV.addEventListener('dragleave', dragLeave);
         tdV.addEventListener('drop',      drop);
-        var addBtnV = document.createElement('button');
-        addBtnV.className = 'verlof-add-btn';
-        addBtnV.innerHTML = '+'; addBtnV.type = 'button';
-        addBtnV.title = 'Snel verlof toevoegen';
-        (function(datum) {
-            addBtnV.addEventListener('click', function(e) {
-                e.stopPropagation(); if (!isAdmin) return; voegVerlofToe(datum);
-            });
-        })(datumsVanDeWeek[i]);
-        tdV.appendChild(addBtnV);
+        voegVerlofAddBtnToe(tdV);
         trV.appendChild(tdV);
     }
     tbody.appendChild(trV);
@@ -803,16 +819,7 @@ function bouwTabel() {
             td.addEventListener('dragover',  allowDrop);
             td.addEventListener('dragleave', dragLeave);
             td.addEventListener('drop',      drop);
-            var addBtn = document.createElement('button');
-            addBtn.className = 'cell-add-btn';
-            addBtn.innerHTML = '+'; addBtn.type = 'button';
-            addBtn.title = 'Snelle interventie toevoegen';
-            addBtn.addEventListener('click', function(e) {
-                e.stopPropagation(); if (!isAdmin) return;
-                var pzone = this.parentElement;
-                voegDirecteInterventieToe(pzone.dataset.ploeg, pzone.dataset.datum);
-            });
-            td.appendChild(addBtn);
+            voegCelAddBtnToe(td);
             tr.appendChild(td);
         }
         tbody.appendChild(tr);
@@ -1300,6 +1307,10 @@ function hertekenVanuitCache() {
     allePlaatsingsParen.forEach(function(item) { tekenPlacement(item.p, item.ctx); });
     alleInterventies.forEach(function(int) { tekenInterventie(int); });
     alleVerlofItems.forEach(function(v) { tekenVerlofItem(v); });
+    document.querySelectorAll('.dropzone').forEach(function(z) {
+        if (z.dataset.rowType === 'verlof') voegVerlofAddBtnToe(z);
+        else if (z.dataset.rowType === 'ploeg') voegCelAddBtnToe(z);
+    });
     herlayoutPloegRijen();
 }
 
