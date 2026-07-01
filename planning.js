@@ -1173,6 +1173,10 @@ function herlayoutPloegRijen() {
                 var baan = parseInt(el.dataset.lane, 10); if (isNaN(baan)) return;
                 /* Verborgen vervolgsegmenten (herstelBandSpreiding) niet meenemen in hoogtebepaling */
                 if (el.style.display === 'none') return;
+                /* Reset inline breedte zodat meting cel-gebonden is (niet de uitgerekte
+                   breedte die herstelBandSpreiding instelt voor meerdaagse banden) */
+                el.style.width = '';
+                el.style.right = '';
                 el.style.height = 'auto'; var h = el.offsetHeight;
                 if (!baanHoogtes[baan] || h > baanHoogtes[baan]) baanHoogtes[baan] = h;
                 items.push({ el: el, baan: baan });
@@ -1182,8 +1186,9 @@ function herlayoutPloegRijen() {
         var tops = {}, cursor = BAND_TOP;
         banen.forEach(function(b) { tops[b]=cursor; cursor+=baanHoogtes[b]+BAND_GAP; });
         var totaal = (banen.length ? (cursor-BAND_GAP) : BAND_TOP) + 30;
-        /* Hoogte-egalisatie volgt in tweede pass, ná herstelBandSpreiding */
-        items.forEach(function(it) { it.el.style.top=tops[it.baan]+'px'; it.el.style.height='auto'; it.el.style.bottom='auto'; });
+        /* Stel vaste hoogte in per baan (gelijk aan de gemeten max-hoogte voor die baan).
+           Dit zorgt voor consistente rijhoogte ongeacht eerdere herstelBandSpreiding-aanroepen. */
+        items.forEach(function(it) { it.el.style.top=tops[it.baan]+'px'; it.el.style.height=baanHoogtes[it.baan]+'px'; it.el.style.bottom='auto'; });
         contentHoogtes[pl] = Math.max(80, totaal);
     });
     /* Tweede pas: stel hoogte per rij in op basis van eigen content + ingesteld minimum */
@@ -1218,31 +1223,6 @@ function herlayoutPloegRijen() {
     /* Herstel zoom na meting */
     if (tableEl) tableEl.style.zoom = tableZoom;
     autoFitZoom();
-    herstelBandSpreiding();
-    /* Tweede pass: egaliseer hoogten per top-groep (na band-spreiding) */
-    /* Reset zoom zodat offsetHeight niet door CSS zoom wordt beïnvloed */
-    (function(){
-        if(tableEl)tableEl.style.zoom='';
-        var topGroepen={};
-        Object.keys(perPloeg).forEach(function(pl){
-            perPloeg[pl].forEach(function(z){
-                z.querySelectorAll('.planning-card,.placement-band').forEach(function(el){
-                    if(el.style.display==='none')return;
-                    var t=el.style.top; if(!t)return;
-                    var key=pl+'|'+t;
-                    if(!topGroepen[key])topGroepen[key]=[];
-                    el.style.height='auto';
-                    topGroepen[key].push({el:el,h:el.offsetHeight});
-                });
-            });
-        });
-        Object.keys(topGroepen).forEach(function(key){
-            var groep=topGroepen[key];
-            var maxH=groep.reduce(function(m,g){return Math.max(m,g.h);},0);
-            if(maxH>0)groep.forEach(function(g){g.el.style.height=maxH+'px';});
-        });
-        if(tableEl)tableEl.style.zoom=tableZoom;
-    })();
 }
 
 /* ── MEERDAAGSE BANDEN: één doorlopend blok (Google Agenda-stijl) ── */
