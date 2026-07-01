@@ -211,16 +211,10 @@ function printPlanning(modus) {
         var trVerlof   = alleRows.length > 0 ? alleRows[0] : null;
         var ploegRijen = alleRows.slice(1).filter(function(r) { return !r.classList.contains('add-ploeg-row'); });
 
-        /* Stap 1: reset alle inline heights zodat meting klopt.
-           Col-ploeg td heeft nu ook een JS-height (van herlayoutPloegRijen) die
-           de rijhoogte kan opblazen en zo de zoom-berekening kan verstoren. */
+        /* Stap 1: reset alle inline min-heights zodat meting klopt. */
         Array.from(table.querySelectorAll('.dropzone')).forEach(function(z) {
             z.style.minHeight = '0'; z.style.height = '';
         });
-        Array.from(table.querySelectorAll('td.col-ploeg')).forEach(function(td) {
-            td.style.height = ''; td.style.overflow = '';
-        });
-
         /* Stap 2: meet vaste elementen (zoom-toolbar verborgen via CSS) */
         var tHead    = table.querySelector('thead');
         var theadH   = tHead    ? tHead.offsetHeight    : 24;
@@ -263,7 +257,9 @@ function printPlanning(modus) {
                 });
             });
             Array.from(table.querySelectorAll('td.col-ploeg')).forEach(function(td) {
-                td.style.height = ''; td.style.overflow = '';
+                td.style.position = '';
+                var wrap = td.querySelector('.ploeg-naam-wrap');
+                if (wrap) { wrap.style.position = ''; wrap.style.top = ''; wrap.style.left = ''; wrap.style.right = ''; wrap.style.bottom = ''; wrap.style.overflow = ''; }
             });
             table.style.zoom = tableZoom;
             herlayoutPloegRijen();
@@ -1198,12 +1194,25 @@ function herlayoutPloegRijen() {
         var minH = perRijMin[pl] !== undefined ? perRijMin[pl] : globaalMin;
         var hoogte = Math.max(minH, contentHoogtes[pl] || minH);
         perPloeg[pl].forEach(function(z) { z.style.minHeight = hoogte + 'px'; });
-        /* Begrens ook de ploeg-naam td zodat die de rijhoogte niet kan overschrijden */
+        /* Zet de ploeg-naam wrap op positie:absolute zodat hij niet meedoet aan
+           de rijhoogte-berekening van de tabel. De td zelf heeft dan geen
+           content-gedreven hoogte meer; de dropzone-cellen bepalen de rijhoogte. */
         var firstZone = perPloeg[pl][0];
         if (firstZone) {
             var tr = firstZone.closest('tr');
             var ploegTd = tr ? tr.querySelector('td.col-ploeg') : null;
-            if (ploegTd) { ploegTd.style.height = hoogte + 'px'; ploegTd.style.overflow = 'hidden'; }
+            if (ploegTd) {
+                ploegTd.style.position = 'relative';
+                var wrap = ploegTd.querySelector('.ploeg-naam-wrap');
+                if (wrap) {
+                    wrap.style.position = 'absolute';
+                    wrap.style.top = '0';
+                    wrap.style.left = '0';
+                    wrap.style.right = '0';
+                    wrap.style.bottom = '0';
+                    wrap.style.overflow = 'hidden';
+                }
+            }
         }
     });
     /* Herstel zoom na meting */
