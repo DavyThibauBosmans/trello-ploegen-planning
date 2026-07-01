@@ -1,4 +1,4 @@
-var t = TrelloPowerUp.iframe();
+﻿var t = TrelloPowerUp.iframe();
 
 var DEFAULT_PLOEGEN = ["Ploeg 1", "Ploeg 2", "Ploeg 5", "Ploeg 7 / Extra"];
 var ploegen = DEFAULT_PLOEGEN.slice();
@@ -1182,10 +1182,21 @@ function herlayoutPloegRijen() {
         items.forEach(function(it) { it.el.style.top=tops[it.baan]+'px'; it.el.style.height='auto'; it.el.style.bottom='auto'; });
         contentHoogtes[pl] = Math.max(80, totaal);
     });
-    /* Tweede pas: stel hoogte per rij in op basis van eigen content */
+    /* Tweede pas: stel hoogte per rij in op basis van eigen content + ingesteld minimum */
+    var instView = instellingen[VIEW_MODUS] || {};
+    var perRijMin = instView.perRijMinHoogte || {};
+    var globaalMin = instView.minRijHoogte || 80;
     Object.keys(perPloeg).forEach(function(pl) {
-        var hoogte = contentHoogtes[pl] || 80;
+        var minH = perRijMin[pl] !== undefined ? perRijMin[pl] : globaalMin;
+        var hoogte = Math.max(minH, contentHoogtes[pl] || minH);
         perPloeg[pl].forEach(function(z) { z.style.minHeight = hoogte + 'px'; });
+        /* Begrens ook de ploeg-naam td zodat die de rijhoogte niet kan overschrijden */
+        var firstZone = perPloeg[pl][0];
+        if (firstZone) {
+            var tr = firstZone.closest('tr');
+            var ploegTd = tr ? tr.querySelector('td.col-ploeg') : null;
+            if (ploegTd) { ploegTd.style.height = hoogte + 'px'; ploegTd.style.overflow = 'hidden'; }
+        }
     });
     /* Herstel zoom na meting */
     if (tableEl) tableEl.style.zoom = tableZoom;
@@ -2081,13 +2092,15 @@ var INSTELLINGEN_KEY = 'layoutInstellingen';
 
 /* Standaardwaarden per view */
 var INST_DEFAULTS = {
-    week:  { weekdag: 150, weekend: 100, ploegKol: 130, tekstGrootte: 13 },
-    multi: { weekdag: 120, weekend:  80, ploegKol: 130, tekstGrootte: 12 },
-    month: { weekdag: 100, weekend:  67, ploegKol: 130, tekstGrootte: 10 }
+    week:  { weekdag: 150, weekend: 100, ploegKol: 130, tekstGrootte: 13, minRijHoogte: 80, perRijMinHoogte: {} },
+    multi: { weekdag: 120, weekend:  80, ploegKol: 130, tekstGrootte: 12, minRijHoogte: 80, perRijMinHoogte: {} },
+    month: { weekdag: 100, weekend:  67, ploegKol: 130, tekstGrootte: 10, minRijHoogte: 80, perRijMinHoogte: {} }
 };
 
 function kloonInstDefaults(v) {
-    return Object.assign({}, INST_DEFAULTS[v]);
+    var k = Object.assign({}, INST_DEFAULTS[v]);
+    k.perRijMinHoogte = Object.assign({}, INST_DEFAULTS[v].perRijMinHoogte || {});
+    return k;
 }
 
 /* Huidige instellingen (gevuld bij laden) */
@@ -2224,6 +2237,43 @@ function bouwSettingsPaneel() {
     secTekst.innerText = 'Tekstgrootte — ' + vLabels[settingsPaneelView];
     body.appendChild(secTekst);
     body.appendChild(maakNumInput('Kaarttitel', 'tekstGrootte', 7, 18, 1));
+
+    /* Per-ploeg minimum rijhoogte */
+    var ploegNamen = [];
+    document.querySelectorAll('.dropzone[data-row-type="ploeg"]').forEach(function(z) {
+        var pl = z.dataset.ploeg; if (pl && ploegNamen.indexOf(pl) === -1) ploegNamen.push(pl);
+    });
+    if (ploegNamen.length > 0) {
+        var secRij = document.createElement('div'); secRij.className = 'settings-section-label';
+        secRij.innerText = 'Minimum rijhoogte per ploeg — ' + vLabels[settingsPaneelView];
+        body.appendChild(secRij);
+        if (!sv.perRijMinHoogte) sv.perRijMinHoogte = {};
+        ploegNamen.forEach(function(pl) {
+            var rij = document.createElement('div'); rij.className = 'settings-row';
+            var lbl = document.createElement('label'); lbl.innerText = pl;
+            var inp = document.createElement('input');
+            inp.type = 'number'; inp.className = 'settings-num';
+            inp.min = 40; inp.max = 400; inp.step = 5;
+            inp.value = sv.perRijMinHoogte[pl] !== undefined ? sv.perRijMinHoogte[pl] : (sv.minRijHoogte || 80);
+            var unit = document.createElement('span'); unit.className = 'settings-num-unit'; unit.innerText = 'px';
+            function maakHandler(ploeg, input) {
+                return function() {
+                    var val = parseInt(input.value, 10);
+                    if (isNaN(val) || val < 40) { val = 40; input.value = val; }
+                    if (val > 400) { val = 400; input.value = val; }
+                    if (!sv.perRijMinHoogte) sv.perRijMinHoogte = {};
+                    sv.perRijMinHoogte[ploeg] = val;
+                    slaInstellingenOp();
+                    herlayoutPloegRijen();
+                };
+            }
+            var handler = maakHandler(pl, inp);
+            inp.addEventListener('input', handler);
+            inp.addEventListener('change', handler);
+            rij.appendChild(lbl); rij.appendChild(inp); rij.appendChild(unit);
+            body.appendChild(rij);
+        });
+    }
 
     /* Knoppenrij onderaan */
     var btnRij = document.createElement('div'); btnRij.className = 'settings-btn-rij';
