@@ -1,4 +1,4 @@
-﻿var t = TrelloPowerUp.iframe();
+var t = TrelloPowerUp.iframe();
 
 var DEFAULT_PLOEGEN = ["Ploeg 1", "Ploeg 2", "Ploeg 5", "Ploeg 7 / Extra"];
 var ploegen = DEFAULT_PLOEGEN.slice();
@@ -1627,6 +1627,7 @@ function laadEnRenderAlles(){
             interventions.forEach(function(int){tekenInterventie(int);});
             verlofItems.forEach(function(v){tekenVerlofItem(v);});
             herlayoutPloegRijen();
+            setTimeout(herlayoutPloegRijen, 0);
             var zoekVeld=document.getElementById('sidebar-search');
             if(zoekVeld)filterZijbalk(zoekVeld.value);
         });
@@ -2159,6 +2160,11 @@ function laadInstellingen() {
             });
         }
         pasColStijlToe();
+        // Als de tabel al getekend is (race-conditie: render liep vóór laadInstellingen),
+        // herbereken rijhoogtes nu de instellingen geladen zijn.
+        if (document.querySelector('.dropzone[data-row-type="ploeg"]')) {
+            herlayoutPloegRijen();
+        }
     });
 }
 
