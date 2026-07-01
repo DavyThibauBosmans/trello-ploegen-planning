@@ -211,9 +211,14 @@ function printPlanning(modus) {
         var trVerlof   = alleRows.length > 0 ? alleRows[0] : null;
         var ploegRijen = alleRows.slice(1).filter(function(r) { return !r.classList.contains('add-ploeg-row'); });
 
-        /* Stap 1: reset alle inline min-heights zodat meting klopt */
+        /* Stap 1: reset alle inline heights zodat meting klopt.
+           Col-ploeg td heeft nu ook een JS-height (van herlayoutPloegRijen) die
+           de rijhoogte kan opblazen en zo de zoom-berekening kan verstoren. */
         Array.from(table.querySelectorAll('.dropzone')).forEach(function(z) {
             z.style.minHeight = '0'; z.style.height = '';
+        });
+        Array.from(table.querySelectorAll('td.col-ploeg')).forEach(function(td) {
+            td.style.height = ''; td.style.overflow = '';
         });
 
         /* Stap 2: meet vaste elementen (zoom-toolbar verborgen via CSS) */
@@ -256,6 +261,9 @@ function printPlanning(modus) {
                 Array.from(r.querySelectorAll('.dropzone')).forEach(function(z) {
                     z.style.height = ''; z.style.minHeight = '';
                 });
+            });
+            Array.from(table.querySelectorAll('td.col-ploeg')).forEach(function(td) {
+                td.style.height = ''; td.style.overflow = '';
             });
             table.style.zoom = tableZoom;
             herlayoutPloegRijen();

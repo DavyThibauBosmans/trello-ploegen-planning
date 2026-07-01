@@ -903,7 +903,7 @@ body.print-mode-month .zoom-toolbar { display: none !important; }
     body.print-mode-month .dropzone { min-height: 0 !important; overflow: hidden !important; }
     body.print-mode-month .dropzone.verlof-zone { height: auto !important; overflow: visible !important; }
     body.print-mode-month .placement-band,
-    body.print-mode-month .planning-card { overflow: hidden !important; }
+    body.print-mode-month .planning-card { overflow: visible !important; height: auto !important; }
     body.print-mode-month .card-body { overflow: hidden !important; }
     body.print-mode-month .card-title { white-space: normal !important; word-break: break-word !important; }
     body.print-mode-month .card-address { white-space: normal !important; word-break: break-word !important; }
