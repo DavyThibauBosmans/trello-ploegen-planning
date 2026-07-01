@@ -1651,6 +1651,7 @@ function laadEnRenderAlles(){
             herlayoutPloegRijen();
             var zoekVeld=document.getElementById('sidebar-search');
             if(zoekVeld)filterZijbalk(zoekVeld.value);
+            controleerOpslagLimiet();
         });
     }).catch(function(err){
         console.error('Fout bij laden kaarten:',err&&err.message?err.message:err);
@@ -2676,6 +2677,144 @@ function toonBackupReminder() {
     var orig2 = toepassenAdminStatus;
     toepassenAdminStatus = function() { orig2(); controleerBackupReminder(); };
 })();
+
+/* ════════════════════════════════════════════════════════
+   ── OPSLAGLIMIET-WAARSCHUWING ──
+   Trello staat maximaal 8192 tekens toe voor alle 'board'+'shared'
+   sleutels samen (ploegen, interventions, verlofItems, enz. delen
+   allemaal dezelfde pot). Bij overschrijding mislukt elke t.set
+   stil op de achtergrond — bv. het "+"-knopje lijkt dan niets te
+   doen. Waarschuw ruim op tijd zodat er nog marge is om op te ruimen. */
+var BOARD_SHARED_SLEUTELS = ['ploegen','interventions','verlofItems','plannedCardIds','ploegLaanVolgorde','layoutInstellingen','layoutStandaard','adminUsernames','viewMode','ankerDatum'];
+var TRELLO_OPSLAG_LIMIET = 8192;
+var OPSLAG_WAARSCHUW_GRENS = 7500;
+var OPSLAG_WAARSCHUW_REMINDER_KEY = 'ploegenPlanningOpslagWaarschuwing';
+var OPSLAG_SNOOZE_DAGEN = 3;
+var _opslagWaarschuwingGetoond = false;
+
+function berekenBoardSharedGrootte() {
+    return Promise.all(BOARD_SHARED_SLEUTELS.map(function(k) { return boardGet(k, null); })).then(function(waarden) {
+        var obj = {};
+        BOARD_SHARED_SLEUTELS.forEach(function(k, i) { if (waarden[i] !== null && waarden[i] !== undefined) obj[k] = waarden[i]; });
+        return JSON.stringify(obj).length;
+    });
+}
+
+async function verwijderOudeItems(dagenGrens) {
+    var grensDatum = new Date(); grensDatum.setDate(grensDatum.getDate() - dagenGrens); grensDatum.setHours(0, 0, 0, 0);
+    var grensISO = isoVanDate(grensDatum);
+    var verwijderdInt = 0, verwijderdVerlof = 0;
+    await muteInterventies(function(arr) {
+        return arr.filter(function(i) {
+            var eind = i.eindDatum || i.datum;
+            var bewaren = !eind || isoVanDate(ddMMNaarDate(eind)) >= grensISO;
+            if (!bewaren) verwijderdInt++;
+            return bewaren;
+        });
+    });
+    await muteVerlof(function(arr) {
+        return arr.filter(function(v) {
+            var eind = v.eindDatum || v.startDatum;
+            var bewaren = !eind || isoVanDate(ddMMNaarDate(eind)) >= grensISO;
+            if (!bewaren) verwijderdVerlof++;
+            return bewaren;
+        });
+    });
+    return { verwijderdInt: verwijderdInt, verwijderdVerlof: verwijderdVerlof };
+}
+
+function sluitOpslagWaarschuwing() { var o = document.getElementById('opslag-waarschuwing-overlay'); if (o && o.parentNode) o.parentNode.removeChild(o); }
+
+function toonOpslagWaarschuwing(grootte) {
+    if (document.getElementById('opslag-waarschuwing-overlay')) return;
+    var overlay = document.createElement('div');
+    overlay.id = 'opslag-waarschuwing-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(9,30,66,0.42);display:flex;align-items:center;justify-content:center;z-index:900;';
+
+    var popup = document.createElement('div');
+    popup.style.cssText = 'background:#fff;border-radius:10px;width:min(440px,92vw);padding:28px 24px 20px;box-shadow:0 8px 32px rgba(0,0,0,0.28);text-align:center;font-family:inherit;';
+
+    var icoon = document.createElement('div');
+    icoon.style.cssText = 'font-size:44px;margin-bottom:10px;'; icoon.innerText = '⚠️';
+
+    var titel = document.createElement('div');
+    titel.style.cssText = 'font-size:16px;font-weight:700;color:#172b4d;margin-bottom:8px;';
+    titel.innerText = 'Opslag bijna vol';
+
+    var tekst = document.createElement('div');
+    tekst.style.cssText = 'font-size:13px;color:#5e6c84;line-height:1.55;margin-bottom:18px;white-space:pre-wrap;';
+    tekst.innerText = 'Trello staat maximaal ' + TRELLO_OPSLAG_LIMIET + ' tekens toe voor alle planningsgegevens samen ' +
+        '(ploegen, interventies, afwezigheden, instellingen).\n\n' +
+        'Huidig gebruik: ' + grootte + ' / ' + TRELLO_OPSLAG_LIMIET + ' tekens.\n\n' +
+        'Bij het bereiken van de limiet kan je geen nieuwe interventies of afwezigheden meer toevoegen ' +
+        '(het "+"-knopje lijkt dan niets te doen). Download eerst een back-up en ruim daarna oude items op.';
+
+    var statusEl = document.createElement('div');
+    statusEl.style.cssText = 'font-size:12px;color:#5e6c84;min-height:16px;margin-bottom:4px;';
+
+    var btnWrap = document.createElement('div');
+    btnWrap.style.cssText = 'display:flex;gap:10px;justify-content:center;flex-wrap:wrap;';
+
+    var dlBtn = document.createElement('button');
+    dlBtn.style.cssText = 'background:#0052cc;color:#fff;border:none;border-radius:6px;padding:10px 18px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;';
+    dlBtn.innerText = '💾 Download back-up';
+    dlBtn.addEventListener('click', function() {
+        dlBtn.innerText = '⏳ Bezig…'; dlBtn.disabled = true;
+        exporteerBackup().then(function() {
+            dlBtn.innerText = '✓ Gedownload!';
+            setTimeout(function() { dlBtn.innerText = '💾 Download back-up'; dlBtn.disabled = false; }, 2000);
+        }).catch(function() {
+            dlBtn.innerText = '💾 Download back-up'; dlBtn.disabled = false;
+        });
+    });
+
+    var opkuisBtn = document.createElement('button');
+    opkuisBtn.style.cssText = 'background:#ffebe6;color:#bf2600;border:1px solid #ff8f73;border-radius:6px;padding:10px 18px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;';
+    opkuisBtn.innerText = '🧹 Ruim items ouder dan 90 dagen op';
+    opkuisBtn.addEventListener('click', function() {
+        if (!confirm('⚠️ Interventies en afwezigheden die meer dan 90 dagen geleden zijn afgelopen worden definitief verwijderd uit de actieve planning.\n\nHeb je net een back-up gedownload? Dan kan je dit veilig doen.\n\nDoorgaan?')) return;
+        opkuisBtn.disabled = true; dlBtn.disabled = true;
+        verwijderOudeItems(90).then(function(res) {
+            return berekenBoardSharedGrootte().then(function(nieuweGrootte) {
+                statusEl.innerText = '✓ ' + res.verwijderdInt + ' interventie(s) en ' + res.verwijderdVerlof + ' afwezigheid(-heden) verwijderd. Nieuw gebruik: ' + nieuweGrootte + ' / ' + TRELLO_OPSLAG_LIMIET + ' tekens.';
+                opkuisBtn.disabled = false; dlBtn.disabled = false;
+                laadEnRenderAlles();
+            });
+        }).catch(function(err) {
+            statusEl.innerText = '⚠️ Opkuis mislukt: ' + (err && err.message ? err.message : 'onbekende fout');
+            opkuisBtn.disabled = false; dlBtn.disabled = false;
+        });
+    });
+
+    var laterBtn = document.createElement('button');
+    laterBtn.style.cssText = 'background:none;color:#5e6c84;border:1px solid #dfe1e6;border-radius:6px;padding:10px 18px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;';
+    laterBtn.innerText = 'Later herinneren';
+    laterBtn.addEventListener('click', function() {
+        try { localStorage.setItem(OPSLAG_WAARSCHUW_REMINDER_KEY, new Date().toISOString()); } catch (e) {}
+        sluitOpslagWaarschuwing();
+    });
+
+    btnWrap.appendChild(dlBtn); btnWrap.appendChild(opkuisBtn); btnWrap.appendChild(laterBtn);
+    popup.appendChild(icoon); popup.appendChild(titel); popup.appendChild(tekst); popup.appendChild(statusEl); popup.appendChild(btnWrap);
+    overlay.appendChild(popup);
+    document.body.appendChild(overlay);
+}
+
+function controleerOpslagLimiet() {
+    if (!isAdmin || _opslagWaarschuwingGetoond) return;
+    try {
+        var laatst = localStorage.getItem(OPSLAG_WAARSCHUW_REMINDER_KEY);
+        if (laatst) {
+            var dagenGeleden = (Date.now() - new Date(laatst).getTime()) / 86400000;
+            if (dagenGeleden < OPSLAG_SNOOZE_DAGEN) return;
+        }
+    } catch (e) {}
+    berekenBoardSharedGrootte().then(function(grootte) {
+        if (grootte < OPSLAG_WAARSCHUW_GRENS) return;
+        _opslagWaarschuwingGetoond = true;
+        toonOpslagWaarschuwing(grootte);
+    }).catch(function() {});
+}
 
 /* Laad instellingen bij opstart (wordt aangeroepen voor t.render) */
 laadInstellingen();
