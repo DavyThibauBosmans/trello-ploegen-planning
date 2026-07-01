@@ -1,4 +1,4 @@
-﻿var t = TrelloPowerUp.iframe();
+var t = TrelloPowerUp.iframe();
 
 var DEFAULT_PLOEGEN = ["Ploeg 1", "Ploeg 2", "Ploeg 5", "Ploeg 7 / Extra"];
 var ploegen = DEFAULT_PLOEGEN.slice();
@@ -211,10 +211,11 @@ function printPlanning(modus) {
         var trVerlof   = alleRows.length > 0 ? alleRows[0] : null;
         var ploegRijen = alleRows.slice(1).filter(function(r) { return !r.classList.contains('add-ploeg-row'); });
 
-        /* Stap 1: reset alle inline min-heights zodat meting klopt. */
+        /* Stap 1: reset alle inline min-heights zodat meting klopt */
         Array.from(table.querySelectorAll('.dropzone')).forEach(function(z) {
             z.style.minHeight = '0'; z.style.height = '';
         });
+
         /* Stap 2: meet vaste elementen (zoom-toolbar verborgen via CSS) */
         var tHead    = table.querySelector('thead');
         var theadH   = tHead    ? tHead.offsetHeight    : 24;
@@ -255,11 +256,6 @@ function printPlanning(modus) {
                 Array.from(r.querySelectorAll('.dropzone')).forEach(function(z) {
                     z.style.height = ''; z.style.minHeight = '';
                 });
-            });
-            Array.from(table.querySelectorAll('td.col-ploeg')).forEach(function(td) {
-                td.style.position = '';
-                var wrap = td.querySelector('.ploeg-naam-wrap');
-                if (wrap) { wrap.style.position = ''; wrap.style.top = ''; wrap.style.left = ''; wrap.style.right = ''; wrap.style.bottom = ''; wrap.style.overflow = ''; }
             });
             table.style.zoom = tableZoom;
             herlayoutPloegRijen();
@@ -1160,6 +1156,9 @@ function herlayoutPloegRijen() {
     var tableEl = document.querySelector('.planning-table');
     /* Reset zoom voor accurate offsetHeight meting (CSS zoom beïnvloedt offsetHeight) */
     if (tableEl) tableEl.style.zoom = '';
+    var sv = instellingen[VIEW_MODUS];
+    var rijHoogte = sv.rijHoogte || { vast: false, hoogte: 120 };
+    var perRijHoogte = sv.perRijHoogte || {};
     var zones = document.querySelectorAll('.dropzone[data-row-type="ploeg"]');
     var perPloeg = {};
     zones.forEach(function(z) { var pl=z.dataset.ploeg; if (!pl) return; if (!perPloeg[pl]) perPloeg[pl]=[]; perPloeg[pl].push(z); });
@@ -1173,10 +1172,6 @@ function herlayoutPloegRijen() {
                 var baan = parseInt(el.dataset.lane, 10); if (isNaN(baan)) return;
                 /* Verborgen vervolgsegmenten (herstelBandSpreiding) niet meenemen in hoogtebepaling */
                 if (el.style.display === 'none') return;
-                /* Reset inline breedte zodat meting cel-gebonden is (niet de uitgerekte
-                   breedte die herstelBandSpreiding instelt voor meerdaagse banden) */
-                el.style.width = '';
-                el.style.right = '';
                 el.style.height = 'auto'; var h = el.offsetHeight;
                 if (!baanHoogtes[baan] || h > baanHoogtes[baan]) baanHoogtes[baan] = h;
                 items.push({ el: el, baan: baan });
@@ -1186,43 +1181,59 @@ function herlayoutPloegRijen() {
         var tops = {}, cursor = BAND_TOP;
         banen.forEach(function(b) { tops[b]=cursor; cursor+=baanHoogtes[b]+BAND_GAP; });
         var totaal = (banen.length ? (cursor-BAND_GAP) : BAND_TOP) + 30;
-        /* Stel vaste hoogte in per baan (gelijk aan de gemeten max-hoogte voor die baan).
-           Dit zorgt voor consistente rijhoogte ongeacht eerdere herstelBandSpreiding-aanroepen. */
-        items.forEach(function(it) { it.el.style.top=tops[it.baan]+'px'; it.el.style.height=baanHoogtes[it.baan]+'px'; it.el.style.bottom='auto'; });
+        /* Hoogte-egalisatie volgt in tweede pass, ná herstelBandSpreiding */
+        items.forEach(function(it) { it.el.style.top=tops[it.baan]+'px'; it.el.style.height='auto'; it.el.style.bottom='auto'; });
         contentHoogtes[pl] = Math.max(80, totaal);
     });
-    /* Tweede pas: stel hoogte per rij in op basis van eigen content + ingesteld minimum */
-    var instView = instellingen[VIEW_MODUS] || {};
-    var perRijMin = instView.perRijMinHoogte || {};
-    var globaalMin = instView.minRijHoogte || 80;
+    /* Tweede pas: bepaal uiteindelijke hoogte per rij op basis van instellingen */
+    var maxAutoHoogte = 80;
     Object.keys(perPloeg).forEach(function(pl) {
-        var minH = perRijMin[pl] !== undefined ? perRijMin[pl] : globaalMin;
-        var hoogte = Math.max(minH, contentHoogtes[pl] || minH);
-        perPloeg[pl].forEach(function(z) { z.style.minHeight = hoogte + 'px'; });
-        /* Zet de ploeg-naam wrap op positie:absolute zodat hij niet meedoet aan
-           de rijhoogte-berekening van de tabel. De td zelf heeft dan geen
-           content-gedreven hoogte meer; de dropzone-cellen bepalen de rijhoogte. */
-        var firstZone = perPloeg[pl][0];
-        if (firstZone) {
-            var tr = firstZone.closest('tr');
-            var ploegTd = tr ? tr.querySelector('td.col-ploeg') : null;
-            if (ploegTd) {
-                ploegTd.style.position = 'relative';
-                var wrap = ploegTd.querySelector('.ploeg-naam-wrap');
-                if (wrap) {
-                    wrap.style.position = 'absolute';
-                    wrap.style.top = '0';
-                    wrap.style.left = '0';
-                    wrap.style.right = '0';
-                    wrap.style.bottom = '0';
-                    wrap.style.overflow = 'hidden';
-                }
-            }
+        var prh = perRijHoogte[pl];
+        if (!(prh && prh.aan) && !rijHoogte.vast) {
+            if ((contentHoogtes[pl] || 80) > maxAutoHoogte) maxAutoHoogte = contentHoogtes[pl];
         }
+    });
+    Object.keys(perPloeg).forEach(function(pl) {
+        var cellen = perPloeg[pl];
+        var prh = perRijHoogte[pl];
+        var hoogte;
+        if (prh && prh.aan && prh.hoogte) {
+            hoogte = Math.max(prh.hoogte, contentHoogtes[pl] || 80);
+        } else if (rijHoogte.vast && rijHoogte.hoogte) {
+            hoogte = Math.max(rijHoogte.hoogte, contentHoogtes[pl] || 80);
+        } else {
+            hoogte = maxAutoHoogte;
+        }
+        cellen.forEach(function(z) { z.style.minHeight = hoogte + 'px'; });
     });
     /* Herstel zoom na meting */
     if (tableEl) tableEl.style.zoom = tableZoom;
     autoFitZoom();
+    herstelBandSpreiding();
+    /* Tweede pass: egaliseer hoogten per top-groep (na band-spreiding) */
+    /* Reset zoom zodat offsetHeight niet door CSS zoom wordt beïnvloed */
+    (function(){
+        if(tableEl)tableEl.style.zoom='';
+        var topGroepen={};
+        Object.keys(perPloeg).forEach(function(pl){
+            perPloeg[pl].forEach(function(z){
+                z.querySelectorAll('.planning-card,.placement-band').forEach(function(el){
+                    if(el.style.display==='none')return;
+                    var t=el.style.top; if(!t)return;
+                    var key=pl+'|'+t;
+                    if(!topGroepen[key])topGroepen[key]=[];
+                    el.style.height='auto';
+                    topGroepen[key].push({el:el,h:el.offsetHeight});
+                });
+            });
+        });
+        Object.keys(topGroepen).forEach(function(key){
+            var groep=topGroepen[key];
+            var maxH=groep.reduce(function(m,g){return Math.max(m,g.h);},0);
+            if(maxH>0)groep.forEach(function(g){g.el.style.height=maxH+'px';});
+        });
+        if(tableEl)tableEl.style.zoom=tableZoom;
+    })();
 }
 
 /* ── MEERDAAGSE BANDEN: één doorlopend blok (Google Agenda-stijl) ── */
@@ -1627,7 +1638,6 @@ function laadEnRenderAlles(){
             interventions.forEach(function(int){tekenInterventie(int);});
             verlofItems.forEach(function(v){tekenVerlofItem(v);});
             herlayoutPloegRijen();
-            setTimeout(herlayoutPloegRijen, 0);
             var zoekVeld=document.getElementById('sidebar-search');
             if(zoekVeld)filterZijbalk(zoekVeld.value);
         });
@@ -2090,15 +2100,17 @@ var INSTELLINGEN_KEY = 'layoutInstellingen';
 
 /* Standaardwaarden per view */
 var INST_DEFAULTS = {
-    week:  { weekdag: 150, weekend: 100, ploegKol: 130, tekstGrootte: 13, minRijHoogte: 80, perRijMinHoogte: {} },
-    multi: { weekdag: 120, weekend:  80, ploegKol: 130, tekstGrootte: 12, minRijHoogte: 80, perRijMinHoogte: {} },
-    month: { weekdag: 100, weekend:  67, ploegKol: 130, tekstGrootte: 10, minRijHoogte: 80, perRijMinHoogte: {} }
+    week:  { weekdag: 150, weekend: 100, ploegKol: 130, tekstGrootte: 13, rijHoogte: { vast: false, hoogte: 120 }, perRijHoogte: {} },
+    multi: { weekdag: 120, weekend:  80, ploegKol: 130, tekstGrootte: 12, rijHoogte: { vast: false, hoogte: 100 }, perRijHoogte: {} },
+    month: { weekdag: 100, weekend:  67, ploegKol: 130, tekstGrootte: 10, rijHoogte: { vast: false, hoogte:  80 }, perRijHoogte: {} }
 };
 
 function kloonInstDefaults(v) {
-    var k = Object.assign({}, INST_DEFAULTS[v]);
-    k.perRijMinHoogte = Object.assign({}, INST_DEFAULTS[v].perRijMinHoogte || {});
-    return k;
+    var d = INST_DEFAULTS[v];
+    return Object.assign({}, d, {
+        rijHoogte: Object.assign({}, d.rijHoogte),
+        perRijHoogte: Object.assign({}, d.perRijHoogte)
+    });
 }
 
 /* Huidige instellingen (gevuld bij laden) */
@@ -2156,15 +2168,12 @@ function laadInstellingen() {
             ['week','multi','month'].forEach(function(v) {
                 if (opgeslagen[v]) {
                     instellingen[v] = Object.assign({}, INST_DEFAULTS[v], opgeslagen[v]);
+                    if (opgeslagen[v].rijHoogte) instellingen[v].rijHoogte = Object.assign({}, INST_DEFAULTS[v].rijHoogte, opgeslagen[v].rijHoogte);
+                    instellingen[v].perRijHoogte = Object.assign({}, opgeslagen[v].perRijHoogte || {});
                 }
             });
         }
         pasColStijlToe();
-        // Als de tabel al getekend is (race-conditie: render liep vóór laadInstellingen),
-        // herbereken rijhoogtes nu de instellingen geladen zijn.
-        if (document.querySelector('.dropzone[data-row-type="ploeg"]')) {
-            herlayoutPloegRijen();
-        }
     });
 }
 
@@ -2241,42 +2250,62 @@ function bouwSettingsPaneel() {
     body.appendChild(secTekst);
     body.appendChild(maakNumInput('Kaarttitel', 'tekstGrootte', 7, 18, 1));
 
-    /* Per-ploeg minimum rijhoogte */
-    var ploegNamen = [];
-    document.querySelectorAll('.dropzone[data-row-type="ploeg"]').forEach(function(z) {
-        var pl = z.dataset.ploeg; if (pl && ploegNamen.indexOf(pl) === -1) ploegNamen.push(pl);
+    /* ── Rijhoogte sectie ── */
+    var secRij = document.createElement('div'); secRij.className = 'settings-section-label';
+    secRij.innerText = 'Rijhoogte — ' + vLabels[settingsPaneelView];
+    body.appendChild(secRij);
+
+    if (!sv.rijHoogte) sv.rijHoogte = { vast: false, hoogte: 120 };
+    if (!sv.perRijHoogte) sv.perRijHoogte = {};
+
+    /* Master blok */
+    var masterBlok = document.createElement('div'); masterBlok.className = 'settings-master-blok';
+    var masterCb = document.createElement('input'); masterCb.type = 'checkbox'; masterCb.id = 'rij-hoogte-vast'; masterCb.checked = sv.rijHoogte.vast;
+    var masterLbl = document.createElement('label'); masterLbl.htmlFor = 'rij-hoogte-vast'; masterLbl.innerText = 'Vaste hoogte voor alle rijen';
+    var masterInp = document.createElement('input'); masterInp.type = 'number'; masterInp.className = 'settings-num';
+    masterInp.min = 50; masterInp.max = 600; masterInp.step = 10; masterInp.value = sv.rijHoogte.hoogte || 120;
+    masterInp.disabled = !sv.rijHoogte.vast;
+    var masterUnit = document.createElement('span'); masterUnit.className = 'settings-num-unit'; masterUnit.innerText = 'px';
+    masterCb.addEventListener('change', function() {
+        sv.rijHoogte = { vast: masterCb.checked, hoogte: parseInt(masterInp.value, 10) || 120 };
+        masterInp.disabled = !masterCb.checked;
+        slaInstellingenOp(); herlayoutPloegRijen();
     });
-    if (ploegNamen.length > 0) {
-        var secRij = document.createElement('div'); secRij.className = 'settings-section-label';
-        secRij.innerText = 'Minimum rijhoogte per ploeg — ' + vLabels[settingsPaneelView];
-        body.appendChild(secRij);
-        if (!sv.perRijMinHoogte) sv.perRijMinHoogte = {};
-        ploegNamen.forEach(function(pl) {
-            var rij = document.createElement('div'); rij.className = 'settings-row';
-            var lbl = document.createElement('label'); lbl.innerText = pl;
-            var inp = document.createElement('input');
-            inp.type = 'number'; inp.className = 'settings-num';
-            inp.min = 40; inp.max = 400; inp.step = 5;
-            inp.value = sv.perRijMinHoogte[pl] !== undefined ? sv.perRijMinHoogte[pl] : (sv.minRijHoogte || 80);
-            var unit = document.createElement('span'); unit.className = 'settings-num-unit'; unit.innerText = 'px';
-            function maakHandler(ploeg, input) {
-                return function() {
-                    var val = parseInt(input.value, 10);
-                    if (isNaN(val) || val < 40) { val = 40; input.value = val; }
-                    if (val > 400) { val = 400; input.value = val; }
-                    if (!sv.perRijMinHoogte) sv.perRijMinHoogte = {};
-                    sv.perRijMinHoogte[ploeg] = val;
-                    slaInstellingenOp();
-                    herlayoutPloegRijen();
-                };
-            }
-            var handler = maakHandler(pl, inp);
-            inp.addEventListener('input', handler);
-            inp.addEventListener('change', handler);
-            rij.appendChild(lbl); rij.appendChild(inp); rij.appendChild(unit);
-            body.appendChild(rij);
-        });
-    }
+    masterInp.addEventListener('input', function() {
+        var val = Math.max(50, parseInt(masterInp.value, 10) || 50);
+        sv.rijHoogte = { vast: sv.rijHoogte.vast, hoogte: val };
+        slaInstellingenOp(); herlayoutPloegRijen();
+    });
+    masterBlok.appendChild(masterCb); masterBlok.appendChild(masterLbl); masterBlok.appendChild(masterInp); masterBlok.appendChild(masterUnit);
+    body.appendChild(masterBlok);
+
+    /* Per-rij overrides */
+    var rijList = document.createElement('div'); rijList.className = 'settings-rij-list';
+    ploegen.forEach(function(ploeg) {
+        var prh = sv.perRijHoogte[ploeg] || { aan: false, hoogte: sv.rijHoogte.hoogte || 120 };
+        var item = document.createElement('div'); item.className = 'settings-rij-item';
+        var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = prh.aan;
+        var lbl = document.createElement('label'); lbl.innerText = ploeg; lbl.style.cssText = 'flex:1;font-size:13px;color:#172b4d;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+        var inp = document.createElement('input'); inp.type = 'number'; inp.className = 'settings-num';
+        inp.min = 50; inp.max = 600; inp.step = 10; inp.value = prh.hoogte || sv.rijHoogte.hoogte || 120;
+        inp.disabled = !prh.aan;
+        var unit = document.createElement('span'); unit.className = 'settings-num-unit'; unit.innerText = 'px';
+        (function(pl, cbEl, inpEl) {
+            cbEl.addEventListener('change', function() {
+                sv.perRijHoogte[pl] = { aan: cbEl.checked, hoogte: parseInt(inpEl.value, 10) || 120 };
+                inpEl.disabled = !cbEl.checked;
+                slaInstellingenOp(); herlayoutPloegRijen();
+            });
+            inpEl.addEventListener('input', function() {
+                var val = Math.max(50, parseInt(inpEl.value, 10) || 50);
+                sv.perRijHoogte[pl] = { aan: cbEl.checked, hoogte: val };
+                slaInstellingenOp(); herlayoutPloegRijen();
+            });
+        })(ploeg, cb, inp);
+        item.appendChild(cb); item.appendChild(lbl); item.appendChild(inp); item.appendChild(unit);
+        rijList.appendChild(item);
+    });
+    body.appendChild(rijList);
 
     /* Knoppenrij onderaan */
     var btnRij = document.createElement('div'); btnRij.className = 'settings-btn-rij';
