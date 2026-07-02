@@ -1190,20 +1190,26 @@ async function verwijderVerlof(id) {
     if (!isAdmin) return;
     await muteVerlof(function(arr) { return arr.filter(function(v) { return v.id !== id; }); });
     document.querySelectorAll('[data-verlof-id="' + id + '"]').forEach(function(el) { if (el.parentNode) el.parentNode.removeChild(el); });
+    verlofStapelVrijgeven(id);
 }
 
 function hertekenEnkelVerlofItem(item) {
     document.querySelectorAll('[data-verlof-id="' + item.id + '"]').forEach(function(el) { if (el.parentNode) el.parentNode.removeChild(el); });
+    verlofStapelVrijgeven(item.id);
     if (!item.startDatum || !item.eindDatum) return;
     tekenVerlofItem(item);
 }
 
 function tekenVerlofItem(item) {
     var segmentDagen = dagenBinnenWeek(item.startDatum, item.eindDatum);
+    var zoneIds = segmentDagen.map(function(dag) { return maakZoneId(VERLOF_ROW_KEY, dag.datum); });
+    var top = verlofRijNaarTop(verlofStapelReserveer(zoneIds, item.id));
     segmentDagen.forEach(function(dag) {
         var zone = document.getElementById(maakZoneId(VERLOF_ROW_KEY, dag.datum));
         if (!zone) return;
-        zone.appendChild(maakVerlofSegment(item, { datum: dag.datum, isFirstVisible: dag.isFirstVisible, isLastVisible: dag.isLastVisible }));
+        var segment = maakVerlofSegment(item, { datum: dag.datum, isFirstVisible: dag.isFirstVisible, isLastVisible: dag.isLastVisible });
+        segment.style.top = top + 'px';
+        zone.appendChild(segment);
     });
 }
 
@@ -1369,6 +1375,37 @@ function updateZoneHoogte(zoneId) {
     Object.keys(zoneRijen).forEach(function(r) { var ri=parseInt(r,10); if (ri>maxRij) maxRij=ri; });
     zone.style.minHeight = maxRij < 0 ? '' : Math.max(80, rijNaarTop(maxRij) + BAND_HOOGTE + 30) + 'px';
 }
+
+/* ── VERLOF-BANEN (zelfde principe als STAPELLOGICA hierboven, maar voor de afwezig-rij:
+   een item krijgt over alle dagen die het beslaat dezelfde band, zodat het niet verspringt
+   als een ander afwezig-item niet exact dezelfde dagen beslaat) ── */
+var verlofStackMap = {};
+var VERLOF_BAND_HOOGTE = 26, VERLOF_BAND_GAP = 4, VERLOF_BAND_TOP = 0;
+function verlofRijNaarTop(rij) { return VERLOF_BAND_TOP + rij * (VERLOF_BAND_HOOGTE + VERLOF_BAND_GAP); }
+function verlofStapelReserveer(zoneIds, itemId) {
+    zoneIds.forEach(function(zid) { if (!verlofStackMap[zid]) verlofStackMap[zid] = {}; });
+    var rij = 0;
+    while (true) {
+        if (zoneIds.every(function(zid) { var b=verlofStackMap[zid][rij]; return b===undefined||b===itemId; })) break;
+        rij++; if (rij > 200) break;
+    }
+    zoneIds.forEach(function(zid) { verlofStackMap[zid][rij] = itemId; });
+    zoneIds.forEach(updateVerlofZoneHoogte);
+    return rij;
+}
+function verlofStapelVrijgeven(itemId) {
+    Object.keys(verlofStackMap).forEach(function(zid) {
+        Object.keys(verlofStackMap[zid]).forEach(function(rij) { if (verlofStackMap[zid][rij]===itemId) delete verlofStackMap[zid][rij]; });
+        updateVerlofZoneHoogte(zid);
+    });
+}
+function updateVerlofZoneHoogte(zoneId) {
+    var zone = document.getElementById(zoneId); if (!zone) return;
+    var zoneRijen = verlofStackMap[zoneId] || {}, maxRij = -1;
+    Object.keys(zoneRijen).forEach(function(r) { var ri=parseInt(r,10); if (ri>maxRij) maxRij=ri; });
+    zone.style.minHeight = maxRij < 0 ? '' : (verlofRijNaarTop(maxRij) + VERLOF_BAND_HOOGTE) + 'px';
+}
+
 function herlayoutPloegRijen() {
     var tableEl = document.querySelector('.planning-table');
     /* Reset zoom voor accurate offsetHeight meting (CSS zoom beïnvloedt offsetHeight) */
@@ -1513,6 +1550,7 @@ function sorteerPlaatsingenVoorRender(paren) {
 function hertekenVanuitCache() {
     document.querySelectorAll('.dropzone').forEach(function(z) { z.innerHTML = ''; });
     stackMap = {};
+    verlofStackMap = {};
     sorteerPlaatsingenVoorRender(allePlaatsingsParen);
     allePlaatsingsParen.forEach(function(item) { tekenPlacement(item.p, item.ctx); });
     alleInterventies.forEach(function(int) { tekenInterventie(int); });
@@ -1757,7 +1795,7 @@ async function onInterventieResizeEnd() {
 /* ── HOOFDLAADFUNCTIE ── */
 function laadEnRenderAlles(){
     berekenWeekDatums();bouwLegende();markeerActieveViewKnop();
-    trelloKaartCache={};placementCtx={};stackMap={};plaatsingsData={};allePlaatsingsParen=[];alleInterventies=[];alleVerlofItems=[];
+    trelloKaartCache={};placementCtx={};stackMap={};verlofStackMap={};plaatsingsData={};allePlaatsingsParen=[];alleInterventies=[];alleVerlofItems=[];
     var pool=document.getElementById('sidebar-pool');
     var loadingMsg=document.getElementById('loading-msg');
     var errorMsg=document.getElementById('error-msg');

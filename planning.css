@@ -420,25 +420,28 @@ body.view-only-mode .ploeg-naam-editable { cursor: default; }
 }
 .verlof-zone.dragover { background-color: #fff4cc; outline: 2px dashed #ffab00; }
 
-/* ── VERLOF-SEGMENTEN ── */
+/* ── VERLOF-SEGMENTEN ──
+   position: absolute + top (via JS, zie verlofStapelReserveer) i.p.v. normale block-flow,
+   zodat eenzelfde item over alle dagen die het beslaat op dezelfde hoogte (baan) blijft staan,
+   ook als een ander afwezig-item niet exact dezelfde dagen beslaat. */
 .verlof-segment {
-    display: block;
+    position: absolute; left: 0; right: 0;
     background-color: #ffe9a8;
     border: 1px solid #f1c40f;
     border-radius: 12px;
-    padding: 3px 8px; margin-bottom: 4px;
+    padding: 3px 8px;
     min-height: 22px; font-size: 11px; font-weight: 600; color: #5f4b00;
-    cursor: grab; user-select: none; position: relative;
+    cursor: grab; user-select: none;
     transition: filter 0.12s;
 }
 .verlof-segment:hover { filter: brightness(0.97); }
 .verlof-segment.not-first {
     border-top-left-radius: 0; border-bottom-left-radius: 0;
-    border-left: 0; margin-left: -9px; padding-left: 10px;
+    border-left: 0; left: -9px; padding-left: 10px;
 }
 .verlof-segment.not-last {
     border-top-right-radius: 0; border-bottom-right-radius: 0;
-    border-right: 0; margin-right: -9px;
+    border-right: 0; right: -9px;
 }
 .verlof-segment.continuation { color: transparent; }
 
