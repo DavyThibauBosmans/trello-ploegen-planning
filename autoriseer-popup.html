@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Autoriseer toegang</title>
+<script src="https://p.trellocdn.com/power-up.min.js"></script>
+<style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 16px; text-align: center; color: #172b4d; }
+    p { font-size: 12px; color: #5e6c84; line-height: 1.5; }
+    button { background: #0052cc; color: #fff; border: none; border-radius: 6px; padding: 10px 18px; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+    button:disabled { opacity: 0.6; cursor: default; }
+    #status { font-size: 12px; font-weight: 600; min-height: 16px; margin-top: 10px; }
+</style>
+</head>
+<body>
+    <p>Geef deze Power-Up toestemming om automatisch opslag-kaarten aan te maken wanneer de planning meer ruimte nodig heeft.</p>
+    <button id="autoriseer-btn" type="button">Autoriseer toegang</button>
+    <div id="status"></div>
+    <script>
+        var t = TrelloPowerUp.iframe({ appKey: '23048d20a881b0a47600f90dd72f4d62', appName: 'Ploegen Planning', appAuthor: 'Ploegen Planning' });
+        var btn = document.getElementById('autoriseer-btn');
+        var statusEl = document.getElementById('status');
+        btn.addEventListener('click', function() {
+            btn.disabled = true;
+            statusEl.textContent = 'Bezig…';
+            t.getRestApi().authorize({ scope: 'read,write', expiration: 'never' }).then(function() {
+                statusEl.textContent = '✓ Toegang verleend!';
+                setTimeout(function() { t.closePopup(); }, 900);
+            }).catch(function() {
+                statusEl.textContent = '⚠️ Autorisatie mislukt of geannuleerd.';
+                btn.disabled = false;
+            });
+        });
+    </script>
+</body>
+</html>

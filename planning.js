@@ -1,4 +1,6 @@
-var t = TrelloPowerUp.iframe();
+var TRELLO_APP_KEY = '23048d20a881b0a47600f90dd72f4d62';
+var TRELLO_APP_NAAM = 'Ploegen Planning';
+var t = TrelloPowerUp.iframe({ appKey: TRELLO_APP_KEY, appName: TRELLO_APP_NAAM, appAuthor: TRELLO_APP_NAAM });
 
 var DEFAULT_PLOEGEN = ["Ploeg 1", "Ploeg 2", "Ploeg 5", "Ploeg 7 / Extra"];
 var ploegen = DEFAULT_PLOEGEN.slice();
@@ -39,6 +41,7 @@ async function mutePlacements(cardId, fn) {
 var CHUNK_MAX = 3000; // ruime marge onder 4096 (JSON-escaping-overhead + 'doel'-veld)
 var opslagKaarten = { interventions: [], verlofItems: [], vrij: [] };
 var opslagActief = false;
+var opslagLijstId = null; // id van de "🗄️ Planning opslag"-lijst, indien gevonden
 
 function verdeelOpslagKaarten(shardIds) {
     if (!shardIds || shardIds.length === 0) return Promise.resolve({ interventions: [], verlofItems: [], vrij: [] });
@@ -94,12 +97,56 @@ async function schrijfGespreideData(stroom, arr) {
     opslagKaarten.vrij = opslagKaarten.vrij.concat(overtollig);
 }
 
-/* Fase B (later): automatisch nieuwe opslag-kaarten aanmaken via de Trello REST API
-   wanneer de vrije pool leeg raakt. Nog niet geïmplementeerd — retourneert nu geen
-   extra kaarten, waardoor schrijfGespreideData een duidelijke fout toont i.p.v. stil
-   te falen. */
+/* ── TRELLO REST API (voor automatische opslag-kaartcreatie) ──
+   De sandbox-methodes (t.get/t.set/t.cards/t.lists) kunnen geen kaarten of lijsten
+   aanmaken. Daarvoor is een member-geautoriseerd REST-token nodig (t.getRestApi()).
+   Nieuwe opslag-kaarten blijven bewust GEWOON ZICHTBAAR (niet gearchiveerd): t.cards()
+   ziet gearchiveerde kaarten namelijk niet, waardoor de app ze bij een volgende load
+   niet meer zou terugvinden — dat zou de handmatige achtervang (Fase A) breken. */
+function trelloRestFetch(pad, opties) {
+    return t.getRestApi().getToken().then(function(token) {
+        if (!token) { var fout = new Error('Niet geautoriseerd voor Trello REST API.'); fout.code = 'NIET_GEAUTORISEERD'; throw fout; }
+        var scheidingsteken = pad.indexOf('?') === -1 ? '?' : '&';
+        var url = 'https://api.trello.com/1' + pad + scheidingsteken + 'key=' + TRELLO_APP_KEY + '&token=' + encodeURIComponent(token);
+        return fetch(url, opties || { method: 'GET' }).then(function(res) {
+            if (!res.ok) return res.text().then(function(txt) { throw new Error('Trello REST-fout (' + res.status + '): ' + txt); });
+            return res.json();
+        });
+    });
+}
+function trelloMaakLijst(naam, idBoard) {
+    return trelloRestFetch('/lists?name=' + encodeURIComponent(naam) + '&idBoard=' + idBoard, { method: 'POST' });
+}
+function trelloMaakKaart(idList, naam) {
+    return trelloRestFetch('/cards?idList=' + idList + '&name=' + encodeURIComponent(naam), { method: 'POST' });
+}
+
+/* Automatisch nieuwe opslag-kaarten aanmaken wanneer de vrije pool leeg raakt.
+   Vereist dat de admin ooit via het instellingenpaneel toegang heeft geautoriseerd;
+   is dat niet het geval (of faalt de aanroep), dan geven we gewoon geen extra kaarten
+   terug — schrijfGespreideData toont dan zijn eigen duidelijke foutmelding i.p.v. stil
+   te falen, en de kaart kan altijd nog handmatig toegevoegd worden. */
 async function zorgVoorOpslagCapaciteit(aantalNodig) {
-    return [];
+    try {
+        var geautoriseerd = await t.getRestApi().isAuthorized();
+        if (!geautoriseerd) return [];
+        var lijstId = opslagLijstId;
+        if (!lijstId) {
+            var board = await t.board('id');
+            var nieuweLijst = await trelloMaakLijst(OPSLAG_LIJST_NAAM, board.id);
+            lijstId = nieuweLijst.id;
+            opslagLijstId = lijstId;
+        }
+        var nieuweIds = [];
+        for (var i = 0; i < aantalNodig; i++) {
+            var kaart = await trelloMaakKaart(lijstId, 'Opslagblok ' + (Date.now() + i));
+            nieuweIds.push(kaart.id);
+        }
+        return nieuweIds;
+    } catch (err) {
+        console.error('zorgVoorOpslagCapaciteit fout:', err);
+        return [];
+    }
 }
 
 async function muteInterventies(fn) {
@@ -1726,7 +1773,8 @@ function laadEnRenderAlles(){
            dienen als extra opslagcapaciteit en worden overal verder uitgesloten van de
            normale projectkaart-verwerking (zijbalk, placements, archief-detectie). */
         var opslagLijstIds={};
-        lists.forEach(function(l){if(isOpslagLijst(l.name))opslagLijstIds[l.id]=true;});
+        opslagLijstId=null;
+        lists.forEach(function(l){if(isOpslagLijst(l.name)){opslagLijstIds[l.id]=true;if(!opslagLijstId)opslagLijstId=l.id;}});
         var opslagCardIds=cards.filter(function(c){return opslagLijstIds[c.idList];})
             .sort(function(a,b){return (a.pos||0)-(b.pos||0);})
             .map(function(c){return c.id;});
@@ -2595,6 +2643,54 @@ function bouwSettingsPaneel() {
     }).catch(function() {
         adminLijstEl.style.cssText = 'font-size:12px;color:#bf2600;font-style:italic;';
         adminLijstEl.innerText = 'Kon boardleden niet laden.';
+    });
+
+    /* ── Uitgebreide opslag sectie ── */
+    var hrOpslag = document.createElement('hr');
+    hrOpslag.style.cssText = 'border:none;border-top:1px solid #ebecf0;margin:16px 0 12px;';
+    body.appendChild(hrOpslag);
+
+    var secOpslag = document.createElement('div'); secOpslag.className = 'settings-section-label';
+    secOpslag.style.marginTop = '0'; secOpslag.innerText = '☁️ Uitgebreide opslag';
+    body.appendChild(secOpslag);
+
+    var opslagStatusEl = document.createElement('div');
+    opslagStatusEl.style.cssText = 'font-size:12px;color:#5e6c84;line-height:1.5;padding:4px 0;';
+    opslagStatusEl.innerText = 'Status wordt geladen…';
+    body.appendChild(opslagStatusEl);
+
+    var opslagAutoriseerBtn = document.createElement('button');
+    opslagAutoriseerBtn.className = 'settings-action-btn primair';
+    opslagAutoriseerBtn.style.cssText = 'margin-top:6px;width:100%;display:none;';
+    opslagAutoriseerBtn.innerText = 'Autoriseer toegang';
+    opslagAutoriseerBtn.addEventListener('click', function() {
+        t.popup({ title: 'Autoriseer toegang', url: './autoriseer-popup.html', height: 140 }).then(function() {
+            /* Herlaad het paneel na sluiten van de popup zodat de autorisatiestatus klopt */
+            sluitSettings(); bouwSettingsPaneel(); toonSettings();
+        });
+    });
+    body.appendChild(opslagAutoriseerBtn);
+
+    Promise.all([
+        opslagActief ? berekenShardCapaciteit() : Promise.resolve(null),
+        t.getRestApi().isAuthorized().catch(function() { return false; })
+    ]).then(function(res) {
+        var capaciteit = res[0], geautoriseerd = res[1];
+        var regels = [];
+        if (opslagActief) {
+            var percentage = capaciteit && capaciteit.capaciteit > 0 ? Math.round((capaciteit.gebruikt / capaciteit.capaciteit) * 100) : 0;
+            regels.push((capaciteit ? capaciteit.aantalKaarten : 0) + ' opslag-kaart(en) actief in de lijst "' + OPSLAG_LIJST_NAAM + '" (' + percentage + '% gebruikt).');
+        } else {
+            regels.push('Nog geen opslag-kaarten gevonden — interventies/afwezigheden gebruiken nog de standaard bordopslag.');
+        }
+        regels.push(geautoriseerd
+            ? '✓ Toegang verleend: nieuwe opslag-kaarten worden automatisch aangemaakt wanneer nodig.'
+            : 'Nog niet geautoriseerd: bij plaatsgebrek moet je zelf een kaart toevoegen aan de lijst "' + OPSLAG_LIJST_NAAM + '", tenzij je hieronder autoriseert.');
+        opslagStatusEl.innerText = regels.join('\n');
+        opslagAutoriseerBtn.style.display = geautoriseerd ? 'none' : 'block';
+        if (geautoriseerd) opslagAutoriseerBtn.innerText = '✓ Toegang verleend';
+    }).catch(function() {
+        opslagStatusEl.innerText = 'Kon opslagstatus niet laden.';
     });
 
     /* ── Backup & Herstel sectie ── */
