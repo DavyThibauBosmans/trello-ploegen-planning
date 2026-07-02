@@ -1293,6 +1293,7 @@ function maakVerlofSegment(item, opts) {
             delBtn.title = 'Verwijderen';
             delBtn.addEventListener('mousedown', function(e) { e.stopPropagation(); });
             controls.appendChild(delBtn);
+            voegVolgordeKnoppenToe(controls, item.id, item.ploeg || VERLOF_ROW_KEY, 'verlof');
             bodyEl.appendChild(controls);
         }
     } else { bodyEl.innerHTML = '&nbsp;'; }
@@ -1756,6 +1757,37 @@ function herschikVerlofKaart(itemId, rijKey, insertOpIndex) {
     hertekenVanuitCache();
 }
 
+/* Robuust alternatief voor sleep-herschikken: wisselt de kaart rechtstreeks met zijn
+   buur in de opgeslagen volgorde-array, zonder muispositie-/DOM-geometrie nodig te hebben. */
+function verplaatsInVolgorde(id, ploeg, richting) {
+    if (!ploegLaanVolgorde[ploeg]) ploegLaanVolgorde[ploeg] = bouwHuidigeVolgorde(ploeg);
+    var huidigeIdsP = {};
+    allePlaatsingsParen.forEach(function(item) { if (item.p.ploeg === ploeg) huidigeIdsP[item.p.instanceId] = true; });
+    alleInterventies.forEach(function(int) { if (int.ploeg === ploeg) huidigeIdsP[int.id] = true; });
+    var volgorde = ploegLaanVolgorde[ploeg].filter(function(x){return huidigeIdsP[x];});
+    allePlaatsingsParen.forEach(function(item) { if (item.p.ploeg === ploeg && volgorde.indexOf(item.p.instanceId) === -1) volgorde.push(item.p.instanceId); });
+    alleInterventies.forEach(function(int) { if (int.ploeg === ploeg && volgorde.indexOf(int.id) === -1) volgorde.push(int.id); });
+    var idx = volgorde.indexOf(id); if (idx === -1) return;
+    var doel = idx + richting; if (doel < 0 || doel >= volgorde.length) return;
+    var tmp = volgorde[doel]; volgorde[doel] = volgorde[idx]; volgorde[idx] = tmp;
+    ploegLaanVolgorde[ploeg] = volgorde;
+    t.set('board', 'shared', 'ploegLaanVolgorde', ploegLaanVolgorde);
+    hertekenVanuitCache();
+}
+function verplaatsVerlofInVolgorde(id, rijKey, richting) {
+    if (!verlofRijVolgorde[rijKey]) verlofRijVolgorde[rijKey] = bouwHuidigeVerlofVolgorde(rijKey);
+    var huidigeIdsV = {};
+    alleVerlofItems.forEach(function(v) { if ((v.ploeg||VERLOF_ROW_KEY) === rijKey) huidigeIdsV[v.id] = true; });
+    var volgorde = verlofRijVolgorde[rijKey].filter(function(x){return huidigeIdsV[x];});
+    alleVerlofItems.forEach(function(v) { if ((v.ploeg||VERLOF_ROW_KEY) === rijKey && volgorde.indexOf(v.id) === -1) volgorde.push(v.id); });
+    var idx = volgorde.indexOf(id); if (idx === -1) return;
+    var doel = idx + richting; if (doel < 0 || doel >= volgorde.length) return;
+    var tmp = volgorde[doel]; volgorde[doel] = volgorde[idx]; volgorde[idx] = tmp;
+    verlofRijVolgorde[rijKey] = volgorde;
+    t.set('board', 'shared', 'verlofRijVolgorde', verlofRijVolgorde);
+    hertekenVanuitCache();
+}
+
 function placementStart(p) { return p.datum; }
 function placementEind(p)  { return p.eindDatum || p.datum; }
 
@@ -1804,6 +1836,7 @@ function maakPlacementBandSegment(card, p, opts) {
         if (isAdmin) {
             var controls = document.createElement('div'); controls.className = 'card-controls band-controls';
             controls.appendChild(maakZwevendToggleBtn(p.zwevend, (function(placement) { return function() { toggleZwevend(placement, ctx); }; })(p)));
+            voegVolgordeKnoppenToe(controls, p.instanceId, p.ploeg, 'rij');
             el.appendChild(controls);
             voegReorderHandleToe(el);
         }
@@ -1920,6 +1953,7 @@ function maakInterventieBandSegment(int, opts) {
             controls.appendChild(maakZwevendToggleBtn(int.zwevend, function() { toggleZwevendInterventie(int.id); }));
             controls.appendChild(maakKleurKnop(function() { return controls; }, function(kleur) { setInterventionColor(int.id, null, kleur); }));
             controls.appendChild(maakDeleteBtn(function() { verwijderInterventie(int.id); }));
+            voegVolgordeKnoppenToe(controls, int.id, int.ploeg, 'rij');
             el.appendChild(controls);
             voegReorderHandleToe(el);
         }
@@ -2221,6 +2255,7 @@ function maakTrelloInstantieKaart(card, placement, opts) {
     if (isAdmin && opts.ctx) {
         var controls = document.createElement('div'); controls.className = 'card-controls';
         controls.appendChild(maakZwevendToggleBtn(placement.zwevend, (function(p, ctx) { return function() { toggleZwevend(p, ctx); }; })(placement, opts.ctx)));
+        voegVolgordeKnoppenToe(controls, placement.instanceId, placement.ploeg, 'rij');
         el.appendChild(controls);
     }
     if (isAdmin) voegReorderHandleToe(el);
@@ -2250,6 +2285,7 @@ function maakInterventieKaart(int, opts) {
         controls.appendChild(maakZwevendToggleBtn(int.zwevend, function() { toggleZwevendInterventie(id); }));
         controls.appendChild(maakKleurKnop(function() { return controls; }, function(kleur) { setInterventionColor(id, el, kleur); }));
         controls.appendChild(maakDeleteBtn(function() { verwijderInterventie(id); }));
+        voegVolgordeKnoppenToe(controls, id, int.ploeg, 'rij');
         el.appendChild(controls);
         voegReorderHandleToe(el);
     }
@@ -2339,13 +2375,13 @@ function toonReorderIndicator(zone, e){
         Array.from(z.children).forEach(function(el){
             if(!el.classList.contains('planning-card')&&!el.classList.contains('placement-band'))return;
             if(el.style.display==='none')return;
+            if(el.classList.contains('band-not-first'))return;
+            var elId=el.dataset.instanceId||el.dataset.intId;
+            if(elId&&elId===_dragCurrentId)return;
             var rect=el.getBoundingClientRect();
             kaarten.push({el:el,midY:(rect.top+rect.bottom)/2,topY:rect.top,bottomY:rect.bottom});
         });
     });
-    /* Verwijder dubbels (meerdaagse band heeft één zichtbaar segment, maar kan via
-       meerdere datums gevonden worden — dedup op element-referentie is al geborgd door
-       de 'display:none' filter, dus sorteer en dedup op topY+hoogte combo niet nodig). */
     kaarten.sort(function(a,b){return a.topY-b.topY||a.el.dataset.lane-b.el.dataset.lane;});
     /* Bepaal insert-positie op basis van muisY */
     var insertIdx=kaarten.length;
@@ -2382,6 +2418,7 @@ function toonVerlofReorderIndicator(zone, e){
         if(z.dataset.ploeg!==rijKey)return;
         Array.from(z.children).forEach(function(el){
             if(!el.classList.contains('verlof-segment')||el.classList.contains('not-first'))return;
+            if(el.dataset.verlofId===_dragCurrentId)return;
             var rect=el.getBoundingClientRect();
             kaarten.push({el:el,midY:(rect.top+rect.bottom)/2,topY:rect.top});
         });
@@ -2430,6 +2467,21 @@ function voegReorderHandleToe(el){
         _dragViaHandle=true;
     });
     el.appendChild(handle);
+}
+function voegVolgordeKnoppenToe(container, id, ploeg, soort) {
+    var omhoog = document.createElement('span');
+    omhoog.className = 'volgorde-btn volgorde-omhoog'; omhoog.innerHTML = '&#9650;';
+    omhoog.title = 'Naar boven verplaatsen';
+    omhoog.addEventListener('click', function(e) { e.stopPropagation();
+        if (soort === 'verlof') verplaatsVerlofInVolgorde(id, ploeg, -1); else verplaatsInVolgorde(id, ploeg, -1);
+    });
+    var omlaag = document.createElement('span');
+    omlaag.className = 'volgorde-btn volgorde-omlaag'; omlaag.innerHTML = '&#9660;';
+    omlaag.title = 'Naar beneden verplaatsen';
+    omlaag.addEventListener('click', function(e) { e.stopPropagation();
+        if (soort === 'verlof') verplaatsVerlofInVolgorde(id, ploeg, 1); else verplaatsInVolgorde(id, ploeg, 1);
+    });
+    container.appendChild(omhoog); container.appendChild(omlaag);
 }
 function verwijderReorderIndicator(){
     document.querySelectorAll('.reorder-indicator').forEach(function(el){if(el.parentNode)el.parentNode.removeChild(el);});

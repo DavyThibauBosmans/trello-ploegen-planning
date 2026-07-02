@@ -226,10 +226,11 @@ body:not(.view-only-mode) .dropzone > .placement-band { padding-left: 26px; }
     display: flex; gap: 6px; align-items: center;
     margin-left: 6px; position: relative;
 }
-.color-btn, .delete-btn {
+.color-btn, .delete-btn, .volgorde-btn {
     cursor: pointer; font-size: 14px; opacity: 0.3; transition: opacity 0.15s;
 }
-.color-btn:hover, .delete-btn:hover { opacity: 1; }
+.color-btn:hover, .delete-btn:hover, .volgorde-btn:hover { opacity: 1; }
+.volgorde-btn { font-size: 11px; line-height: 1; }
 
 .color-picker-menu {
     position: absolute; top: 22px; right: 0;
