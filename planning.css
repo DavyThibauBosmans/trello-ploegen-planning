@@ -444,6 +444,10 @@ body.view-only-mode .ploeg-naam-editable { cursor: default; }
     border-right: 0; right: -9px;
 }
 .verlof-segment.continuation { color: transparent; }
+/* Het 1e segment (met het kruisje) overlapt bij een meerdaagse kaart in de volgende dag-cel
+   (via .not-last hierboven). Zonder verhoogd z-index wint dát vervolgsegment de tekenvolgorde
+   (later in de DOM) en dekt het het kruisje half af — daarom altijd boven de vervolgstukken. */
+.verlof-segment:not(.not-first) { z-index: 4; }
 
 .verlof-segment-body { display: flex; align-items: center; gap: 6px; min-height: 16px; height: 100%; }
 .verlof-naam-editable {

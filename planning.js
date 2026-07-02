@@ -5,6 +5,14 @@ var t = TrelloPowerUp.iframe({ appKey: TRELLO_APP_KEY, appName: TRELLO_APP_NAAM,
 var DEFAULT_PLOEGEN = ["Ploeg 1", "Ploeg 2", "Ploeg 5", "Ploeg 7 / Extra"];
 var ploegen = DEFAULT_PLOEGEN.slice();
 var VERLOF_ROW_KEY = '__verlof__';
+/* Speciale rijen boven de ploegen — werken allemaal exact hetzelfde als de afwezig-rij
+   (zelfde opslag-array, zelfde sleep/rek/kleur-gedrag), enkel gescheiden via hun eigen key. */
+var SPECIALE_RIJEN = [
+    { key: VERLOF_ROW_KEY, label: 'Afwezig'  },
+    { key: '__magazijn__', label: 'Magazijn' },
+    { key: '__staal__',    label: 'Staal'    },
+    { key: '__meubel__',   label: 'Meubel'   }
+];
 var VIEW_MODUS = 'week';
 var WEEK_DAGNAMEN_KORT = ['Zo', 'Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za'];
 var WEEK_DAGNAMEN_LANG = ['Zondag', 'Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag'];
@@ -386,10 +394,11 @@ function printPlanning(modus) {
 
         var tbody      = table.querySelector('tbody');
         var alleRows   = tbody ? Array.from(tbody.children) : [];
-        var trVerlof   = alleRows.length > 0 ? alleRows[0] : null;
-        var ploegRijen = alleRows.slice(1).filter(function(r) { return !r.classList.contains('add-ploeg-row'); });
+        var specialeRijen = alleRows.slice(0, SPECIALE_RIJEN.length);
+        var ploegRijen = alleRows.slice(SPECIALE_RIJEN.length).filter(function(r) { return !r.classList.contains('add-ploeg-row'); });
 
         /* Stap 1: reset alle inline min-heights zodat meting klopt */
+        specialeRijen.forEach(function(r) { r.style.height = ''; });
         Array.from(table.querySelectorAll('.dropzone')).forEach(function(z) {
             z.style.minHeight = '0'; z.style.height = '';
         });
@@ -397,7 +406,7 @@ function printPlanning(modus) {
         /* Stap 2: meet vaste elementen (zoom-toolbar verborgen via CSS) */
         var tHead    = table.querySelector('thead');
         var theadH   = tHead    ? tHead.offsetHeight    : 24;
-        var verlofH  = trVerlof ? trVerlof.offsetHeight : 30;
+        var verlofH  = specialeRijen.reduce(function(som, r) { return som + r.offsetHeight; }, 0) || 30 * SPECIALE_RIJEN.length;
         var headerEl = document.querySelector('.main-content-header');
         var headerH  = headerEl ? headerEl.offsetHeight : 50;
         var paddingV = 4 * MM_TO_PX; /* 2mm top + 2mm bottom */
@@ -437,6 +446,7 @@ function printPlanning(modus) {
             });
             table.style.zoom = tableZoom;
             herlayoutPloegRijen();
+            herlayoutVerlofRij();
         }, 1500);
     }, 120);
 }
@@ -899,10 +909,10 @@ function voegVerlofAddBtnToe(tdV) {
     var addBtnV = document.createElement('button');
     addBtnV.className = 'verlof-add-btn';
     addBtnV.innerHTML = '+'; addBtnV.type = 'button';
-    addBtnV.title = 'Snel verlof toevoegen';
+    addBtnV.title = 'Snel toevoegen';
     addBtnV.addEventListener('click', function(e) {
         e.stopPropagation(); if (!isAdmin) return;
-        voegVerlofToe(tdV.dataset.datum);
+        voegVerlofToe(tdV.dataset.datum, tdV.dataset.ploeg);
     });
     tdV.appendChild(addBtnV);
 }
@@ -931,28 +941,30 @@ function bouwTabel() {
         if (dISO <= vandaagISO) cel.classList.add('is-verleden');
     }
 
-    /* VERLOF-RIJ */
-    var trV = document.createElement('tr');
-    var tdLabel = document.createElement('td');
-    tdLabel.className = 'row-verlof-label col-ploeg';
-    tdLabel.innerText = 'Afwezig';
-    trV.appendChild(tdLabel);
-    for (var i = 0; i < aantalDagen; i++) {
-        var tdV = document.createElement('td');
-        tdV.className = 'dropzone verlof-zone col-dag';
-        if (weekendVlaggen[i]) tdV.classList.add('is-weekend');
-        markeerTijd(tdV, datumsVanDeWeek[i]);
-        tdV.id = maakZoneId(VERLOF_ROW_KEY, datumsVanDeWeek[i]);
-        tdV.dataset.ploeg   = VERLOF_ROW_KEY;
-        tdV.dataset.datum   = datumsVanDeWeek[i];
-        tdV.dataset.rowType = 'verlof';
-        tdV.addEventListener('dragover',  allowDrop);
-        tdV.addEventListener('dragleave', dragLeave);
-        tdV.addEventListener('drop',      drop);
-        voegVerlofAddBtnToe(tdV);
-        trV.appendChild(tdV);
-    }
-    tbody.appendChild(trV);
+    /* SPECIALE RIJEN (Afwezig, Magazijn, Staal, Meubel — werken allemaal identiek) */
+    SPECIALE_RIJEN.forEach(function(rij) {
+        var trV = document.createElement('tr');
+        var tdLabel = document.createElement('td');
+        tdLabel.className = 'row-verlof-label col-ploeg';
+        tdLabel.innerText = rij.label;
+        trV.appendChild(tdLabel);
+        for (var i = 0; i < aantalDagen; i++) {
+            var tdV = document.createElement('td');
+            tdV.className = 'dropzone verlof-zone col-dag';
+            if (weekendVlaggen[i]) tdV.classList.add('is-weekend');
+            markeerTijd(tdV, datumsVanDeWeek[i]);
+            tdV.id = maakZoneId(rij.key, datumsVanDeWeek[i]);
+            tdV.dataset.ploeg   = rij.key;
+            tdV.dataset.datum   = datumsVanDeWeek[i];
+            tdV.dataset.rowType = 'verlof';
+            tdV.addEventListener('dragover',  allowDrop);
+            tdV.addEventListener('dragleave', dragLeave);
+            tdV.addEventListener('drop',      drop);
+            voegVerlofAddBtnToe(tdV);
+            trV.appendChild(tdV);
+        }
+        tbody.appendChild(trV);
+    });
 
     /* PLOEG-RIJEN */
     ploegen.forEach(function(ploeg) {
@@ -1167,14 +1179,14 @@ async function verwijderPloeg(naam, rijElement) {
 }
 
 /* ── VERLOF-MUTATIES ── */
-async function voegVerlofToe(datum) {
+async function voegVerlofToe(datum, ploeg) {
     if (!isAdmin) return;
-    var nieuw = { id: 'verlof-' + Date.now() + '-' + Math.floor(Math.random()*9999), naam: 'Naam', startDatum: datum, eindDatum: datum, ploeg: VERLOF_ROW_KEY };
+    var nieuw = { id: 'verlof-' + Date.now() + '-' + Math.floor(Math.random()*9999), naam: 'Naam', startDatum: datum, eindDatum: datum, ploeg: ploeg || VERLOF_ROW_KEY };
     try {
         await muteVerlof(function(arr) { arr.push(nieuw); });
     } catch (err) {
         console.error('voegVerlofToe fout:', err);
-        toonGlobaleFoutmelding(err && err.code === 'OPSLAG_VOL' ? err.message : 'Kon afwezigheid niet toevoegen — de opslag zit vol. Voeg een kaart toe aan de lijst "' + OPSLAG_LIJST_NAAM + '" of maak ruimte vrij.');
+        toonGlobaleFoutmelding(err && err.code === 'OPSLAG_VOL' ? err.message : 'Kon kaart niet toevoegen — de opslag zit vol. Voeg een kaart toe aan de lijst "' + OPSLAG_LIJST_NAAM + '" of maak ruimte vrij.');
         return;
     }
     tekenVerlofItem(nieuw);
@@ -1184,6 +1196,13 @@ async function voegVerlofToe(datum) {
 
 async function updateVerlofNaam(id, nieuweNaam) {
     await muteVerlof(function(arr) { arr.forEach(function(v) { if (v.id === id) v.naam = nieuweNaam; }); });
+}
+
+async function setVerlofColor(id, kleur) {
+    await muteVerlof(function(arr) { arr.forEach(function(v) { if (v.id === id) v.colorObj = kleur; }); });
+    document.querySelectorAll('[data-verlof-id="' + id + '"]').forEach(function(seg) {
+        seg.style.backgroundColor = kleur.bg; seg.style.color = kleur.text; seg.style.borderColor = kleur.bg;
+    });
 }
 
 async function verwijderVerlof(id) {
@@ -1202,11 +1221,12 @@ function hertekenEnkelVerlofItem(item) {
 }
 
 function tekenVerlofItem(item) {
+    var rijKey = item.ploeg || VERLOF_ROW_KEY;
     var segmentDagen = dagenBinnenWeek(item.startDatum, item.eindDatum);
-    var zoneIds = segmentDagen.map(function(dag) { return maakZoneId(VERLOF_ROW_KEY, dag.datum); });
+    var zoneIds = segmentDagen.map(function(dag) { return maakZoneId(rijKey, dag.datum); });
     var band = verlofStapelReserveer(zoneIds, item.id);
     segmentDagen.forEach(function(dag) {
-        var zone = document.getElementById(maakZoneId(VERLOF_ROW_KEY, dag.datum));
+        var zone = document.getElementById(maakZoneId(rijKey, dag.datum));
         if (!zone) return;
         var segment = maakVerlofSegment(item, { datum: dag.datum, isFirstVisible: dag.isFirstVisible, isLastVisible: dag.isLastVisible });
         segment.dataset.band = band;
@@ -1250,13 +1270,21 @@ function maakVerlofSegment(item, opts) {
         })(item.id, naamEl);
         bodyEl.appendChild(naamEl);
         if (isAdmin) {
+            var controls = document.createElement('div'); controls.className = 'card-controls';
+            controls.appendChild(maakKleurKnop(function() { return controls; }, function(kleur) { setVerlofColor(item.id, kleur); }));
             var delBtn = maakDeleteBtn(function() { verwijderVerlof(item.id); });
-            delBtn.title = 'Verwijder verlof';
+            delBtn.title = 'Verwijderen';
             delBtn.addEventListener('mousedown', function(e) { e.stopPropagation(); });
-            bodyEl.appendChild(delBtn);
+            controls.appendChild(delBtn);
+            bodyEl.appendChild(controls);
         }
     } else { bodyEl.innerHTML = '&nbsp;'; }
     el.appendChild(bodyEl);
+    if (item.colorObj) {
+        el.style.backgroundColor = item.colorObj.bg;
+        el.style.color = item.colorObj.text;
+        el.style.borderColor = item.colorObj.bg;
+    }
     if (opts.isLastVisible && isAdmin) {
         el.appendChild(maakResizeHandle(function(e) { startVerlofResize(e, item); }));
     }
@@ -1279,7 +1307,7 @@ var verlofResizeState = null;
 function startVerlofResize(e, itemSnapshot) {
     if (!isAdmin) return;
     e.preventDefault(); e.stopPropagation();
-    verlofResizeState = { itemId: itemSnapshot.id, naam: itemSnapshot.naam, startDatum: itemSnapshot.startDatum, origineelEind: itemSnapshot.eindDatum, huidigEind: itemSnapshot.eindDatum };
+    verlofResizeState = { itemId: itemSnapshot.id, naam: itemSnapshot.naam, ploeg: itemSnapshot.ploeg || VERLOF_ROW_KEY, colorObj: itemSnapshot.colorObj, startDatum: itemSnapshot.startDatum, origineelEind: itemSnapshot.eindDatum, huidigEind: itemSnapshot.eindDatum };
     document.body.classList.add('span-resizing');
     document.addEventListener('mousemove', onVerlofResizeMove);
     document.addEventListener('mouseup',   onVerlofResizeEnd);
@@ -1293,7 +1321,7 @@ function onVerlofResizeMove(e) {
     if (sD && nD && nD < sD) nieuweEind = verlofResizeState.startDatum;
     if (nieuweEind === verlofResizeState.huidigEind) return;
     verlofResizeState.huidigEind = nieuweEind;
-    hertekenEnkelVerlofItem({ id: verlofResizeState.itemId, naam: verlofResizeState.naam, startDatum: verlofResizeState.startDatum, eindDatum: verlofResizeState.huidigEind, ploeg: VERLOF_ROW_KEY });
+    hertekenEnkelVerlofItem({ id: verlofResizeState.itemId, naam: verlofResizeState.naam, ploeg: verlofResizeState.ploeg, colorObj: verlofResizeState.colorObj, startDatum: verlofResizeState.startDatum, eindDatum: verlofResizeState.huidigEind });
 }
 async function onVerlofResizeEnd() {
     if (!verlofResizeState) return;
@@ -1399,39 +1427,48 @@ function verlofStapelVrijgeven(itemId) {
     });
 }
 /* Meet de werkelijke hoogte van elke baan (i.p.v. een vaste aanname) en positioneert de
-   segmenten + rijhoogte daarop, zodat de afwezig-rij altijd meeschaalt met het aantal
-   gestapelde kaarten (en met namen die naar 2 regels omslaan). */
+   segmenten + rijhoogte daarop, zodat elke speciale rij (Afwezig, Magazijn, Staal, Meubel)
+   altijd meeschaalt met het aantal gestapelde kaarten (en met namen die naar 2 regels omslaan).
+   Elke rij wordt afzonderlijk berekend — banen van de ene rij mogen de hoogte van een andere
+   rij niet beïnvloeden. */
 function herlayoutVerlofRij() {
     var tableEl = document.querySelector('.planning-table');
     /* Reset zoom voor accurate offsetHeight meting (CSS zoom beïnvloedt offsetHeight) */
     if (tableEl) tableEl.style.zoom = '';
-    var zones = document.querySelectorAll('.dropzone[data-row-type="verlof"]');
-    var baanHoogtes = {};
-    zones.forEach(function(z) {
-        z.querySelectorAll('.verlof-segment').forEach(function(el) {
-            var baan = parseInt(el.dataset.band, 10); if (isNaN(baan)) return;
-            el.style.height = 'auto';
-            var h = el.offsetHeight;
-            if (!baanHoogtes[baan] || h > baanHoogtes[baan]) baanHoogtes[baan] = h;
-        });
+    var perRij = {};
+    document.querySelectorAll('.dropzone[data-row-type="verlof"]').forEach(function(z) {
+        var pl = z.dataset.ploeg; if (!pl) return;
+        if (!perRij[pl]) perRij[pl] = [];
+        perRij[pl].push(z);
     });
-    var banen = Object.keys(baanHoogtes).map(function(k){return parseInt(k,10);}).sort(function(a,b){return a-b;});
-    var tops = {}, cursor = VERLOF_BAND_TOP;
-    banen.forEach(function(b) { tops[b] = cursor; cursor += baanHoogtes[b] + VERLOF_BAND_GAP; });
-    var totaal = banen.length ? (cursor - VERLOF_BAND_GAP) : 0;
-    zones.forEach(function(z) {
-        z.querySelectorAll('.verlof-segment').forEach(function(el) {
-            var baan = parseInt(el.dataset.band, 10); if (isNaN(baan)) return;
-            el.style.top = (tops[baan] !== undefined ? tops[baan] : 0) + 'px';
-            /* Alle segmenten van dezelfde baan op exact dezelfde hoogte zetten, anders sluit
-               het eerste segment (met het grotere kruisje) niet naadloos aan op de vervolgstukken. */
-            if (baanHoogtes[baan] !== undefined) el.style.height = baanHoogtes[baan] + 'px';
+    Object.keys(perRij).forEach(function(pl) {
+        var zones = perRij[pl];
+        var baanHoogtes = {};
+        zones.forEach(function(z) {
+            z.querySelectorAll('.verlof-segment').forEach(function(el) {
+                var baan = parseInt(el.dataset.band, 10); if (isNaN(baan)) return;
+                el.style.height = 'auto';
+                var h = el.offsetHeight;
+                if (!baanHoogtes[baan] || h > baanHoogtes[baan]) baanHoogtes[baan] = h;
+            });
         });
-        z.style.minHeight = totaal > 0 ? totaal + 'px' : '';
+        var banen = Object.keys(baanHoogtes).map(function(k){return parseInt(k,10);}).sort(function(a,b){return a-b;});
+        var tops = {}, cursor = VERLOF_BAND_TOP;
+        banen.forEach(function(b) { tops[b] = cursor; cursor += baanHoogtes[b] + VERLOF_BAND_GAP; });
+        var totaal = banen.length ? (cursor - VERLOF_BAND_GAP) : 0;
+        zones.forEach(function(z) {
+            z.querySelectorAll('.verlof-segment').forEach(function(el) {
+                var baan = parseInt(el.dataset.band, 10); if (isNaN(baan)) return;
+                el.style.top = (tops[baan] !== undefined ? tops[baan] : 0) + 'px';
+                /* Alle segmenten van dezelfde baan op exact dezelfde hoogte zetten, anders sluit
+                   het eerste segment (met het grotere kruisje) niet naadloos aan op de vervolgstukken. */
+                if (baanHoogtes[baan] !== undefined) el.style.height = baanHoogtes[baan] + 'px';
+            });
+            z.style.minHeight = totaal > 0 ? totaal + 'px' : '';
+        });
+        var rijEl = zones[0] ? zones[0].closest('tr') : null;
+        if (rijEl) rijEl.style.height = totaal > 0 ? totaal + 'px' : '';
     });
-    var verlofRow = document.querySelector('.row-verlof-label');
-    verlofRow = verlofRow ? verlofRow.closest('tr') : null;
-    if (verlofRow) verlofRow.style.height = totaal > 0 ? totaal + 'px' : '';
     /* Herstel zoom na meting */
     if (tableEl) tableEl.style.zoom = tableZoom;
 }
@@ -2288,6 +2325,7 @@ function drop(e){
             var item=null;
             arr.forEach(function(v){if(v.id===id)item=v;});
             if(!item)return arr;
+            if((item.ploeg||VERLOF_ROW_KEY)!==doelPloeg)return arr;
             var oudeStart=item.startDatum||item.datum,oudeEind=item.eindDatum||oudeStart;
             if(oudeStart===doelDatum)return arr;
             var rangeLengte=aantalDagenTussen(oudeStart,oudeEind);
