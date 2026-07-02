@@ -1763,10 +1763,11 @@ function verplaatsInVolgorde(id, ploeg, richting) {
     var volgorde = ploegLaanVolgorde[ploeg].filter(function(x){return huidigeIdsP[x];});
     allePlaatsingsParen.forEach(function(item) { if (item.p.ploeg === ploeg && volgorde.indexOf(item.p.instanceId) === -1) volgorde.push(item.p.instanceId); });
     alleInterventies.forEach(function(int) { if (int.ploeg === ploeg && volgorde.indexOf(int.id) === -1) volgorde.push(int.id); });
-    var idx = volgorde.indexOf(id); if (idx === -1) return;
+    var idx = volgorde.indexOf(id); if (idx === -1) { console.log('[Ploegen Planning] verplaatsInVolgorde: id niet gevonden', id, ploeg, volgorde); return; }
     var doel = idx + richting; if (doel < 0 || doel >= volgorde.length) return;
     var tmp = volgorde[doel]; volgorde[doel] = volgorde[idx]; volgorde[idx] = tmp;
     ploegLaanVolgorde[ploeg] = volgorde;
+    console.log('[Ploegen Planning] verplaatsInVolgorde uitgevoerd @ '+new Date().toLocaleTimeString(), ploeg, JSON.parse(JSON.stringify(volgorde)));
     t.set('board', 'shared', 'ploegLaanVolgorde', ploegLaanVolgorde);
     hertekenVanuitCache();
 }
@@ -1999,6 +2000,7 @@ async function onInterventieResizeEnd() {
 
 /* ── HOOFDLAADFUNCTIE ── */
 function laadEnRenderAlles(){
+    console.log('[Ploegen Planning] herlaad gestart @ '+new Date().toLocaleTimeString());
     berekenWeekDatums();bouwLegende();markeerActieveViewKnop();
     trelloKaartCache={};placementCtx={};stackMap={};verlofStackMap={};plaatsingsData={};allePlaatsingsParen=[];alleInterventies=[];alleVerlofItems=[];
     var pool=document.getElementById('sidebar-pool');
@@ -2027,6 +2029,7 @@ function laadEnRenderAlles(){
         var memberInfo=resultaten[7];
         ploegLaanVolgorde=(resultaten[8]&&typeof resultaten[8]==='object'&&!Array.isArray(resultaten[8]))?resultaten[8]:{};
         verlofRijVolgorde=(resultaten[9]&&typeof resultaten[9]==='object'&&!Array.isArray(resultaten[9]))?resultaten[9]:{};
+        console.log('[Ploegen Planning] ploegLaanVolgorde na fetch:', JSON.parse(JSON.stringify(ploegLaanVolgorde)));
         if(Array.isArray(opgeslagenAdmins)&&opgeslagenAdmins.length>0){ADMIN_USERNAMES=opgeslagenAdmins;}
         if(DEV_MODE){isAdmin=true;}
         else{var u=(memberInfo&&memberInfo.username)?memberInfo.username.toLowerCase():'';isAdmin=ADMIN_USERNAMES.indexOf(u)!==-1;}
