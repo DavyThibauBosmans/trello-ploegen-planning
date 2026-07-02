@@ -18,8 +18,28 @@ ankerDatum.setHours(0, 0, 0, 0);
 function ensureArray(x) { return Array.isArray(x) ? x : []; }
 function boardGet(key, def)      { return t.get('board', 'shared', key, def); }
 function boardSet(key, val)      { return t.set('board', 'shared', key, val); }
-function cardGet(id, key, def)   { return t.get(id, 'shared', key, def); }
-function cardSet(id, key, val)   { return t.set(id, 'shared', key, val); }
+/* Kaarten die net via de REST API zijn aangemaakt (zie zorgVoorOpslagCapaciteit) staan
+   niet meteen bekend bij Trello's eigen board-model, waardoor t.get/t.set daar even
+   'Card not found or not on current board' op teruggeven totdat Trello is bijgewerkt.
+   Probeer daarom een paar keer opnieuw met oplopende vertraging vóór we echt falen. */
+function wacht(ms) { return new Promise(function(resolve) { setTimeout(resolve, ms); }); }
+function isTijdelijkeKaartFout(err) {
+    return !!(err && typeof err.message === 'string' && err.message.indexOf('not found or not on current board') !== -1);
+}
+async function cardGet(id, key, def) {
+    var vertraging = 500;
+    for (var poging = 0; poging < 6; poging++) {
+        try { return await t.get(id, 'shared', key, def); }
+        catch (err) { if (!isTijdelijkeKaartFout(err) || poging === 5) throw err; await wacht(vertraging); vertraging = Math.min(vertraging * 1.6, 4000); }
+    }
+}
+async function cardSet(id, key, val) {
+    var vertraging = 500;
+    for (var poging = 0; poging < 6; poging++) {
+        try { return await t.set(id, 'shared', key, val); }
+        catch (err) { if (!isTijdelijkeKaartFout(err) || poging === 5) throw err; await wacht(vertraging); vertraging = Math.min(vertraging * 1.6, 4000); }
+    }
+}
 
 async function mutePlacements(cardId, fn) {
     var arr = ensureArray(await cardGet(cardId, 'placements', []));
