@@ -1251,6 +1251,7 @@ function maakVerlofSegment(item, opts) {
     if (!opts.isFirstVisible && !opts.isLastVisible) el.classList.add('continuation');
     el.id = 'vseg-' + item.id + '-' + opts.datum;
     el.dataset.verlofId = item.id; el.dataset.datum = opts.datum; el.dataset.rol = 'verlof';
+    el.dataset.ploegRow = item.ploeg || VERLOF_ROW_KEY;
     el.draggable = isAdmin;
     var bodyEl = document.createElement('div');
     bodyEl.className = 'verlof-segment-body';
@@ -1380,6 +1381,7 @@ var stackMap = {};
 var BAND_HOOGTE = 56, BAND_GAP = 4, BAND_TOP = 6;
 /* ── HERSCHIKKEN ── */
 var ploegLaanVolgorde = {};   // { ploegNaam: [instanceId, ...] }
+var verlofRijVolgorde = {};   // { rijKey: [verlofId, ...] } — zelfde principe, voor de speciale rijen
 var plaatsingsData = {};       // { instanceId: plaatsingObject }
 var allePlaatsingsParen = [];  // [{ p, ctx }, ...]
 var alleInterventies = [];
@@ -1621,6 +1623,18 @@ function sorteerPlaatsingenVoorRender(paren) {
         return iA - iB;
     });
 }
+function sorteerVerlofVoorRender(items) {
+    items.sort(function(a, b) {
+        var rijA = a.ploeg || VERLOF_ROW_KEY, rijB = b.ploeg || VERLOF_ROW_KEY;
+        if (rijA !== rijB) return 0; // rijen onderling niet herordenen
+        var vA = verlofRijVolgorde[rijA] || [], vB = verlofRijVolgorde[rijB] || [];
+        var iA = vA.indexOf(a.id), iB = vB.indexOf(b.id);
+        if (iA === -1 && iB === -1) return 0;
+        if (iA === -1) return 1;
+        if (iB === -1) return -1;
+        return iA - iB;
+    });
+}
 
 function hertekenVanuitCache() {
     document.querySelectorAll('.dropzone').forEach(function(z) { z.innerHTML = ''; });
@@ -1629,6 +1643,7 @@ function hertekenVanuitCache() {
     sorteerPlaatsingenVoorRender(allePlaatsingsParen);
     allePlaatsingsParen.forEach(function(item) { tekenPlacement(item.p, item.ctx); });
     alleInterventies.forEach(function(int) { tekenInterventie(int); });
+    sorteerVerlofVoorRender(alleVerlofItems);
     alleVerlofItems.forEach(function(v) { tekenVerlofItem(v); });
     document.querySelectorAll('.dropzone').forEach(function(z) {
         if (z.dataset.rowType === 'verlof') voegVerlofAddBtnToe(z);
@@ -1661,6 +1676,30 @@ function herschikKaart(instanceId, ploeg, insertOpIndex) {
     });
     ploegLaanVolgorde[ploeg] = volgorde;
     t.set('board', 'shared', 'ploegLaanVolgorde', ploegLaanVolgorde);
+    hertekenVanuitCache();
+}
+
+function bouwHuidigeVerlofVolgorde(rijKey) {
+    var baanNaarId = {};
+    document.querySelectorAll('[data-verlof-id]').forEach(function(el) {
+        if (el.dataset.ploegRow !== rijKey) return;
+        var id = el.dataset.verlofId;
+        var baan = parseInt(el.dataset.band, 10);
+        if (id && !isNaN(baan) && baanNaarId[baan] === undefined) baanNaarId[baan] = id;
+    });
+    return Object.keys(baanNaarId).map(Number).sort(function(a,b){return a-b;}).map(function(b){return baanNaarId[b];});
+}
+
+function herschikVerlofKaart(itemId, rijKey, insertOpIndex) {
+    if (!verlofRijVolgorde[rijKey]) verlofRijVolgorde[rijKey] = bouwHuidigeVerlofVolgorde(rijKey);
+    var volgorde = verlofRijVolgorde[rijKey].filter(function(id){return id!==itemId;});
+    volgorde.splice(insertOpIndex, 0, itemId);
+    // onbekende verlof-ids van dezelfde rij achteraan toevoegen
+    alleVerlofItems.forEach(function(v) {
+        if ((v.ploeg||VERLOF_ROW_KEY) === rijKey && volgorde.indexOf(v.id) === -1) volgorde.push(v.id);
+    });
+    verlofRijVolgorde[rijKey] = volgorde;
+    t.set('board', 'shared', 'verlofRijVolgorde', verlofRijVolgorde);
     hertekenVanuitCache();
 }
 
@@ -1886,7 +1925,8 @@ function laadEnRenderAlles(){
         t.get('board','shared','verlofItems',[]),
         t.get('board','shared','adminUsernames', null),
         DEV_MODE ? Promise.resolve(null) : t.member('username').catch(function(){return null;}),
-        t.get('board','shared','ploegLaanVolgorde',{})
+        t.get('board','shared','ploegLaanVolgorde',{}),
+        t.get('board','shared','verlofRijVolgorde',{})
     ]).then(function(resultaten){
         var cards=resultaten[0],lists=resultaten[1],legacyInterventions=ensureArray(resultaten[2]);
         var indexIds=Array.isArray(resultaten[3])?resultaten[3]:[];
@@ -1895,6 +1935,7 @@ function laadEnRenderAlles(){
         var opgeslagenAdmins=resultaten[6];
         var memberInfo=resultaten[7];
         ploegLaanVolgorde=(resultaten[8]&&typeof resultaten[8]==='object'&&!Array.isArray(resultaten[8]))?resultaten[8]:{};
+        verlofRijVolgorde=(resultaten[9]&&typeof resultaten[9]==='object'&&!Array.isArray(resultaten[9]))?resultaten[9]:{};
         if(Array.isArray(opgeslagenAdmins)&&opgeslagenAdmins.length>0){ADMIN_USERNAMES=opgeslagenAdmins;}
         if(DEV_MODE){isAdmin=true;}
         else{var u=(memberInfo&&memberInfo.username)?memberInfo.username.toLowerCase():'';isAdmin=ADMIN_USERNAMES.indexOf(u)!==-1;}
@@ -1993,6 +2034,7 @@ function laadEnRenderAlles(){
             alleInterventies=interventions;
             alleVerlofItems=verlofItems;
             interventions.forEach(function(int){tekenInterventie(int);});
+            sorteerVerlofVoorRender(verlofItems);
             verlofItems.forEach(function(v){tekenVerlofItem(v);});
             herlayoutPloegRijen();
             var zoekVeld=document.getElementById('sidebar-search');
@@ -2217,6 +2259,9 @@ function allowDrop(e){
     if((dragType==='instantie'||dragType==='interventie')&&_dragCurrentId&&this.dataset.ploeg===_dragCurrentPloeg){
         if(this.dataset.datum===_dragCurrentDatum){toonReorderIndicator(this,e);}
     }
+    if(dragType==='verlof'&&_dragCurrentId&&this.dataset.ploeg===_dragCurrentPloeg&&this.dataset.datum===_dragCurrentDatum){
+        toonVerlofReorderIndicator(this,e);
+    }
 }
 function toonReorderIndicator(zone, e){
     var ploeg=zone.dataset.ploeg; if(!ploeg)return;
@@ -2263,11 +2308,49 @@ function toonReorderIndicator(zone, e){
     lijn.style.top=indicatorY+'px';
     zone.appendChild(lijn);
 }
+function toonVerlofReorderIndicator(zone, e){
+    var rijKey=zone.dataset.ploeg; if(!rijKey)return;
+    /* Verzamel het representatieve (1e zichtbare) segment van elk item in dezelfde rij —
+       een meerdaags item heeft per dag een eigen, wél zichtbaar segment (i.t.t. .placement-band
+       hierboven), dus filter op 'not-first' i.p.v. display:none om niet te dubbel-tellen. */
+    var kaarten=[];
+    document.querySelectorAll('.dropzone[data-row-type="verlof"]').forEach(function(z){
+        if(z.dataset.ploeg!==rijKey)return;
+        Array.from(z.children).forEach(function(el){
+            if(!el.classList.contains('verlof-segment')||el.classList.contains('not-first'))return;
+            var rect=el.getBoundingClientRect();
+            kaarten.push({el:el,midY:(rect.top+rect.bottom)/2,topY:rect.top});
+        });
+    });
+    kaarten.sort(function(a,b){return a.topY-b.topY||(parseInt(a.el.dataset.band,10)-parseInt(b.el.dataset.band,10));});
+    var insertIdx=kaarten.length;
+    for(var i=0;i<kaarten.length;i++){if(e.clientY<kaarten[i].midY){insertIdx=i;break;}}
+    _reorderLastIdx=insertIdx;
+    verwijderReorderIndicator();
+    zone.dataset.reorderInsertIdx=insertIdx;
+    var zoneRect=zone.getBoundingClientRect();
+    var indicatorY;
+    if(kaarten.length===0){
+        indicatorY=VERLOF_BAND_TOP;
+    } else if(insertIdx===0){
+        indicatorY=(kaarten[0].topY-zoneRect.top)/tableZoom-2;
+    } else if(insertIdx>=kaarten.length){
+        var last=kaarten[kaarten.length-1].el.getBoundingClientRect();
+        indicatorY=(last.bottom-zoneRect.top)/tableZoom+2;
+    } else {
+        var prevBottom=kaarten[insertIdx-1].el.getBoundingClientRect().bottom;
+        var nextTop=kaarten[insertIdx].topY;
+        indicatorY=((prevBottom+nextTop)/2-zoneRect.top)/tableZoom;
+    }
+    var lijn=document.createElement('div');lijn.className='reorder-indicator';
+    lijn.style.top=indicatorY+'px';
+    zone.appendChild(lijn);
+}
 function dragLeave(e){
     if(e.relatedTarget && this.contains(e.relatedTarget)) return;
     this.classList.remove('dragover');
     var dragType=document.body.dataset.dragType||'';
-    if(dragType==='instantie'||dragType==='interventie'){
+    if(dragType==='instantie'||dragType==='interventie'||dragType==='verlof'){
         var relZone=e.relatedTarget&&e.relatedTarget.closest&&e.relatedTarget.closest('.dropzone');
         if(relZone&&relZone.dataset.ploeg===_dragCurrentPloeg) return;
     }
@@ -2328,15 +2411,25 @@ function drop(e){
 
     if(soort==='verlof'){
         if(naarZijbalk||doelRowType!=='verlof')return;
+        /* Zelfde rij + drop valt op dezelfde dag als waar de sleep startte → herschikken
+           (volgorde/baan wijzigen) i.p.v. verplaatsen naar een andere datum. */
+        if(doelPloeg===_dragCurrentPloeg&&doelDatum===_dragCurrentDatum){
+            var insertIdxV=parseInt(doelZone.dataset.reorderInsertIdx,10);
+            if(isNaN(insertIdxV))insertIdxV=_reorderLastIdx;
+            verwijderReorderIndicator();
+            herschikVerlofKaart(id,doelPloeg,insertIdxV);
+            return;
+        }
         var verplaatstVerlofItem=null;
         muteVerlof(function(arr){
             var item=null;
             arr.forEach(function(v){if(v.id===id)item=v;});
             if(!item)return arr;
-            if((item.ploeg||VERLOF_ROW_KEY)!==doelPloeg)return arr;
+            var oudePloeg=item.ploeg||VERLOF_ROW_KEY;
             var oudeStart=item.startDatum||item.datum,oudeEind=item.eindDatum||oudeStart;
-            if(oudeStart===doelDatum)return arr;
+            if(oudeStart===doelDatum&&oudePloeg===doelPloeg)return arr;
             var rangeLengte=aantalDagenTussen(oudeStart,oudeEind);
+            item.ploeg=doelPloeg;
             item.startDatum=doelDatum;item.eindDatum=voegDagenToe(doelDatum,rangeLengte);delete item.datum;
             verplaatstVerlofItem=item;
             return arr;
@@ -3097,7 +3190,7 @@ function toonBackupReminder() {
    eigen 4096-tekenbudget) en waarschuwen we in plaats daarvan wanneer díe
    gezamenlijke capaciteit bijna vol is — met als oplossing: een kaart
    toevoegen aan de lijst "🗄️ Planning opslag" (i.p.v. opruimen). */
-var BOARD_SHARED_SLEUTELS = ['ploegen','plannedCardIds','ploegLaanVolgorde','layoutInstellingen','layoutStandaard','adminUsernames','viewMode','ankerDatum','dataOpslagVersie'];
+var BOARD_SHARED_SLEUTELS = ['ploegen','plannedCardIds','ploegLaanVolgorde','verlofRijVolgorde','layoutInstellingen','layoutStandaard','adminUsernames','viewMode','ankerDatum','dataOpslagVersie'];
 var TRELLO_OPSLAG_LIMIET = 8192;
 var OPSLAG_WAARSCHUW_GRENS = 7500;
 var SHARD_WAARSCHUW_PERCENTAGE = 0.85;
