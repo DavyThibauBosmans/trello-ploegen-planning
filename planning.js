@@ -1693,7 +1693,15 @@ function bouwHuidigeVolgorde(ploeg) {
 
 function herschikKaart(instanceId, ploeg, insertOpIndex) {
     if (!ploegLaanVolgorde[ploeg]) ploegLaanVolgorde[ploeg] = bouwHuidigeVolgorde(ploeg);
-    var volgorde = ploegLaanVolgorde[ploeg].filter(function(id){return id!==instanceId;});
+    /* Ids van kaarten die intussen verwijderd of naar een andere ploeg verplaatst zijn
+       blijven anders voorgoed als 'spook'-ids in ploegLaanVolgorde staan (die wordt nooit
+       opnieuw uit de DOM opgebouwd zolang hij al eens gezet is). Daardoor klopt de lengte
+       van dit array niet meer met wat toonReorderIndicator zopas visueel telde, en komt
+       insertOpIndex op de verkeerde plek terecht — vandaar het willekeurige "terugspringen". */
+    var huidigeIdsP = {};
+    allePlaatsingsParen.forEach(function(item) { if (item.p.ploeg === ploeg) huidigeIdsP[item.p.instanceId] = true; });
+    alleInterventies.forEach(function(int) { if (int.ploeg === ploeg) huidigeIdsP[int.id] = true; });
+    var volgorde = ploegLaanVolgorde[ploeg].filter(function(id){return id!==instanceId&&huidigeIdsP[id];});
     volgorde.splice(insertOpIndex, 0, instanceId);
     // onbekende instanceIds en interventie-IDs van dezelfde ploeg achteraan toevoegen
     allePlaatsingsParen.forEach(function(item) {
@@ -1720,7 +1728,11 @@ function bouwHuidigeVerlofVolgorde(rijKey) {
 
 function herschikVerlofKaart(itemId, rijKey, insertOpIndex) {
     if (!verlofRijVolgorde[rijKey]) verlofRijVolgorde[rijKey] = bouwHuidigeVerlofVolgorde(rijKey);
-    var volgorde = verlofRijVolgorde[rijKey].filter(function(id){return id!==itemId;});
+    /* Zelfde reden als bij herschikKaart hierboven: spook-ids van verwijderde/verplaatste
+       items opruimen zodat insertOpIndex weer op de juiste plek terechtkomt. */
+    var huidigeIdsV = {};
+    alleVerlofItems.forEach(function(v) { if ((v.ploeg||VERLOF_ROW_KEY) === rijKey) huidigeIdsV[v.id] = true; });
+    var volgorde = verlofRijVolgorde[rijKey].filter(function(id){return id!==itemId&&huidigeIdsV[id];});
     volgorde.splice(insertOpIndex, 0, itemId);
     // onbekende verlof-ids van dezelfde rij achteraan toevoegen
     alleVerlofItems.forEach(function(v) {
