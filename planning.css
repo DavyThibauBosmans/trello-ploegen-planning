@@ -425,7 +425,7 @@ body.view-only-mode .ploeg-naam-editable { cursor: default; }
    zodat eenzelfde item over alle dagen die het beslaat op dezelfde hoogte (baan) blijft staan,
    ook als een ander afwezig-item niet exact dezelfde dagen beslaat. */
 .verlof-segment {
-    position: absolute; left: 0; right: 0;
+    position: absolute; left: 0; right: 0; z-index: 2;
     background-color: #ffe9a8;
     border: 1px solid #f1c40f;
     border-radius: 12px;
@@ -452,7 +452,10 @@ body.view-only-mode .ploeg-naam-editable { cursor: default; }
 }
 .verlof-naam-editable:focus { background-color: #fff8e1; box-shadow: 0 0 0 1px #ffab00; }
 body.view-only-mode .verlof-naam-editable { cursor: default; }
-.verlof-segment .delete-btn { font-size: 13px; opacity: 0.4; color: #6f4e00; }
+.verlof-segment .delete-btn {
+    font-size: 26px; line-height: 1; opacity: 0.4; color: #6f4e00;
+    position: relative; z-index: 10;
+}
 .verlof-segment:hover .delete-btn { opacity: 1; }
 
 .verlof-add-btn {

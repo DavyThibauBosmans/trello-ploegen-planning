@@ -1191,26 +1191,28 @@ async function verwijderVerlof(id) {
     await muteVerlof(function(arr) { return arr.filter(function(v) { return v.id !== id; }); });
     document.querySelectorAll('[data-verlof-id="' + id + '"]').forEach(function(el) { if (el.parentNode) el.parentNode.removeChild(el); });
     verlofStapelVrijgeven(id);
+    herlayoutVerlofRij();
 }
 
 function hertekenEnkelVerlofItem(item) {
     document.querySelectorAll('[data-verlof-id="' + item.id + '"]').forEach(function(el) { if (el.parentNode) el.parentNode.removeChild(el); });
     verlofStapelVrijgeven(item.id);
-    if (!item.startDatum || !item.eindDatum) return;
+    if (!item.startDatum || !item.eindDatum) { herlayoutVerlofRij(); return; }
     tekenVerlofItem(item);
 }
 
 function tekenVerlofItem(item) {
     var segmentDagen = dagenBinnenWeek(item.startDatum, item.eindDatum);
     var zoneIds = segmentDagen.map(function(dag) { return maakZoneId(VERLOF_ROW_KEY, dag.datum); });
-    var top = verlofRijNaarTop(verlofStapelReserveer(zoneIds, item.id));
+    var band = verlofStapelReserveer(zoneIds, item.id);
     segmentDagen.forEach(function(dag) {
         var zone = document.getElementById(maakZoneId(VERLOF_ROW_KEY, dag.datum));
         if (!zone) return;
         var segment = maakVerlofSegment(item, { datum: dag.datum, isFirstVisible: dag.isFirstVisible, isLastVisible: dag.isLastVisible });
-        segment.style.top = top + 'px';
+        segment.dataset.band = band;
         zone.appendChild(segment);
     });
+    herlayoutVerlofRij();
 }
 
 function maakVerlofSegment(item, opts) {
@@ -1380,8 +1382,7 @@ function updateZoneHoogte(zoneId) {
    een item krijgt over alle dagen die het beslaat dezelfde band, zodat het niet verspringt
    als een ander afwezig-item niet exact dezelfde dagen beslaat) ── */
 var verlofStackMap = {};
-var VERLOF_BAND_HOOGTE = 26, VERLOF_BAND_GAP = 4, VERLOF_BAND_TOP = 0;
-function verlofRijNaarTop(rij) { return VERLOF_BAND_TOP + rij * (VERLOF_BAND_HOOGTE + VERLOF_BAND_GAP); }
+var VERLOF_BAND_GAP = 4, VERLOF_BAND_TOP = 0;
 function verlofStapelReserveer(zoneIds, itemId) {
     zoneIds.forEach(function(zid) { if (!verlofStackMap[zid]) verlofStackMap[zid] = {}; });
     var rij = 0;
@@ -1390,20 +1391,38 @@ function verlofStapelReserveer(zoneIds, itemId) {
         rij++; if (rij > 200) break;
     }
     zoneIds.forEach(function(zid) { verlofStackMap[zid][rij] = itemId; });
-    zoneIds.forEach(updateVerlofZoneHoogte);
     return rij;
 }
 function verlofStapelVrijgeven(itemId) {
     Object.keys(verlofStackMap).forEach(function(zid) {
         Object.keys(verlofStackMap[zid]).forEach(function(rij) { if (verlofStackMap[zid][rij]===itemId) delete verlofStackMap[zid][rij]; });
-        updateVerlofZoneHoogte(zid);
     });
 }
-function updateVerlofZoneHoogte(zoneId) {
-    var zone = document.getElementById(zoneId); if (!zone) return;
-    var zoneRijen = verlofStackMap[zoneId] || {}, maxRij = -1;
-    Object.keys(zoneRijen).forEach(function(r) { var ri=parseInt(r,10); if (ri>maxRij) maxRij=ri; });
-    zone.style.minHeight = maxRij < 0 ? '' : (verlofRijNaarTop(maxRij) + VERLOF_BAND_HOOGTE) + 'px';
+/* Meet de werkelijke hoogte van elke baan (i.p.v. een vaste aanname) en positioneert de
+   segmenten + rijhoogte daarop, zodat de afwezig-rij altijd meeschaalt met het aantal
+   gestapelde kaarten (en met namen die naar 2 regels omslaan). */
+function herlayoutVerlofRij() {
+    var zones = document.querySelectorAll('.dropzone[data-row-type="verlof"]');
+    var baanHoogtes = {};
+    zones.forEach(function(z) {
+        z.querySelectorAll('.verlof-segment').forEach(function(el) {
+            var baan = parseInt(el.dataset.band, 10); if (isNaN(baan)) return;
+            el.style.height = 'auto';
+            var h = el.offsetHeight;
+            if (!baanHoogtes[baan] || h > baanHoogtes[baan]) baanHoogtes[baan] = h;
+        });
+    });
+    var banen = Object.keys(baanHoogtes).map(function(k){return parseInt(k,10);}).sort(function(a,b){return a-b;});
+    var tops = {}, cursor = VERLOF_BAND_TOP;
+    banen.forEach(function(b) { tops[b] = cursor; cursor += baanHoogtes[b] + VERLOF_BAND_GAP; });
+    var totaal = banen.length ? (cursor - VERLOF_BAND_GAP) : 0;
+    zones.forEach(function(z) {
+        z.querySelectorAll('.verlof-segment').forEach(function(el) {
+            var baan = parseInt(el.dataset.band, 10); if (isNaN(baan)) return;
+            el.style.top = (tops[baan] !== undefined ? tops[baan] : 0) + 'px';
+        });
+        z.style.minHeight = totaal > 0 ? totaal + 'px' : '';
+    });
 }
 
 function herlayoutPloegRijen() {
