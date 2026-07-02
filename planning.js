@@ -1019,8 +1019,13 @@ function bouwTabel() {
             naamElement.addEventListener('blur', function() {
                 naamElement.contentEditable = false;
                 var nieuwe = naamElement.innerText.trim();
-                if (!nieuwe || nieuwe === oudeNaam) { naamElement.innerText = oudeNaam; return; }
-                var bestaatAl = ploegen.some(function(p) { return p !== oudeNaam && p.toLowerCase() === nieuwe.toLowerCase(); });
+                /* contentEditable-velden voegen bij elke klik-en-blur soms stilzwijgend lege
+                   regels/spaties toe of weg (browser-eigenaardigheid), zonder dat de gebruiker
+                   iets echt wijzigde. Vergelijk daarom op genormaliseerde tekst, anders vuurt
+                   hier een "hernoeming" op puur opmaak-verschil — met een verweesde oude
+                   ploegLaanVolgorde-sleutel en een lege nieuwe als gevolg. */
+                if (!nieuwe || normaliseerPloegtekst(nieuwe) === normaliseerPloegtekst(oudeNaam)) { naamElement.innerText = oudeNaam; return; }
+                var bestaatAl = ploegen.some(function(p) { return p !== oudeNaam && normaliseerPloegtekst(p).toLowerCase() === normaliseerPloegtekst(nieuwe).toLowerCase(); });
                 if (bestaatAl) { naamElement.innerText = oudeNaam; toonPloegMelding(rijElement, 'Er is al een ploeg met de naam "' + nieuwe + '".'); return; }
                 hernoemPloeg(oudeNaam, nieuwe).catch(function(err){ console.error('Hernoemen mislukt:', err); naamElement.innerText = oudeNaam; });
             });
@@ -1151,6 +1156,10 @@ function voegPloegToe() {
     boardSet('ploegen', ploegen).then(laadEnRenderAlles);
 }
 
+function normaliseerPloegtekst(s) {
+    return String(s || '').replace(/[ \t]+$/gm, '').replace(/\n{2,}/g, '\n').trim();
+}
+
 async function hernoemPloeg(oudeNaam, nieuweNaam) {
     var idx = ploegen.indexOf(oudeNaam);
     if (idx === -1) return;
@@ -1164,6 +1173,15 @@ async function hernoemPloeg(oudeNaam, nieuweNaam) {
             pa.forEach(function(p) { if (p.ploeg === oudeNaam) p.ploeg = nieuweNaam; });
         });
     }));
+    /* ploegLaanVolgorde is gekoppeld aan de exacte ploeg-naam als sleutel. Zonder migratie
+       raakt de opgebouwde volgorde bij elke hernoeming verweesd onder de oude naam, en
+       start de rij stilzwijgend terug vanaf een lege/onvolledige volgorde onder de nieuwe naam. */
+    if (ploegLaanVolgorde[oudeNaam] !== undefined) {
+        var bestaandeVolgorde = ploegLaanVolgorde[nieuweNaam] || [];
+        ploegLaanVolgorde[nieuweNaam] = ploegLaanVolgorde[oudeNaam].concat(bestaandeVolgorde.filter(function(id) { return ploegLaanVolgorde[oudeNaam].indexOf(id) === -1; }));
+        delete ploegLaanVolgorde[oudeNaam];
+        await boardSet('ploegLaanVolgorde', ploegLaanVolgorde);
+    }
     await boardSet('ploegen', ploegen);
     laadEnRenderAlles();
 }
