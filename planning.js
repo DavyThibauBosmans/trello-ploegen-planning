@@ -810,6 +810,22 @@ function toonPloegMelding(rijEl, tekst) {
     setTimeout(function() { w.classList.remove('show'); setTimeout(function() { if (w.parentNode) w.parentNode.removeChild(w); }, 200); }, 3200);
 }
 
+/* Generieke, zichtbare foutmelding (los van een specifieke rij) — gebruikt wanneer
+   een opslag-actie mislukt, zodat dit nooit meer stil (enkel in de console) faalt. */
+function toonGlobaleFoutmelding(tekst) {
+    var bestaand = document.getElementById('globale-foutmelding');
+    if (bestaand && bestaand.parentNode) bestaand.parentNode.removeChild(bestaand);
+    var w = document.createElement('div');
+    w.id = 'globale-foutmelding';
+    w.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:1200;'
+        + 'background-color:#fff4e5;border:1px solid #ffab00;color:#6f4e00;font-size:13px;font-weight:600;'
+        + 'padding:10px 16px;border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,0.18);max-width:min(480px,90vw);'
+        + 'text-align:center;';
+    w.innerText = '⚠️ ' + tekst;
+    document.body.appendChild(w);
+    setTimeout(function() { if (w.parentNode) w.parentNode.removeChild(w); }, 6000);
+}
+
 /* ── QUICK-ADD KNOPPEN (afwezig-rij en ploeg-cellen) ──
    Los in een functie zodat hertekenVanuitCache ze kan herplaatsen na een dropzone-wipe. */
 function voegVerlofAddBtnToe(tdV) {
@@ -1087,7 +1103,13 @@ async function verwijderPloeg(naam, rijElement) {
 async function voegVerlofToe(datum) {
     if (!isAdmin) return;
     var nieuw = { id: 'verlof-' + Date.now() + '-' + Math.floor(Math.random()*9999), naam: 'Naam', startDatum: datum, eindDatum: datum, ploeg: VERLOF_ROW_KEY };
-    await muteVerlof(function(arr) { arr.push(nieuw); });
+    try {
+        await muteVerlof(function(arr) { arr.push(nieuw); });
+    } catch (err) {
+        console.error('voegVerlofToe fout:', err);
+        toonGlobaleFoutmelding(err && err.code === 'OPSLAG_VOL' ? err.message : 'Kon afwezigheid niet toevoegen — de opslag zit vol. Voeg een kaart toe aan de lijst "' + OPSLAG_LIJST_NAAM + '" of maak ruimte vrij.');
+        return;
+    }
     tekenVerlofItem(nieuw);
     var eersteSegment = document.querySelector('[data-verlof-id="' + nieuw.id + '"] .verlof-naam-editable');
     if (eersteSegment) { eersteSegment.contentEditable = true; eersteSegment.focus(); selecteerAllesTekst(eersteSegment); }
@@ -1983,7 +2005,13 @@ async function toggleZwevendInterventie(id) {
 async function voegDirecteInterventieToe(ploeg, datum) {
     if (!isAdmin) return;
     var nieuw = { id: 'int-' + Date.now(), name: 'Nieuwe interventie', ploeg: ploeg, datum: datum, members: [], address: '', infoPlaatsing: '', colorObj: CUSTOM_COLORS[0] };
-    await muteInterventies(function(arr) { arr.push(nieuw); });
+    try {
+        await muteInterventies(function(arr) { arr.push(nieuw); });
+    } catch (err) {
+        console.error('voegDirecteInterventieToe fout:', err);
+        toonGlobaleFoutmelding(err && err.code === 'OPSLAG_VOL' ? err.message : 'Kon interventie niet toevoegen — de opslag zit vol. Voeg een kaart toe aan de lijst "' + OPSLAG_LIJST_NAAM + '" of maak ruimte vrij.');
+        return;
+    }
     tekenInterventie(nieuw); herlayoutPloegRijen();
     var cardEl = document.getElementById(nieuw.id) || document.querySelector('[data-int-id="' + nieuw.id + '"]');
     if (cardEl) { var titleEl = cardEl.querySelector('.card-title'); if (titleEl) { titleEl.contentEditable = true; titleEl.focus(); selecteerAllesTekst(titleEl); } }
