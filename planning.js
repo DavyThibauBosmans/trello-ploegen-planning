@@ -1663,6 +1663,18 @@ function sorteerVerlofVoorRender(items) {
         return iA - iB;
     });
 }
+function sorteerInterventiesVoorRender(interventies) {
+    interventies.sort(function(a, b) {
+        var plA = a.ploeg || '', plB = b.ploeg || '';
+        if (plA !== plB) return 0; // ploegen onderling niet herordenen
+        var vA = ploegLaanVolgorde[plA] || [], vB = ploegLaanVolgorde[plB] || [];
+        var iA = vA.indexOf(a.id), iB = vB.indexOf(b.id);
+        if (iA === -1 && iB === -1) return 0;
+        if (iA === -1) return 1;
+        if (iB === -1) return -1;
+        return iA - iB;
+    });
+}
 
 function hertekenVanuitCache() {
     document.querySelectorAll('.dropzone').forEach(function(z) { z.innerHTML = ''; });
@@ -1670,6 +1682,7 @@ function hertekenVanuitCache() {
     verlofStackMap = {};
     sorteerPlaatsingenVoorRender(allePlaatsingsParen);
     allePlaatsingsParen.forEach(function(item) { tekenPlacement(item.p, item.ctx); });
+    sorteerInterventiesVoorRender(alleInterventies);
     alleInterventies.forEach(function(int) { tekenInterventie(int); });
     sorteerVerlofVoorRender(alleVerlofItems);
     alleVerlofItems.forEach(function(v) { tekenVerlofItem(v); });
@@ -2081,6 +2094,7 @@ function laadEnRenderAlles(){
             allePlaatsingsParen.forEach(function(item){tekenPlacement(item.p,item.ctx);});
             alleInterventies=interventions;
             alleVerlofItems=verlofItems;
+            sorteerInterventiesVoorRender(interventions);
             interventions.forEach(function(int){tekenInterventie(int);});
             sorteerVerlofVoorRender(verlofItems);
             verlofItems.forEach(function(v){tekenVerlofItem(v);});
