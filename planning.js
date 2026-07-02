@@ -183,12 +183,17 @@ async function muteInterventies(fn) {
         var r = fn(arr);
         var s = r !== undefined ? r : arr;
         await schrijfGespreideData('interventions', s);
+        /* Houd de in-memory cache (gebruikt door hertekenVanuitCache/herschikKaart bij elke
+           herschikking) in sync — anders overschrijft de eerstvolgende herschikking deze
+           wijziging weer met de oude, verouderde data. */
+        alleInterventies = s;
         return s;
     }
     var arrLegacy = ensureArray(await boardGet('interventions', []));
     var rLegacy = fn(arrLegacy);
     var sLegacy = rLegacy !== undefined ? rLegacy : arrLegacy;
     await boardSet('interventions', sLegacy);
+    alleInterventies = sLegacy;
     return sLegacy;
 }
 async function muteVerlof(fn) {
@@ -197,12 +202,15 @@ async function muteVerlof(fn) {
         var r = fn(arr);
         var s = r !== undefined ? r : arr;
         await schrijfGespreideData('verlofItems', s);
+        /* Zelfde reden als bij muteInterventies hierboven. */
+        alleVerlofItems = s;
         return s;
     }
     var arrLegacy = ensureArray(await boardGet('verlofItems', []));
     var rLegacy = fn(arrLegacy);
     var sLegacy = rLegacy !== undefined ? rLegacy : arrLegacy;
     await boardSet('verlofItems', sLegacy);
+    alleVerlofItems = sLegacy;
     return sLegacy;
 }
 
@@ -1391,6 +1399,26 @@ var _dragCurrentId = '';
 var _dragCurrentPloeg = '';
 var _dragCurrentDatum = '';
 var _dragViaHandle = false;
+/* Placements (Trello-kaarten) hebben geen centrale array-brede mute-functie zoals
+   interventies/verlof (ze leven per kaart, via mutePlacements(cardId, fn)) — bij een
+   verplaatsing/resize/tekst-wijziging moet allePlaatsingsParen daarom expliciet worden
+   bijgewerkt, anders overschrijft de eerstvolgende hertekenVanuitCache() (bv. bij een
+   herschikking) de wijziging weer met de oude, verouderde data. */
+function vindPlaatsingIndex(instanceId) {
+    for (var i = 0; i < allePlaatsingsParen.length; i++) {
+        if (allePlaatsingsParen[i].p.instanceId === instanceId) return i;
+    }
+    return -1;
+}
+function syncPlaatsingInCache(p, ctx) {
+    var idx = vindPlaatsingIndex(p.instanceId);
+    if (idx === -1) allePlaatsingsParen.push({ p: p, ctx: ctx });
+    else { allePlaatsingsParen[idx].p = p; if (ctx) allePlaatsingsParen[idx].ctx = ctx; }
+}
+function verwijderPlaatsingUitCache(instanceId) {
+    var idx = vindPlaatsingIndex(instanceId);
+    if (idx !== -1) allePlaatsingsParen.splice(idx, 1);
+}
 function rijNaarTop(rij) { return BAND_TOP + rij * (BAND_HOOGTE + BAND_GAP); }
 function stapelReserveer(zoneIds, instanceId) {
     zoneIds.forEach(function(zid) { if (!stackMap[zid]) stackMap[zid] = {}; });
@@ -1806,6 +1834,14 @@ async function onPlacementResizeEnd() {
             }
         });
     });
+    /* De live preview tijdens het slepen tekent al met de juiste einddatum, maar
+       allePlaatsingsParen (gebruikt bij elke herschikking) kende die nog niet — anders
+       springt de kaart bij de eerstvolgende herschikking terug naar zijn oude lengte. */
+    var idxR = vindPlaatsingIndex(st.instanceId);
+    if (idxR !== -1) {
+        if (st.huidigEind === allePlaatsingsParen[idxR].p.datum) delete allePlaatsingsParen[idxR].p.eindDatum;
+        else allePlaatsingsParen[idxR].p.eindDatum = st.huidigEind;
+    }
 }
 
 /* ── INTERVENTIES ── */
@@ -2201,6 +2237,8 @@ async function updateInstantieInfo(cardId, instanceId, tekst) {
     await mutePlacements(cardId, function(arr) {
         arr.forEach(function(p) { if (p.instanceId === instanceId) p.infoPlaatsing = tekst; });
     });
+    var idxI = vindPlaatsingIndex(instanceId);
+    if (idxI !== -1) allePlaatsingsParen[idxI].p.infoPlaatsing = tekst;
 }
 
 async function updateInterventieVeld(id, veld, waarde) {
@@ -2454,6 +2492,7 @@ function drop(e){
         if(naarZijbalk){
             document.querySelectorAll('[data-instance-id="'+id+'"]').forEach(function(el){if(el.parentNode)el.parentNode.removeChild(el);});
             stapelVrijgeven(id);
+            verwijderPlaatsingUitCache(id);
             t.get(cardId,'shared','placements',[]).then(function(lijst){
                 var arr=(Array.isArray(lijst)?lijst:[]).filter(function(p){return p.instanceId!==id;});
                 return t.set(cardId,'shared','placements',arr).then(function(){return arr.length;});
@@ -2476,10 +2515,11 @@ function drop(e){
             if(ctx){ctx.ploeg=doelPloeg;}
             else{
                 var liveCard=trelloKaartCache[cardId];
-                if(liveCard){ctx={card:liveCard,kanTonen:true,url:liveCard.url||'',isArchief:false,ploeg:doelPloeg};hertekenEnkelPlacement(doelP,ctx);}
-                else{t.get(cardId,'shared','cardSnapshot',null).then(function(snap){ctx={card:snapshotNaarKaart(snap||{}),kanTonen:false,url:(snap&&(snap.u||snap.url))||'',isArchief:true,ploeg:doelPloeg};hertekenEnkelPlacement(doelP,ctx);});}
+                if(liveCard){ctx={card:liveCard,kanTonen:true,url:liveCard.url||'',isArchief:false,ploeg:doelPloeg};syncPlaatsingInCache(doelP,ctx);hertekenEnkelPlacement(doelP,ctx);}
+                else{t.get(cardId,'shared','cardSnapshot',null).then(function(snap){ctx={card:snapshotNaarKaart(snap||{}),kanTonen:false,url:(snap&&(snap.u||snap.url))||'',isArchief:true,ploeg:doelPloeg};syncPlaatsingInCache(doelP,ctx);hertekenEnkelPlacement(doelP,ctx);});}
                 return;
             }
+            syncPlaatsingInCache(doelP,ctx);
             hertekenEnkelPlacement(doelP,ctx);
         });
         return;
@@ -2495,6 +2535,7 @@ function drop(e){
             return t.set(id,'shared','placements',arr).then(function(){return arr.length;});
         }).then(function(aantal){
             var ctx={card:card,kanTonen:true,url:card.url||'',isArchief:false,ploeg:doelPloeg};
+            syncPlaatsingInCache(nieuwePlacement,ctx);
             tekenPlacement(nieuwePlacement,ctx);herlayoutPloegRijen();updateBronBadgeById(id,aantal);voegCardToeAanIndex(id);
         });
         return;
