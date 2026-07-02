@@ -1402,6 +1402,9 @@ function verlofStapelVrijgeven(itemId) {
    segmenten + rijhoogte daarop, zodat de afwezig-rij altijd meeschaalt met het aantal
    gestapelde kaarten (en met namen die naar 2 regels omslaan). */
 function herlayoutVerlofRij() {
+    var tableEl = document.querySelector('.planning-table');
+    /* Reset zoom voor accurate offsetHeight meting (CSS zoom beïnvloedt offsetHeight) */
+    if (tableEl) tableEl.style.zoom = '';
     var zones = document.querySelectorAll('.dropzone[data-row-type="verlof"]');
     var baanHoogtes = {};
     zones.forEach(function(z) {
@@ -1420,9 +1423,17 @@ function herlayoutVerlofRij() {
         z.querySelectorAll('.verlof-segment').forEach(function(el) {
             var baan = parseInt(el.dataset.band, 10); if (isNaN(baan)) return;
             el.style.top = (tops[baan] !== undefined ? tops[baan] : 0) + 'px';
+            /* Alle segmenten van dezelfde baan op exact dezelfde hoogte zetten, anders sluit
+               het eerste segment (met het grotere kruisje) niet naadloos aan op de vervolgstukken. */
+            if (baanHoogtes[baan] !== undefined) el.style.height = baanHoogtes[baan] + 'px';
         });
         z.style.minHeight = totaal > 0 ? totaal + 'px' : '';
     });
+    var verlofRow = document.querySelector('.row-verlof-label');
+    verlofRow = verlofRow ? verlofRow.closest('tr') : null;
+    if (verlofRow) verlofRow.style.height = totaal > 0 ? totaal + 'px' : '';
+    /* Herstel zoom na meting */
+    if (tableEl) tableEl.style.zoom = tableZoom;
 }
 
 function herlayoutPloegRijen() {

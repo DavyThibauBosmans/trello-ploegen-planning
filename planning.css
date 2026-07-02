@@ -445,7 +445,7 @@ body.view-only-mode .ploeg-naam-editable { cursor: default; }
 }
 .verlof-segment.continuation { color: transparent; }
 
-.verlof-segment-body { display: flex; align-items: center; gap: 6px; min-height: 16px; }
+.verlof-segment-body { display: flex; align-items: center; gap: 6px; min-height: 16px; height: 100%; }
 .verlof-naam-editable {
     outline: none; padding: 0 2px; border-radius: 2px; cursor: text;
     min-width: 20px; word-break: break-word; flex-grow: 1;
