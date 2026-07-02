@@ -2,6 +2,19 @@ var TRELLO_APP_KEY = '23048d20a881b0a47600f90dd72f4d62';
 var TRELLO_APP_NAAM = 'Ploegen Planning';
 var t = TrelloPowerUp.iframe({ appKey: TRELLO_APP_KEY, appName: TRELLO_APP_NAAM, appAuthor: TRELLO_APP_NAAM });
 
+/* Trello roept de t.render()-callback hieronder ook automatisch opnieuw aan vlak nadat
+   deze app zelf iets wegschrijft (board-data-wijziging-notificatie op eigen schrijfactie).
+   Een t.get() vlak daarna kan de eigen recente t.set() nog niet altijd terugzien (Trello's
+   opslag is niet meteen consistent), waardoor die automatische herlaad de zopas uitgevoerde
+   herschikking weer overschrijft met de oude staat — vandaar het "terugspringen"/"niet
+   verplaatsbaar" gedrag. We onderdrukken die auto-herlaad daarom kort na een eigen schrijfactie. */
+var _laatsteLokaleWijziging = 0;
+var HERLAAD_COOLDOWN_MS = 4000;
+(function() {
+    var origSet = t.set.bind(t);
+    t.set = function() { _laatsteLokaleWijziging = Date.now(); return origSet.apply(t, arguments); };
+})();
+
 var DEFAULT_PLOEGEN = ["Ploeg 1", "Ploeg 2", "Ploeg 5", "Ploeg 7 / Extra"];
 var ploegen = DEFAULT_PLOEGEN.slice();
 var VERLOF_ROW_KEY = '__verlof__';
@@ -1763,11 +1776,10 @@ function verplaatsInVolgorde(id, ploeg, richting) {
     var volgorde = ploegLaanVolgorde[ploeg].filter(function(x){return huidigeIdsP[x];});
     allePlaatsingsParen.forEach(function(item) { if (item.p.ploeg === ploeg && volgorde.indexOf(item.p.instanceId) === -1) volgorde.push(item.p.instanceId); });
     alleInterventies.forEach(function(int) { if (int.ploeg === ploeg && volgorde.indexOf(int.id) === -1) volgorde.push(int.id); });
-    var idx = volgorde.indexOf(id); if (idx === -1) { console.log('[Ploegen Planning] verplaatsInVolgorde: id niet gevonden', id, ploeg, volgorde); return; }
+    var idx = volgorde.indexOf(id); if (idx === -1) return;
     var doel = idx + richting; if (doel < 0 || doel >= volgorde.length) return;
     var tmp = volgorde[doel]; volgorde[doel] = volgorde[idx]; volgorde[idx] = tmp;
     ploegLaanVolgorde[ploeg] = volgorde;
-    console.log('[Ploegen Planning] verplaatsInVolgorde uitgevoerd @ '+new Date().toLocaleTimeString(), ploeg, JSON.parse(JSON.stringify(volgorde)));
     t.set('board', 'shared', 'ploegLaanVolgorde', ploegLaanVolgorde);
     hertekenVanuitCache();
 }
@@ -2000,7 +2012,6 @@ async function onInterventieResizeEnd() {
 
 /* ── HOOFDLAADFUNCTIE ── */
 function laadEnRenderAlles(){
-    console.log('[Ploegen Planning] herlaad gestart @ '+new Date().toLocaleTimeString());
     berekenWeekDatums();bouwLegende();markeerActieveViewKnop();
     trelloKaartCache={};placementCtx={};stackMap={};verlofStackMap={};plaatsingsData={};allePlaatsingsParen=[];alleInterventies=[];alleVerlofItems=[];
     var pool=document.getElementById('sidebar-pool');
@@ -2029,7 +2040,6 @@ function laadEnRenderAlles(){
         var memberInfo=resultaten[7];
         ploegLaanVolgorde=(resultaten[8]&&typeof resultaten[8]==='object'&&!Array.isArray(resultaten[8]))?resultaten[8]:{};
         verlofRijVolgorde=(resultaten[9]&&typeof resultaten[9]==='object'&&!Array.isArray(resultaten[9]))?resultaten[9]:{};
-        console.log('[Ploegen Planning] ploegLaanVolgorde na fetch:', JSON.parse(JSON.stringify(ploegLaanVolgorde)));
         if(Array.isArray(opgeslagenAdmins)&&opgeslagenAdmins.length>0){ADMIN_USERNAMES=opgeslagenAdmins;}
         if(DEV_MODE){isAdmin=true;}
         else{var u=(memberInfo&&memberInfo.username)?memberInfo.username.toLowerCase():'';isAdmin=ADMIN_USERNAMES.indexOf(u)!==-1;}
@@ -2142,6 +2152,7 @@ function laadEnRenderAlles(){
 }
 
 t.render(function(){
+    if (Date.now() - _laatsteLokaleWijziging < HERLAAD_COOLDOWN_MS) return Promise.resolve();
     return Promise.all([t.get('board','shared','viewMode','week'),t.get('board','shared','ankerDatum',null)]).then(function(res){
         var opgeslagenView=res[0],opgeslagenAnker=res[1];
         if(['week','multi','month'].indexOf(opgeslagenView)!==-1)VIEW_MODUS=opgeslagenView;
