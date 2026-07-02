@@ -246,6 +246,11 @@ body:not(.view-only-mode) .dropzone > .placement-band { padding-left: 26px; }
 }
 .color-swatch:hover { transform: scale(1.15); }
 
+/* Afwezig/Magazijn/Staal/Meubel-chips staan vaak dicht op elkaar gestapeld — het
+   kleurenpaletje moet daarom altijd bovenaan de kaart openen i.p.v. eronder,
+   anders overlapt het de chips die eronder staan. */
+.verlof-segment .color-picker-menu { top: auto; bottom: 22px; }
+
 /* ── HOOFDSCHERM & TABEL ── */
 .main-content {
     flex-grow: 1; padding: 20px; overflow: auto;
@@ -854,6 +859,7 @@ body.print-mode-month .zoom-toolbar { display: none !important; }
     body.print-mode-week .zoom-toolbar { display: none !important; }
     body.print-mode-week .dropzone { min-height: 0 !important; overflow: hidden !important; }
     body.print-mode-week .dropzone.verlof-zone { height: auto !important; overflow: visible !important; }
+    body.print-mode-week .verlof-segment { font-size: 9px !important; padding: 2px 5px !important; min-height: 17px !important; }
     body.print-mode-week .placement-band,
     body.print-mode-week .planning-card { overflow: hidden !important; }
     body.print-mode-week .card-body { overflow: hidden !important; }
@@ -870,7 +876,7 @@ body.print-mode-month .zoom-toolbar { display: none !important; }
     body.print-mode-multi .card-info-placement { font-size: 7px !important; }
     body.print-mode-multi .planning-table th,
     body.print-mode-multi .planning-table td { padding: 2px 3px !important; }
-    body.print-mode-multi .verlof-segment { font-size: 7px !important; padding: 1px 3px !important; min-height: 16px !important; }
+    body.print-mode-multi .verlof-segment { font-size: 7px !important; padding: 0px 3px !important; min-height: 13px !important; }
     body.print-mode-multi .placement-band { padding: 3px 5px !important; }
     body.print-mode-multi .table-scroll-wrap { overflow: visible !important; width: 100% !important; }
     body.print-mode-multi .main-content { padding: 2mm 4mm 2mm 4mm !important; }
@@ -899,7 +905,7 @@ body.print-mode-month .zoom-toolbar { display: none !important; }
     body.print-mode-month .planning-table th,
     body.print-mode-month .planning-table td { padding: 1px 2px !important; font-size: 8px !important; }
     body.print-mode-month .planning-table th { font-size: 7px !important; }
-    body.print-mode-month .verlof-segment { font-size: 7px !important; padding: 1px 3px !important; min-height: 16px !important; }
+    body.print-mode-month .verlof-segment { font-size: 7px !important; padding: 0px 3px !important; min-height: 13px !important; }
     body.print-mode-month .placement-band { padding: 2px 4px !important; }
     body.print-mode-month .zwevend-badge { font-size: 7px !important; padding: 0px 3px !important; }
     body.print-mode-month .table-scroll-wrap { overflow: visible !important; width: 100% !important; }

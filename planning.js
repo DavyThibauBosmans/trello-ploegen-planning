@@ -402,6 +402,14 @@ function printPlanning(modus) {
         Array.from(table.querySelectorAll('.dropzone')).forEach(function(z) {
             z.style.minHeight = '0'; z.style.height = '';
         });
+        /* Herbereken de speciale-rij hoogtes terwijl de print-CSS (kleinere chips) al actief is,
+           en zet die op de <tr> zelf — de print-regel ".dropzone { min-height:0 !important }"
+           blokkeert een hoogte op de cel, maar niet op de rij, dus zo blijven gestapelde
+           chips toch netjes onder elkaar staan i.p.v. overlappen.
+           herlayoutVerlofRij() herstelt nadien de scherm-zoom — zet 'm meteen weer op ''
+           zodat de metingen hieronder (Stap 2-4) nog steeds ongezoomd gebeuren. */
+        herlayoutVerlofRij();
+        table.style.zoom = '';
 
         /* Stap 2: meet vaste elementen (zoom-toolbar verborgen via CSS) */
         var tHead    = table.querySelector('thead');
