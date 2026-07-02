@@ -1461,6 +1461,7 @@ function stapelReserveer(zoneIds, instanceId) {
     }
     zoneIds.forEach(function(zid) { stackMap[zid][rij] = instanceId; });
     zoneIds.forEach(updateZoneHoogte);
+    if (zoneIds.some(function(zid){return zid.indexOf('Ploeg-2')!==-1;})) console.log('[Ploegen Planning] stapelReserveer', instanceId, '-> band', rij, zoneIds);
     return { rij: rij, top: rijNaarTop(rij) };
 }
 function stapelVrijgeven(instanceId) {
@@ -1701,6 +1702,7 @@ function tekenPlaatsingenEnInterventies() {
         if (iB === -1) return -1;
         return iA - iB;
     });
+    console.log('[Ploegen Planning] tekenPlaatsingenEnInterventies volgorde (Ploeg 2)', items.filter(function(it){return (it.ploeg||'').indexOf('Ploeg 2')===0;}).map(function(it){return it.soort+':'+it.id;}));
     items.forEach(function(item) {
         if (item.soort === 'plaatsing') tekenPlacement(item.p, item.ctx);
         else tekenInterventie(item.int);
