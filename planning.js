@@ -1715,6 +1715,7 @@ function bouwHuidigeVolgorde(ploeg) {
 }
 
 function herschikKaart(instanceId, ploeg, insertOpIndex) {
+    console.log('[Ploegen Planning] herschikKaart aangeroepen', {instanceId:instanceId, ploeg:JSON.stringify(ploeg), insertOpIndex:insertOpIndex, bestaandeKeys:Object.keys(ploegLaanVolgorde).map(function(k){return JSON.stringify(k);})});
     if (!ploegLaanVolgorde[ploeg]) ploegLaanVolgorde[ploeg] = bouwHuidigeVolgorde(ploeg);
     /* Ids van kaarten die intussen verwijderd of naar een andere ploeg verplaatst zijn
        blijven anders voorgoed als 'spook'-ids in ploegLaanVolgorde staan (die wordt nooit
@@ -1769,6 +1770,7 @@ function herschikVerlofKaart(itemId, rijKey, insertOpIndex) {
 /* Robuust alternatief voor sleep-herschikken: wisselt de kaart rechtstreeks met zijn
    buur in de opgeslagen volgorde-array, zonder muispositie-/DOM-geometrie nodig te hebben. */
 function verplaatsInVolgorde(id, ploeg, richting) {
+    console.log('[Ploegen Planning] verplaatsInVolgorde aangeroepen', {id:id, ploeg:JSON.stringify(ploeg), bestaandeKeys:Object.keys(ploegLaanVolgorde).map(function(k){return JSON.stringify(k);})});
     if (!ploegLaanVolgorde[ploeg]) ploegLaanVolgorde[ploeg] = bouwHuidigeVolgorde(ploeg);
     var huidigeIdsP = {};
     allePlaatsingsParen.forEach(function(item) { if (item.p.ploeg === ploeg) huidigeIdsP[item.p.instanceId] = true; });
@@ -1776,8 +1778,8 @@ function verplaatsInVolgorde(id, ploeg, richting) {
     var volgorde = ploegLaanVolgorde[ploeg].filter(function(x){return huidigeIdsP[x];});
     allePlaatsingsParen.forEach(function(item) { if (item.p.ploeg === ploeg && volgorde.indexOf(item.p.instanceId) === -1) volgorde.push(item.p.instanceId); });
     alleInterventies.forEach(function(int) { if (int.ploeg === ploeg && volgorde.indexOf(int.id) === -1) volgorde.push(int.id); });
-    var idx = volgorde.indexOf(id); if (idx === -1) return;
-    var doel = idx + richting; if (doel < 0 || doel >= volgorde.length) return;
+    var idx = volgorde.indexOf(id); if (idx === -1) { console.log('[Ploegen Planning] verplaatsInVolgorde: id niet gevonden in volgorde', id, volgorde); return; }
+    var doel = idx + richting; if (doel < 0 || doel >= volgorde.length) { console.log('[Ploegen Planning] verplaatsInVolgorde: grens bereikt, geen effect', idx, richting, volgorde.length); return; }
     var tmp = volgorde[doel]; volgorde[doel] = volgorde[idx]; volgorde[idx] = tmp;
     ploegLaanVolgorde[ploeg] = volgorde;
     t.set('board', 'shared', 'ploegLaanVolgorde', ploegLaanVolgorde);
@@ -2152,7 +2154,8 @@ function laadEnRenderAlles(){
 }
 
 t.render(function(){
-    if (Date.now() - _laatsteLokaleWijziging < HERLAAD_COOLDOWN_MS) return Promise.resolve();
+    if (Date.now() - _laatsteLokaleWijziging < HERLAAD_COOLDOWN_MS) { console.log('[Ploegen Planning] auto-herlaad overgeslagen (cooldown) @ '+new Date().toLocaleTimeString()); return Promise.resolve(); }
+    console.log('[Ploegen Planning] herlaad gestart @ '+new Date().toLocaleTimeString());
     return Promise.all([t.get('board','shared','viewMode','week'),t.get('board','shared','ankerDatum',null)]).then(function(res){
         var opgeslagenView=res[0],opgeslagenAnker=res[1];
         if(['week','multi','month'].indexOf(opgeslagenView)!==-1)VIEW_MODUS=opgeslagenView;
@@ -2525,6 +2528,7 @@ function drop(e){
     if(!id)return;
     var doelPloeg=doelZone.dataset.ploeg,doelDatum=doelZone.dataset.datum,doelRowType=doelZone.dataset.rowType||'';
     var naarZijbalk=!doelPloeg;
+    console.log('[Ploegen Planning] drop', {id:id, doelPloeg:JSON.stringify(doelPloeg), doelDatum:doelDatum, dragCurrentPloeg:JSON.stringify(_dragCurrentPloeg), dragCurrentDatum:_dragCurrentDatum, ploegMatch:doelPloeg===_dragCurrentPloeg, datumMatch:doelDatum===_dragCurrentDatum});
 
     var soort;
     if(id.indexOf('verlof-')===0)soort='verlof';
