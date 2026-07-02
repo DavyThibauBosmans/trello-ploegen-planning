@@ -1640,18 +1640,6 @@ function herstelBandSpreiding() {
 }
 
 /* ── HERSCHIKKEN: helperfuncties ── */
-function sorteerPlaatsingenVoorRender(paren) {
-    paren.sort(function(a, b) {
-        var plA = a.p.ploeg || '', plB = b.p.ploeg || '';
-        if (plA !== plB) return 0; // ploegen onderling niet herordenen
-        var vA = ploegLaanVolgorde[plA] || [], vB = ploegLaanVolgorde[plB] || [];
-        var iA = vA.indexOf(a.p.instanceId), iB = vB.indexOf(b.p.instanceId);
-        if (iA === -1 && iB === -1) return 0;
-        if (iA === -1) return 1;
-        if (iB === -1) return -1;
-        return iA - iB;
-    });
-}
 function sorteerVerlofVoorRender(items) {
     items.sort(function(a, b) {
         var rijA = a.ploeg || VERLOF_ROW_KEY, rijB = b.ploeg || VERLOF_ROW_KEY;
@@ -1664,16 +1652,27 @@ function sorteerVerlofVoorRender(items) {
         return iA - iB;
     });
 }
-function sorteerInterventiesVoorRender(interventies) {
-    interventies.sort(function(a, b) {
+/* Plaatsingen en interventies delen 1 volgorde-array (ploegLaanVolgorde) per ploeg-rij.
+   Ze moeten daarom in 1 gecombineerde, geinterleavede volgorde getekend worden — anders
+   claimt stapelReserveer() de banen in 2 losse groepen (eerst alle plaatsingen, dan alle
+   interventies) en is een gemengde stapel nooit door elkaar te herschikken. */
+function tekenPlaatsingenEnInterventies() {
+    var items = [];
+    allePlaatsingsParen.forEach(function(item) { items.push({ soort: 'plaatsing', p: item.p, ctx: item.ctx, ploeg: item.p.ploeg, id: item.p.instanceId }); });
+    alleInterventies.forEach(function(int) { items.push({ soort: 'interventie', int: int, ploeg: int.ploeg, id: int.id }); });
+    items.sort(function(a, b) {
         var plA = a.ploeg || '', plB = b.ploeg || '';
         if (plA !== plB) return 0; // ploegen onderling niet herordenen
-        var vA = ploegLaanVolgorde[plA] || [], vB = ploegLaanVolgorde[plB] || [];
-        var iA = vA.indexOf(a.id), iB = vB.indexOf(b.id);
+        var v = ploegLaanVolgorde[plA] || [];
+        var iA = v.indexOf(a.id), iB = v.indexOf(b.id);
         if (iA === -1 && iB === -1) return 0;
         if (iA === -1) return 1;
         if (iB === -1) return -1;
         return iA - iB;
+    });
+    items.forEach(function(item) {
+        if (item.soort === 'plaatsing') tekenPlacement(item.p, item.ctx);
+        else tekenInterventie(item.int);
     });
 }
 
@@ -1681,10 +1680,7 @@ function hertekenVanuitCache() {
     document.querySelectorAll('.dropzone').forEach(function(z) { z.innerHTML = ''; });
     stackMap = {};
     verlofStackMap = {};
-    sorteerPlaatsingenVoorRender(allePlaatsingsParen);
-    allePlaatsingsParen.forEach(function(item) { tekenPlacement(item.p, item.ctx); });
-    sorteerInterventiesVoorRender(alleInterventies);
-    alleInterventies.forEach(function(int) { tekenInterventie(int); });
+    tekenPlaatsingenEnInterventies();
     sorteerVerlofVoorRender(alleVerlofItems);
     alleVerlofItems.forEach(function(v) { tekenVerlofItem(v); });
     document.querySelectorAll('.dropzone').forEach(function(z) {
@@ -2124,12 +2120,9 @@ function laadEnRenderAlles(){
                 });
             });
             if(JSON.stringify(nieuweIndex.slice().sort())!==JSON.stringify(indexIds.slice().sort()))t.set('board','shared','plannedCardIds',nieuweIndex);
-            sorteerPlaatsingenVoorRender(allePlaatsingsParen);
-            allePlaatsingsParen.forEach(function(item){tekenPlacement(item.p,item.ctx);});
             alleInterventies=interventions;
             alleVerlofItems=verlofItems;
-            sorteerInterventiesVoorRender(interventions);
-            interventions.forEach(function(int){tekenInterventie(int);});
+            tekenPlaatsingenEnInterventies();
             sorteerVerlofVoorRender(verlofItems);
             verlofItems.forEach(function(v){tekenVerlofItem(v);});
             herlayoutPloegRijen();
